@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Demi Platform
 
-## Getting Started
+The hosted business operations platform for Demi Solutions LLC.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 App Router
+- TypeScript
+- React 19
+- Tailwind CSS
+- Supabase PostgreSQL and Auth
+- Vercel deployment target
+- Vitest
+
+## Requirements
+
+- Node.js 22 or newer
+- npm
+- A Supabase project
+
+With nvm installed:
+
+```bash
+nvm use
+npm install
+```
+
+## Environment
+
+Copy `.env.example` to `.env.local` and configure:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+```
+
+Only use a modern Supabase publishable key in browser-visible configuration. Never expose a secret or service-role key through a `NEXT_PUBLIC_` variable.
+
+## Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Verification
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test
+npm run lint
+npm run typecheck
+npm run build
+npm audit --omit=dev
+```
 
-## Learn More
+## Database
 
-To learn more about Next.js, take a look at the following resources:
+Supabase schema changes are versioned in `supabase/migrations`. The initial schema provides:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Auth-linked profiles
+- Businesses and role-based business membership
+- Customers, jobs, quotes, invoices, expenses, equipment, and maintenance
+- Exact decimal money values and timezone-aware audit timestamps
+- Tenant-safe composite foreign keys
+- Row Level Security on every public table
+- Indexed operational and relationship queries
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The browser uses Supabase's publishable key. Authorization is enforced by authenticated sessions and business-membership RLS policies.
 
-## Deploy on Vercel
+## Current Milestone
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The foundation includes secure sign-in, session refresh, protected routing, owner workspace onboarding, a responsive operational dashboard, generated database types, and the initial Supabase migration. Business modules and verified migration of legacy SQLite records follow in later milestones.
