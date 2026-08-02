@@ -6,7 +6,7 @@ import { createBusiness, type OnboardingState } from "./actions";
 
 const initialState: OnboardingState = {};
 
-export function OnboardingForm() {
+export function OnboardingForm({ businessName }: { businessName: string }) {
   const [state, action, pending] = useActionState(createBusiness, initialState);
 
   return (
@@ -14,19 +14,19 @@ export function OnboardingForm() {
       <div>
         <label className="mb-2 block text-sm font-semibold" htmlFor="name">Business name</label>
         <input
-          className="h-12 w-full rounded-md border border-[#c8d1cb] bg-white px-3 shadow-sm outline-none focus:border-[#16372c] focus:ring-2 focus:ring-[#16372c]/15"
-          defaultValue="Demi Stump Grinding"
+          className="h-12 w-full rounded-md border border-line-strong bg-surface px-3 shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/15"
+          defaultValue={businessName}
           id="name"
           name="name"
           required
         />
         {state.errors?.name?.map((error) => (
-          <p className="mt-2 text-sm text-[#a23833]" key={error}>{error}</p>
+          <p className="mt-2 text-sm text-danger" key={error}>{error}</p>
         ))}
       </div>
-      {state.message && <p className="text-sm text-[#a23833]" role="alert">{state.message}</p>}
+      {state.message && <p className="text-sm text-danger" role="alert">{state.message}</p>}
       <button
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-[#16372c] px-4 font-semibold text-white hover:bg-[#0e2a21] disabled:opacity-65"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand hover:bg-brand-strong disabled:opacity-65"
         disabled={pending}
         type="submit"
       >

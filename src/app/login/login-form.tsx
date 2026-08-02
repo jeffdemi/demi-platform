@@ -2,21 +2,23 @@
 
 import { useActionState } from "react";
 import { ArrowRight, LockKeyhole } from "lucide-react";
+import Link from "next/link";
 import { login, type LoginState } from "./actions";
 
 const initialState: LoginState = {};
 
-export function LoginForm() {
+export function LoginForm({ nextPath }: { nextPath: string }) {
   const [state, action, pending] = useActionState(login, initialState);
 
   return (
     <form action={action} className="mt-8 space-y-5">
+      <input name="next" type="hidden" value={nextPath} />
       <div>
-        <label className="mb-2 block text-sm font-semibold text-[#35403a]" htmlFor="email">
+        <label className="mb-2 block text-sm font-semibold text-muted-strong" htmlFor="email">
           Email
         </label>
         <input
-          className="h-12 w-full rounded-md border border-[#c8d1cb] bg-white px-3 text-base shadow-sm outline-none transition focus:border-[#16372c] focus:ring-2 focus:ring-[#16372c]/15"
+          className="h-12 w-full rounded-md border border-line-strong bg-surface px-3 text-base shadow-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
           id="email"
           name="email"
           type="email"
@@ -25,16 +27,21 @@ export function LoginForm() {
           required
         />
         {state.errors?.email?.map((error) => (
-          <p className="mt-2 text-sm text-[#a23833]" key={error}>{error}</p>
+          <p className="mt-2 text-sm text-danger" key={error}>{error}</p>
         ))}
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-semibold text-[#35403a]" htmlFor="password">
-          Password
-        </label>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <label className="block text-sm font-semibold text-muted-strong" htmlFor="password">
+            Password
+          </label>
+          <Link className="text-sm font-semibold text-brand underline-offset-4 hover:underline" href="/forgot-password">
+            Forgot password?
+          </Link>
+        </div>
         <input
-          className="h-12 w-full rounded-md border border-[#c8d1cb] bg-white px-3 text-base shadow-sm outline-none transition focus:border-[#16372c] focus:ring-2 focus:ring-[#16372c]/15"
+          className="h-12 w-full rounded-md border border-line-strong bg-surface px-3 text-base shadow-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
           id="password"
           name="password"
           type="password"
@@ -42,18 +49,18 @@ export function LoginForm() {
           required
         />
         {state.errors?.password?.map((error) => (
-          <p className="mt-2 text-sm text-[#a23833]" key={error}>{error}</p>
+          <p className="mt-2 text-sm text-danger" key={error}>{error}</p>
         ))}
       </div>
 
       {state.message && (
-        <p className="rounded-md border border-[#e7c8c5] bg-[#fff6f5] px-3 py-2 text-sm text-[#8c302b]" role="alert">
+        <p className="rounded-md border border-danger-line bg-danger-soft px-3 py-2 text-sm text-danger-strong" role="alert">
           {state.message}
         </p>
       )}
 
       <button
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-[#16372c] px-4 font-semibold text-white transition hover:bg-[#0e2a21] disabled:cursor-wait disabled:opacity-65"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand transition hover:bg-brand-strong disabled:cursor-wait disabled:opacity-65"
         disabled={pending}
         type="submit"
       >

@@ -13,6 +13,20 @@ export const requireUser = cache(async () => {
   return {
     id: data.claims.sub,
     email: typeof data.claims.email === "string" ? data.claims.email : "",
+    invitationId:
+      typeof data.claims.user_metadata === "object" &&
+      data.claims.user_metadata !== null &&
+      "invitation_id" in data.claims.user_metadata &&
+      typeof data.claims.user_metadata.invitation_id === "string"
+        ? data.claims.user_metadata.invitation_id
+        : null,
+    initialBusinessName:
+      typeof data.claims.user_metadata === "object" &&
+      data.claims.user_metadata !== null &&
+      "initial_business_name" in data.claims.user_metadata &&
+      typeof data.claims.user_metadata.initial_business_name === "string"
+        ? data.claims.user_metadata.initial_business_name
+        : null,
   };
 });
 
@@ -32,6 +46,9 @@ export const requireBusinessContext = cache(async () => {
   }
 
   if (!membership) {
+    if (user.invitationId) {
+      redirect("/account/accept-invite");
+    }
     redirect("/onboarding");
   }
 

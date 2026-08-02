@@ -32,9 +32,17 @@ Copy `.env.example` to `.env.local` and configure:
 ```text
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+SUPABASE_SECRET_KEY=
 ```
 
-Only use a modern Supabase publishable key in browser-visible configuration. Never expose a secret or service-role key through a `NEXT_PUBLIC_` variable.
+Only use a modern Supabase publishable key in browser-visible configuration. `SUPABASE_SECRET_KEY` is server-only and is used solely for owner-initiated team invitations. Never expose it through a `NEXT_PUBLIC_` variable.
+
+## Account Setup
+
+The platform is invite-only. While the database has no business workspace, `/setup` permits only `jeffdemi@gmail.com` to register the first owner. Email confirmation is required. PostgreSQL independently enforces the same email allowlist and permanently closes workspace creation after the first business is created.
+
+After setup, disable public signup in Supabase and use the Team screen for additional accounts. Configure the Supabase Auth URLs, invite template, password policy, SMTP, and Vercel variables described in [Authentication](docs/authentication.md).
 
 ## Development
 
@@ -68,6 +76,22 @@ Supabase schema changes are versioned in `supabase/migrations`. The initial sche
 
 The browser uses Supabase's publishable key. Authorization is enforced by authenticated sessions and business-membership RLS policies.
 
+## Legacy Data
+
+The migration tool validates the source SQLite database and performs a dry run by default:
+
+```bash
+npm run migrate:legacy
+```
+
+After the owner workspace exists and `SUPABASE_SECRET_KEY` is available locally, apply the transaction:
+
+```bash
+node --env-file=.env.local scripts/migrate-legacy-sqlite.mjs --apply
+```
+
+The import preserves source IDs in `legacy_id`, remaps relationships, normalizes decimals, and verifies every table count. See [Legacy Migration](docs/legacy-migration.md).
+
 ## Current Milestone
 
-The foundation includes secure sign-in, session refresh, protected routing, owner workspace onboarding, a responsive operational dashboard, generated database types, and the initial Supabase migration. Business modules and verified migration of legacy SQLite records follow in later milestones.
+The foundation includes secure sign-in, password recovery, invite-only account creation, session refresh, protected routing, owner workspace onboarding, a responsive operational dashboard, generated database types, transactional legacy import support, and additive Supabase migrations. Business module screens follow in later milestones.

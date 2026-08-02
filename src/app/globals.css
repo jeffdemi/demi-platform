@@ -1,16 +1,59 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f6f3;
-  --foreground: #1e2421;
+  --page: #f4f6f3;
+  --ink: #1e2421;
   --surface: #ffffff;
   --surface-muted: #edf1ee;
-  --border: #d6ddd8;
+  --line: #d6ddd8;
+  --line-strong: #c8d1cb;
   --brand: #16372c;
   --brand-strong: #0e2a21;
+  --brand-soft: #e8efeb;
+  --brand-border: #294a3f;
   --accent: #c9972b;
+  --accent-soft: #fffdf7;
+  --accent-line: #eadfbe;
+  --warning-ink: #806319;
   --danger: #b2403a;
+  --danger-strong: #8c302b;
+  --danger-soft: #fff6f5;
+  --danger-line: #e7c8c5;
   --muted: #66716b;
+  --muted-strong: #35403a;
+  --muted-subtle: #76817b;
+  --on-brand: #ffffff;
+  --on-brand-muted: #dce7e2;
+  --on-brand-subtle: #b8cbc3;
+  --focus-ring: rgba(201, 151, 43, 0.42);
+  --selection: rgba(201, 151, 43, 0.28);
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-ink: var(--ink);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-border: var(--brand-border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --color-muted: var(--muted);
+  --color-muted-strong: var(--muted-strong);
+  --color-muted-subtle: var(--muted-subtle);
+  --color-on-brand: var(--on-brand);
+  --color-on-brand-muted: var(--on-brand-muted);
+  --color-on-brand-subtle: var(--on-brand-subtle);
 }
 
 * {
@@ -19,14 +62,14 @@
 
 html {
   min-height: 100%;
-  background: var(--background);
+  background: var(--page);
 }
 
 body {
   min-height: 100vh;
   margin: 0;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--page);
+  color: var(--ink);
   font-family: var(--font-geist-sans), Arial, sans-serif;
 }
 
@@ -43,10 +86,10 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid rgba(201, 151, 43, 0.42);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: rgba(201, 151, 43, 0.28);
+  background: var(--selection);
 }

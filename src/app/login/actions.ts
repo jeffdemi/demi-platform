@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { safeNextPath } from "@/lib/urls";
 import { loginSchema } from "@/lib/validation/auth";
 
 export type LoginState = {
@@ -29,5 +30,5 @@ export async function login(_: LoginState, formData: FormData): Promise<LoginSta
     return { message: "Email or password was not recognized." };
   }
 
-  redirect("/dashboard");
+  redirect(safeNextPath(formData.get("next")?.toString()));
 }

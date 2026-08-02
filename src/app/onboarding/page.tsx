@@ -23,14 +23,14 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f4f6f3] px-5 py-12">
-      <section className="w-full max-w-lg rounded-lg border border-[#d6ddd8] bg-white p-7 shadow-sm sm:p-10">
-        <span className="grid size-12 place-items-center rounded-md bg-[#e8efeb] text-[#16372c]">
+    <main className="grid min-h-screen place-items-center bg-page px-5 py-12">
+      <section className="w-full max-w-lg rounded-lg border border-line bg-surface p-7 shadow-sm sm:p-10">
+        <span className="grid size-12 place-items-center rounded-md bg-brand-soft text-brand">
           <Building2 aria-hidden="true" size={24} />
         </span>
         <h1 className="mt-6 text-2xl font-bold">Create your workspace</h1>
-        <p className="mt-2 leading-7 text-[#66716b]">Signed in as {user.email}</p>
-        <OnboardingForm />
+        <p className="mt-2 leading-7 text-muted">Signed in as {user.email}</p>
+        <OnboardingForm businessName={user.initialBusinessName || "Demi Stump Grinding"} />
       </section>
     </main>
   );

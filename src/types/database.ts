@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          business_id: number
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          business_id: number
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          business_id?: number
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_invitations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_members: {
         Row: {
           active: boolean
@@ -491,6 +541,41 @@ export type Database = {
           },
         ]
       }
+      legacy_imports: {
+        Row: {
+          business_id: number
+          id: number
+          imported_at: string
+          row_counts: Json
+          source_name: string
+          source_sha256: string
+        }
+        Insert: {
+          business_id: number
+          id?: never
+          imported_at?: string
+          row_counts: Json
+          source_name: string
+          source_sha256: string
+        }
+        Update: {
+          business_id?: number
+          id?: never
+          imported_at?: string
+          row_counts?: Json
+          source_name?: string
+          source_sha256?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legacy_imports_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance: {
         Row: {
           business_id: number
@@ -701,7 +786,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_business_invitation: {
+        Args: { invitation_id: string; member_full_name?: string }
+        Returns: number
+      }
       create_business: { Args: { business_name: string }; Returns: number }
+      import_legacy_snapshot: {
+        Args: {
+          import_payload: Json
+          import_source_name: string
+          import_source_sha256: string
+          target_business_id: number
+        }
+        Returns: Json
+      }
+      platform_setup_available: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
@@ -711,6 +810,7 @@ export type Database = {
     }
   }
 }
+
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]

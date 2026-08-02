@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "migrate:legacy": "node scripts/migrate-legacy-sqlite.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

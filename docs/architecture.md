@@ -20,6 +20,8 @@ Browser
 
 Every operational row belongs to a business. Membership connects a Supabase Auth user to a business with an `owner`, `admin`, or `employee` role. RLS membership helpers live in the unexposed `private` schema.
 
+Account provisioning is invite-only after a one-time owner bootstrap. Team invitation acceptance is checked transactionally against the authenticated user's email. Server-only admin credentials are isolated in `src/lib/supabase/admin.ts` and are never used for normal application data access.
+
 ## Migration
 
-The existing Python and SQLite application remains unchanged as the behavioral reference and rollback source. Legacy rows will be copied through a repeatable migration utility, preserving source IDs in each table's `legacy_id` column and validating counts, relationships, statuses, and financial totals before cutover.
+The existing Python and SQLite application remains unchanged as the behavioral reference and rollback source. Legacy rows are copied through a repeatable migration utility that preserves source IDs in each table's `legacy_id` column. A service-role-only PostgreSQL function performs the relationship remap in one transaction and records the source fingerprint and row counts for idempotency.
