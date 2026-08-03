@@ -54,7 +54,7 @@ export const requireBusinessContext = cache(async () => {
 
   const { data: business, error: businessError } = await supabase
     .from("businesses")
-    .select("id, name")
+    .select("id, name, timezone")
     .eq("id", membership.business_id)
     .single();
 

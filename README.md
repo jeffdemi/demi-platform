@@ -94,4 +94,15 @@ The import preserves source IDs in `legacy_id`, remaps relationships, normalizes
 
 ## Current Milestone
 
-The foundation includes secure sign-in, password recovery, invite-only account creation, session refresh, protected routing, owner workspace onboarding, a responsive operational dashboard, generated database types, transactional legacy import support, and additive Supabase migrations. Business module screens follow in later milestones.
+The platform includes secure sign-in, password recovery, invite-only account creation, protected routing, owner workspace onboarding, and transactional legacy import support.
+
+Daily operations currently provides:
+
+- Customer search, summaries, create/edit forms, and detail pages
+- Customer job and invoice history with paid-revenue totals
+- Job search, supported status filters, and operational views
+- Job scheduling, pricing, time, payment, location, and work-detail forms
+- Readable imported statuses that remain preserved until deliberately corrected
+- Clickable customer, job, and operational dashboard links
+
+Quotes, invoice management, equipment, maintenance, expenses, and reporting follow in subsequent feature-parity milestones.

@@ -1,0 +1,94 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  jobMatchesOperationalView,
+  jobMatchesSearch,
+  type Job,
+  type JobWithCustomer,
+} from "@/lib/domain/jobs";
+import type { Customer } from "@/lib/domain/customers";
+import type { Database } from "@/types/database";
+
+type Client = SupabaseClient<Database>;
+type CustomerFields = Pick<Customer, "company_name" | "customer_type" | "email" | "first_name" | "last_name" | "phone">;
+type Invoice = Database["public"]["Tables"]["invoices"]["Row"];
+export type JobDetail = JobWithCustomer & { invoices: Invoice[] };
+
+function requireData<T>(data: T | null, error: { message: string } | null, message: string): T {
+  if (error || data === null) throw new Error(`${message}${error ? `: ${error.message}` : "."}`);
+  return data;
+}
+
+export async function listJobs(
+  client: Client,
+  businessId: number,
+  filters: { customerId?: number; search?: string; status?: string; view?: string; today: string },
+) {
+  const result = await client
+    .from("jobs")
+    .select("*, customers!inner(company_name, customer_type, email, first_name, last_name, phone)")
+    .eq("business_id", businessId)
+    .order("scheduled_date", { ascending: true, nullsFirst: false })
+    .order("scheduled_start_time", { ascending: true, nullsFirst: false })
+    .order("id", { ascending: false })
+    .limit(500);
+  const jobs = requireData(result.data as JobWithCustomer[] | null, result.error, "Unable to load jobs");
+
+  return jobs.filter((job) => {
+    if (filters.customerId && job.customer_id !== filters.customerId) return false;
+    if (filters.status && job.status !== filters.status) return false;
+    if (filters.search && !jobMatchesSearch(job, filters.search)) return false;
+    if (filters.view && !jobMatchesOperationalView(job, filters.view, filters.today)) return false;
+    return true;
+  });
+}
+
+export async function getJobDetail(client: Client, businessId: number, jobId: number) {
+  const result = await client
+    .from("jobs")
+    .select("*, customers!inner(company_name, customer_type, email, first_name, last_name, phone), invoices(*)")
+    .eq("business_id", businessId)
+    .eq("id", jobId)
+    .maybeSingle();
+  if (result.error) throw new Error(`Unable to load job: ${result.error.message}`);
+  if (!result.data) return null;
+
+  const job = result.data as Job & { customers: CustomerFields; invoices: Invoice[] };
+  job.invoices.sort((left, right) => right.invoice_date.localeCompare(left.invoice_date));
+  return job satisfies JobDetail;
+}
+
+export async function getJobForEdit(client: Client, businessId: number, jobId: number) {
+  const result = await client
+    .from("jobs")
+    .select("*")
+    .eq("business_id", businessId)
+    .eq("id", jobId)
+    .maybeSingle();
+  if (result.error) throw new Error(`Unable to load job: ${result.error.message}`);
+  return result.data;
+}
+
+export async function createJob(
+  client: Client,
+  values: Database["public"]["Tables"]["jobs"]["Insert"],
+) {
+  const result = await client.from("jobs").insert(values).select("id").single();
+  return requireData(result.data, result.error, "Unable to create job");
+}
+
+export async function updateJob(
+  client: Client,
+  businessId: number,
+  jobId: number,
+  values: Database["public"]["Tables"]["jobs"]["Update"],
+) {
+  const result = await client
+    .from("jobs")
+    .update(values)
+    .eq("business_id", businessId)
+    .eq("id", jobId)
+    .select("id")
+    .maybeSingle();
+  if (result.error) throw new Error(`Unable to update job: ${result.error.message}`);
+  return result.data;
+}

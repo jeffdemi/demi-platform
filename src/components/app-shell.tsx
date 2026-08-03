@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  BriefcaseBusiness,
   Gauge,
   LogOut,
   TreePine,
@@ -9,6 +10,8 @@ import { logout } from "@/app/(app)/actions";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
+  { href: "/customers", label: "Customers", icon: Users },
+  { href: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
   { href: "/account/team", label: "Team", icon: Users },
 ];
 

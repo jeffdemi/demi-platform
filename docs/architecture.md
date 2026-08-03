@@ -12,6 +12,8 @@ Browser
 
 - Routes and pages own navigation, rendering, and request concerns.
 - Server Actions validate untrusted form input and re-check authorization.
+- Repository modules own reusable Supabase queries and mutations for business records.
+- Domain modules own display names, status labels, search matching, and operational filters.
 - Data access uses request-scoped Supabase server clients.
 - PostgreSQL constraints preserve relationships and business invariants.
 - RLS enforces business isolation independently of application filters.
