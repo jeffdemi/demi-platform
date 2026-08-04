@@ -22,7 +22,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           id="email"
           name="email"
           type="email"
-          autoComplete="email"
+          autoComplete="username"
           inputMode="email"
           required
         />

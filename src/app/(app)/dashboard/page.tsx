@@ -1,101 +1,30 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BriefcaseBusiness, CalendarDays, CircleDollarSign, FileText, Users } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, CircleDollarSign, Clock3, FileText, Users, Wrench } from "lucide-react";
 import { requireBusinessContext } from "@/lib/auth";
 import { dateInTimeZone } from "@/lib/domain/jobs";
-import { formatTime } from "@/lib/format";
+import { formatCurrency, formatDate, formatTime } from "@/lib/format";
+import { quoteDashboardSummary } from "@/lib/repositories/quote-repository";
+import { getEntityCounts, getOperationalDashboard } from "@/lib/repositories/reporting-repository";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Dashboard" };
+function nextMonth(monthStart: string) { const date = new Date(`${monthStart}T12:00:00Z`); return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1)).toISOString().slice(0, 10); }
+function CustomerName({ customer }: { customer: { first_name: string | null; last_name: string | null; company_name: string | null } | null }) { return <>{customer?.company_name || [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || "Customer"}</>; }
+function JobQueue({ title, href, jobs }: { title: string; href: string; jobs: { id: number; work_description: string | null; scheduled_date: string | null; scheduled_start_time: string | null; customers: { first_name: string | null; last_name: string | null; company_name: string | null } | null }[] }) { return <section className="overflow-hidden rounded-lg border border-line bg-surface shadow-sm"><div className="flex items-center justify-between border-b border-line px-4 py-3"><h2 className="font-bold">{title}</h2><Link className="text-sm font-semibold text-brand" href={href}>View all</Link></div>{jobs.length ? <div className="divide-y divide-line">{jobs.slice(0, 5).map((job) => <Link className="block px-4 py-3 hover:bg-page" href={`/jobs/${job.id}`} key={job.id}><p className="truncate font-semibold">{job.work_description || "Job details"}</p><p className="mt-1 text-sm text-muted"><CustomerName customer={job.customers} />{job.scheduled_date ? ` · ${formatDate(job.scheduled_date)}` : ""}{job.scheduled_start_time ? ` · ${formatTime(job.scheduled_start_time)}` : ""}</p></Link>)}</div> : <p className="px-4 py-8 text-center text-sm text-muted">Nothing in this queue.</p>}</section>; }
 
 export default async function DashboardPage() {
-  const { business } = await requireBusinessContext();
-  const supabase = await createClient();
-  const today = dateInTimeZone(business.timezone);
-
-  const [customers, activeJobs, openQuotes, unpaidInvoices, todaysJobs] = await Promise.all([
-    supabase.from("customers").select("id", { count: "exact", head: true }).eq("business_id", business.id).eq("active", true),
-    supabase.from("jobs").select("id", { count: "exact", head: true }).eq("business_id", business.id).not("status", "in", "(paid,cancelled)"),
-    supabase.from("quotes").select("id", { count: "exact", head: true }).eq("business_id", business.id).in("status", ["draft", "sent", "accepted", "no_response"]),
-    supabase.from("invoices").select("id", { count: "exact", head: true }).eq("business_id", business.id).eq("status", "unpaid"),
-    supabase.from("jobs").select("id, scheduled_start_time, work_description, customers(first_name, last_name, company_name)").eq("business_id", business.id).eq("scheduled_date", today).order("scheduled_start_time").limit(6),
-  ]);
-
-  const metrics = [
-    { label: "Active customers", value: customers.count ?? 0, icon: Users, href: "/customers" },
-    { label: "Active jobs", value: activeJobs.count ?? 0, icon: BriefcaseBusiness, href: "/jobs" },
-    { label: "Open quotes", value: openQuotes.count ?? 0, icon: FileText, href: null },
-    { label: "Unpaid invoices", value: unpaidInvoices.count ?? 0, icon: CircleDollarSign, href: null },
-  ];
-
-  return (
-    <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <header className="border-b border-line pb-5">
-        <div>
-          <p className="text-sm font-semibold text-muted">{new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(new Date())}</p>
-          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Daily operations</h1>
-        </div>
-      </header>
-
-      <section className="grid grid-cols-2 gap-3 py-6 xl:grid-cols-4" aria-label="Business summary">
-        {metrics.map(({ label, value, icon: Icon, href }) => {
-          const content = <>
-            <div className="flex items-center justify-between gap-3">
-              <span className="grid size-9 place-items-center rounded-md bg-brand-soft text-brand"><Icon aria-hidden="true" size={19} /></span>
-            </div>
-            <p className="mt-5 text-3xl font-bold tabular-nums">{value}</p>
-            <p className="mt-1 text-sm text-muted">{label}</p>
-          </>;
-          return href ? <Link className="rounded-lg border border-line bg-surface p-4 shadow-sm hover:border-brand-border hover:bg-page sm:p-5" href={href} key={label}>{content}</Link> : <div className="rounded-lg border border-line bg-surface p-4 shadow-sm sm:p-5" key={label}>{content}</div>;
-        })}
-      </section>
-
-      <section className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
-        <div className="rounded-lg border border-line bg-surface shadow-sm">
-          <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <div className="flex items-center gap-3">
-              <CalendarDays aria-hidden="true" className="text-brand" size={20} />
-              <h2 className="font-bold">Today&apos;s jobs</h2>
-            </div>
-          </div>
-          {todaysJobs.data?.length ? (
-            <div className="divide-y divide-line">
-              {todaysJobs.data.map((job) => (
-                <Link className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-page" href={`/jobs/${job.id}`} key={job.id}>
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{job.work_description || "Scheduled job"}</p>
-                    <p className="mt-1 text-sm text-muted">{job.scheduled_start_time ? formatTime(job.scheduled_start_time) : "Time not set"}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="px-5 py-12 text-center">
-              <p className="font-semibold">No jobs scheduled today</p>
-              <p className="mt-1 text-sm text-muted">The day is clear.</p>
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-lg border border-line bg-accent-soft p-5 shadow-sm">
-          <p className="text-sm font-semibold text-warning-ink">Attention</p>
-          <h2 className="mt-2 text-xl font-bold">Keep work moving</h2>
-          <div className="mt-5 space-y-3">
-            <div className="flex items-center justify-between rounded-md border border-accent-line bg-surface px-4 py-3 text-sm font-semibold">Open quotes <span className="tabular-nums">{openQuotes.count ?? 0}</span></div>
-            <div className="flex items-center justify-between rounded-md border border-accent-line bg-surface px-4 py-3 text-sm font-semibold">
-              Unpaid invoices <span className="tabular-nums">{unpaidInvoices.count ?? 0}</span>
-            </div>
-            <Link className="flex items-center justify-between rounded-md border border-accent-line bg-surface px-4 py-3 text-sm font-semibold hover:border-brand-border" href="/jobs">Active jobs <span className="tabular-nums">{activeJobs.count ?? 0}</span></Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Job views">
-        <Link className="rounded-lg border border-line bg-surface p-4 font-semibold shadow-sm hover:border-brand-border hover:bg-page" href="/jobs?view=today">Today&apos;s jobs</Link>
-        <Link className="rounded-lg border border-line bg-surface p-4 font-semibold shadow-sm hover:border-brand-border hover:bg-page" href="/jobs?view=upcoming">Upcoming jobs</Link>
-        <Link className="rounded-lg border border-line bg-surface p-4 font-semibold shadow-sm hover:border-brand-border hover:bg-page" href="/jobs?view=unscheduled">Unscheduled jobs</Link>
-        <Link className="rounded-lg border border-line bg-surface p-4 font-semibold shadow-sm hover:border-brand-border hover:bg-page" href="/jobs?view=completed">Completed jobs</Link>
-      </section>
-    </div>
-  );
+  const { business } = await requireBusinessContext(); const client = await createClient(); const today = dateInTimeZone(business.timezone); const monthStart = `${today.slice(0, 7)}-01`;
+  const [dashboard, counts, quotes] = await Promise.all([getOperationalDashboard(client, business.id, today), getEntityCounts(client, business.id), quoteDashboardSummary(client, business.id, monthStart, nextMonth(monthStart))]);
+  const metrics = [["Revenue today", formatCurrency(dashboard.metrics.revenueToday)], ["Revenue this month", formatCurrency(dashboard.metrics.revenueMonth)], ["Revenue this year", formatCurrency(dashboard.metrics.revenueYear)], ["Outstanding invoices", formatCurrency(dashboard.metrics.outstandingInvoices)], ["Expenses this month", formatCurrency(dashboard.metrics.expensesMonth)], ["Average paid job", formatCurrency(dashboard.metrics.averagePaidJob)]];
+  const sales = [["Draft", quotes.draftCount, "/quotes?status=draft"], ["Awaiting response", quotes.awaitingResponseCount, "/quotes?view=awaiting_response"], ["Accepted, not converted", quotes.acceptedUnconvertedCount, "/quotes?view=accepted_unconverted"], ["Outstanding value", formatCurrency(quotes.outstandingValue), "/quotes?view=outstanding"], ["Month acceptance", `${quotes.acceptanceRate}%`, "/quotes"]];
+  return <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8"><header className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5"><div><p className="text-sm font-semibold text-muted">{formatDate(today)}</p><h1 className="mt-1 text-2xl font-bold sm:text-3xl">Daily operations</h1></div><div className="flex gap-2"><Link className="h-10 rounded-md border border-line-strong bg-surface px-3 py-2 font-semibold" href="/imports/jobs">Import jobs</Link><Link className="h-10 rounded-md bg-brand px-3 py-2 font-semibold text-on-brand" href="/quotes/new">New quote</Link></div></header>
+    <section className="grid grid-cols-2 gap-3 py-5 sm:grid-cols-3 xl:grid-cols-6" aria-label="Financial summary">{metrics.map(([label, value]) => <Link className="rounded-lg border border-line bg-surface p-4 shadow-sm hover:border-brand-border" href="/reports" key={label}><p className="text-xl font-bold tabular-nums">{value}</p><p className="mt-1 text-xs text-muted">{label}</p></Link>)}</section>
+    <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]"><div><div className="mb-3 flex items-center gap-2"><CalendarDays className="text-brand" size={20} /><h2 className="text-lg font-bold">Work queues</h2></div><div className="grid gap-4 md:grid-cols-2"><JobQueue href="/jobs?view=today" jobs={dashboard.todayJobs} title="Today's jobs" /><JobQueue href="/jobs?view=upcoming" jobs={dashboard.upcomingJobs} title="Upcoming jobs" /><JobQueue href="/jobs?view=unscheduled" jobs={dashboard.unscheduledJobs} title="Unscheduled active" /><JobQueue href="/jobs?status=completed" jobs={dashboard.completedAwaitingInvoice} title="Completed, needs invoice" /></div></div>
+      <div className="space-y-5"><section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><div className="flex items-center gap-2"><FileText className="text-brand" size={19} /><h2 className="font-bold">Sales / Quotes</h2></div><div className="mt-4 grid grid-cols-2 gap-2">{sales.map(([label, value, href]) => <Link className="rounded-md border border-line bg-page px-3 py-3 hover:border-brand-border" href={String(href)} key={label}><p className="font-bold tabular-nums">{value}</p><p className="mt-1 text-xs text-muted">{label}</p></Link>)}</div></section>
+      <section className="overflow-hidden rounded-lg border border-line bg-surface shadow-sm"><div className="flex items-center justify-between border-b border-line px-4 py-3"><div className="flex items-center gap-2"><CircleDollarSign className="text-brand" size={18} /><h2 className="font-bold">Unpaid invoices</h2></div><Link className="text-sm font-semibold text-brand" href="/invoices?status=unpaid">View all</Link></div>{dashboard.unpaidInvoices.length ? <div className="divide-y divide-line">{dashboard.unpaidInvoices.slice(0, 5).map((invoice) => <Link className="flex justify-between gap-3 px-4 py-3 hover:bg-page" href={`/invoices/${invoice.id}`} key={invoice.id}><span className="font-semibold">{invoice.invoice_number}</span><span>{formatCurrency(invoice.amount)}</span></Link>)}</div> : <p className="px-4 py-7 text-center text-sm text-muted">No unpaid invoices.</p>}</section>
+      <section className="overflow-hidden rounded-lg border border-line bg-surface shadow-sm"><div className="flex items-center justify-between border-b border-line px-4 py-3"><div className="flex items-center gap-2"><Wrench className="text-brand" size={18} /><h2 className="font-bold">Upcoming maintenance</h2></div><Link className="text-sm font-semibold text-brand" href="/equipment">View all</Link></div>{dashboard.upcomingMaintenance.length ? <div className="divide-y divide-line">{dashboard.upcomingMaintenance.map((record) => <Link className="block px-4 py-3 hover:bg-page" href={`/equipment/maintenance/new?equipmentId=${record.equipment_id}`} key={record.id}><p className="font-semibold">{record.equipment?.name || "Equipment"}</p><p className="text-sm text-muted">{record.service_type} · {formatDate(record.next_due_date)}</p></Link>)}</div> : <p className="px-4 py-7 text-center text-sm text-muted">No maintenance due.</p>}</section></div></section>
+    <section className="mt-5 grid gap-5 lg:grid-cols-[0.7fr_1.3fr]"><div className="rounded-lg border border-line bg-surface p-5 shadow-sm"><div className="flex items-center gap-2"><Clock3 className="text-brand" size={18} /><h2 className="font-bold">Operating totals</h2></div><dl className="mt-4 grid grid-cols-2 gap-4"><div><dt className="text-xs text-muted">Machine hours</dt><dd className="text-xl font-bold">{dashboard.metrics.machineHours.toFixed(1)}</dd></div><div><dt className="text-xs text-muted">Active jobs</dt><dd className="text-xl font-bold">{counts.jobs}</dd></div></dl></div><div className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="font-bold">Revenue by referral source</h2><div className="mt-4 grid gap-2 sm:grid-cols-2">{dashboard.referralRevenue.map(([source, value]) => <div className="flex justify-between gap-4 border-b border-line pb-2 text-sm" key={source}><span>{source}</span><strong>{formatCurrency(value)}</strong></div>)}</div></div></section>
+    <section className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"><Link className="rounded-lg border border-line bg-surface p-4" href="/customers"><Users size={18} /><strong className="mt-3 block text-xl">{counts.customers}</strong><span className="text-sm text-muted">Active customers</span></Link><Link className="rounded-lg border border-line bg-surface p-4" href="/jobs"><BriefcaseBusiness size={18} /><strong className="mt-3 block text-xl">{counts.jobs}</strong><span className="text-sm text-muted">Active jobs</span></Link><Link className="rounded-lg border border-line bg-surface p-4" href="/quotes"><FileText size={18} /><strong className="mt-3 block text-xl">{counts.quotes}</strong><span className="text-sm text-muted">Open quotes</span></Link><Link className="rounded-lg border border-line bg-surface p-4" href="/invoices?status=unpaid"><CircleDollarSign size={18} /><strong className="mt-3 block text-xl">{counts.invoices}</strong><span className="text-sm text-muted">Unpaid invoices</span></Link></section>
+  </div>;
 }

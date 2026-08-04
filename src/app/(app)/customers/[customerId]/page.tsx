@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BriefcaseBusiness, Mail, MapPin, Pencil, Phone, Plus } from "lucide-react";
+import { BriefcaseBusiness, FileText, Mail, MapPin, Pencil, Phone, Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { requireBusinessContext } from "@/lib/auth";
@@ -21,7 +21,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <PageHeader actions={<><Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong bg-surface px-3 font-semibold hover:bg-surface-muted" href={`/customers/${customer.id}/edit`}><Pencil aria-hidden="true" size={16} />Edit</Link><Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand hover:bg-brand-strong" href={`/jobs/new?customerId=${customer.id}`}><Plus aria-hidden="true" size={17} />Add job</Link></>} description={customer.active ? customer.customer_type === "company" ? "Company" : "Individual" : "Inactive customer"} title={customer.displayName} />
+      <PageHeader actions={<><Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong bg-surface px-3 font-semibold hover:bg-surface-muted" href={`/customers/${customer.id}/edit`}><Pencil aria-hidden="true" size={16} />Edit</Link><Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong bg-surface px-3 font-semibold hover:bg-surface-muted" href={`/quotes/new?customerId=${customer.id}`}><FileText aria-hidden="true" size={16} />Add quote</Link><Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand hover:bg-brand-strong" href={`/jobs/new?customerId=${customer.id}`}><Plus aria-hidden="true" size={17} />Add job</Link></>} description={customer.active ? customer.customer_type === "company" ? "Company" : "Individual" : "Inactive customer"} title={customer.displayName} />
 
       <section className="grid gap-5 py-6 lg:grid-cols-[0.72fr_1.28fr]">
         <div className="space-y-5">
@@ -48,7 +48,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           </section>
           <section className="overflow-hidden rounded-lg border border-line bg-surface shadow-sm">
             <div className="border-b border-line px-5 py-4"><h2 className="font-bold">Invoice history</h2></div>
-            {customer.invoices.length ? <div className="divide-y divide-line">{customer.invoices.map((invoice) => <div className="flex items-center justify-between gap-4 px-5 py-4" key={invoice.id}><div><p className="font-semibold">{invoice.invoice_number}</p><p className="mt-1 text-sm text-muted">{formatDate(invoice.invoice_date)} · {invoice.status}</p></div><p className="font-semibold tabular-nums">{formatCurrency(invoice.amount)}</p></div>)}</div> : <p className="px-5 py-10 text-center text-sm text-muted">No invoices for this customer.</p>}
+            {customer.invoices.length ? <div className="divide-y divide-line">{customer.invoices.map((invoice) => <Link className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-page" href={`/invoices/${invoice.id}`} key={invoice.id}><div><p className="font-semibold">{invoice.invoice_number}</p><p className="mt-1 text-sm text-muted">{formatDate(invoice.invoice_date)} · {invoice.status}</p></div><p className="font-semibold tabular-nums">{formatCurrency(invoice.amount)}</p></Link>)}</div> : <p className="px-5 py-10 text-center text-sm text-muted">No invoices for this customer.</p>}
           </section>
         </div>
       </section>

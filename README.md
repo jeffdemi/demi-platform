@@ -11,6 +11,8 @@ The hosted business operations platform for Demi Solutions LLC.
 - Supabase PostgreSQL and Auth
 - Vercel deployment target
 - Vitest
+- pdf-lib for server-generated business PDFs
+- read-excel-file for validated `.xlsx` job imports
 
 ## Requirements
 
@@ -74,6 +76,11 @@ Supabase schema changes are versioned in `supabase/migrations`. The initial sche
 - Row Level Security on every public table
 - Indexed operational and relationship queries
 
+The feature-parity migration adds an RLS-protected job import audit table and
+transactional functions for quote conversion, invoice creation, maintenance
+meter updates, and confirmed spreadsheet imports. Apply migrations in filename
+order before deploying application code that depends on them.
+
 The browser uses Supabase's publishable key. Authorization is enforced by authenticated sessions and business-membership RLS policies.
 
 ## Legacy Data
@@ -92,7 +99,7 @@ node --env-file=.env.local scripts/migrate-legacy-sqlite.mjs --apply
 
 The import preserves source IDs in `legacy_id`, remaps relationships, normalizes decimals, and verifies every table count. See [Legacy Migration](docs/legacy-migration.md).
 
-## Current Milestone
+## Operations
 
 The platform includes secure sign-in, password recovery, invite-only account creation, protected routing, owner workspace onboarding, and transactional legacy import support.
 
@@ -104,5 +111,31 @@ Daily operations currently provides:
 - Job scheduling, pricing, time, payment, location, and work-detail forms
 - Readable imported statuses that remain preserved until deliberately corrected
 - Clickable customer, job, and operational dashboard links
+- Quote create/edit/search/status workflows, customer-ready messages, PDFs, and one-time quote-to-job conversion
+- Invoice creation, job/customer linking, payment status, and PDFs
+- Expense entry with optional job and equipment links
+- Equipment records, maintenance history, hour-meter updates, and upcoming service queues
+- Financial, sales, referral, maintenance, and daily operating dashboard sections
+- Monthly reports, authenticated JSON APIs, and CSV exports
+- Preview-first `.xlsx` or `.csv` job import with duplicate protection and audit history
 
-Quotes, invoice management, equipment, maintenance, expenses, and reporting follow in subsequent feature-parity milestones.
+Primary operational URLs:
+
+```text
+/dashboard                 Daily operations and financial summary
+/customers                 Customer search and history
+/jobs                      Search, status, and operational job views
+/quotes                    Sales pipeline and quote workflows
+/invoices                  Billing and payment status
+/expenses                  Business costs
+/equipment                 Assets and maintenance history
+/imports/jobs              Spreadsheet preview and import
+/reports                    Financial and operating reports/exports
+/api/v1/{resource}         Authenticated JSON records
+/api/v1/{resource}?format=csv
+/api/v1/reports/summary    Authenticated reporting summary
+```
+
+External SMS/email sending, payment collection, electronic signatures, customer
+portal access, PA 811 submission, municipality lookup, and travel-time services
+remain intentionally deferred.

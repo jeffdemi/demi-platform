@@ -1,10 +1,15 @@
 import Link from "next/link";
 import {
   BriefcaseBusiness,
+  CircleDollarSign,
+  FileBarChart,
+  FileSpreadsheet,
+  FileText,
   Gauge,
   LogOut,
   TreePine,
   Users,
+  Wrench,
 } from "lucide-react";
 import { logout } from "@/app/(app)/actions";
 
@@ -12,6 +17,11 @@ const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
+  { href: "/quotes", label: "Quotes", icon: FileText },
+  { href: "/invoices", label: "Invoices", icon: CircleDollarSign },
+  { href: "/expenses", label: "Expenses", icon: FileSpreadsheet },
+  { href: "/equipment", label: "Equipment", icon: Wrench },
+  { href: "/reports", label: "Reports", icon: FileBarChart },
   { href: "/account/team", label: "Team", icon: Users },
 ];
 

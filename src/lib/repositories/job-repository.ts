@@ -92,3 +92,12 @@ export async function updateJob(
   if (result.error) throw new Error(`Unable to update job: ${result.error.message}`);
   return result.data;
 }
+
+export async function listJobOptions(client: Client, businessId: number, customerId?: number) {
+  let query = client.from("jobs").select("id, customer_id, source_job_number, work_description, service_address, amount_quoted")
+    .eq("business_id", businessId).not("status", "eq", "cancelled").order("id", { ascending: false }).limit(500);
+  if (customerId) query = query.eq("customer_id", customerId);
+  const result = await query;
+  const jobs = requireData(result.data, result.error, "Unable to load job options");
+  return jobs.map((job) => ({ ...job, label: job.source_job_number ? `${job.source_job_number} - ${job.work_description || job.service_address || "Job"}` : `#${job.id} - ${job.work_description || job.service_address || "Job"}` }));
+}
