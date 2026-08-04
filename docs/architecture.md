@@ -17,6 +17,8 @@ Browser
 - Data access uses request-scoped Supabase server clients.
 - PostgreSQL constraints preserve relationships and business invariants.
 - RLS enforces business isolation independently of application filters.
+- Dedicated PDF services build quote and invoice documents; route handlers only authorize and return responses.
+- Authenticated API route handlers reuse the same request-scoped client and RLS policies as the web application.
 
 ## Tenancy
 
@@ -27,3 +29,12 @@ Account provisioning is invite-only after a one-time owner bootstrap. Team invit
 ## Migration
 
 The existing Python and SQLite application remains unchanged as the behavioral reference and rollback source. Legacy rows are copied through a repeatable migration utility that preserves source IDs in each table's `legacy_id` column. A service-role-only PostgreSQL function performs the relationship remap in one transaction and records the source fingerprint and row counts for idempotency.
+
+Normal job spreadsheet imports use the signed-in user's session instead of the
+service role. The browser first receives a server-generated preview. Confirmation
+calls one PostgreSQL function that matches or creates customers, skips job
+fingerprints already present, creates jobs, and writes an audit row atomically.
+
+Quote conversion, invoice creation with job-state synchronization, and
+maintenance hour-meter updates are also PostgreSQL transactions. Their functions
+run as the caller and remain subject to RLS; none bypass tenant authorization.

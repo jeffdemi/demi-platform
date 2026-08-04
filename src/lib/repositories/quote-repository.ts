@@ -1,0 +1,86 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { quoteMatchesSearch, type QuoteWithCustomer } from "@/lib/domain/quotes";
+import type { Database } from "@/types/database";
+
+type Client = SupabaseClient<Database>;
+type JobLink = Pick<Database["public"]["Tables"]["jobs"]["Row"], "id" | "status">;
+export type QuoteDetail = QuoteWithCustomer & { jobs: JobLink | null };
+
+function dataOrThrow<T>(data: T | null, error: { message: string } | null, label: string): T {
+  if (error || data === null) throw new Error(`${label}${error ? `: ${error.message}` : "."}`);
+  return data;
+}
+
+export async function listQuotes(client: Client, businessId: number, filters: { search?: string; status?: string; view?: string }) {
+  const result = await client.from("quotes")
+    .select("*, customers!inner(company_name, customer_type, email, first_name, last_name, phone)")
+    .eq("business_id", businessId).order("quote_date", { ascending: false }).order("id", { ascending: false }).limit(500);
+  return dataOrThrow(result.data as QuoteWithCustomer[] | null, result.error, "Unable to load quotes").filter((quote) => {
+    if (filters.status && quote.status !== filters.status) return false;
+    if (filters.search && !quoteMatchesSearch(quote, filters.search)) return false;
+    if (filters.view === "awaiting_response" && !["sent", "no_response"].includes(quote.status)) return false;
+    if (filters.view === "accepted_unconverted" && (quote.status !== "accepted" || quote.job_id !== null)) return false;
+    if (filters.view === "outstanding" && !["draft", "sent", "accepted"].includes(quote.status)) return false;
+    return true;
+  });
+}
+
+export async function getQuote(client: Client, businessId: number, quoteId: number) {
+  const result = await client.from("quotes")
+    .select("*, customers!inner(company_name, customer_type, email, first_name, last_name, phone), jobs(id, status)")
+    .eq("business_id", businessId).eq("id", quoteId).maybeSingle();
+  if (result.error) throw new Error(`Unable to load quote: ${result.error.message}`);
+  return result.data as QuoteDetail | null;
+}
+
+export async function getQuoteForEdit(client: Client, businessId: number, quoteId: number) {
+  const result = await client.from("quotes").select("*").eq("business_id", businessId).eq("id", quoteId).maybeSingle();
+  if (result.error) throw new Error(`Unable to load quote: ${result.error.message}`);
+  return result.data;
+}
+
+async function nextQuoteNumber(client: Client, businessId: number, quoteDate: string) {
+  const year = quoteDate.slice(0, 4);
+  const prefix = `Q-${year}-`;
+  const result = await client.from("quotes").select("quote_number").eq("business_id", businessId)
+    .like("quote_number", `${prefix}%`).order("quote_number", { ascending: false }).limit(1).maybeSingle();
+  if (result.error) throw new Error(`Unable to generate quote number: ${result.error.message}`);
+  const current = result.data?.quote_number.match(/(\d+)$/)?.[1];
+  return `${prefix}${String((current ? Number(current) : 0) + 1).padStart(4, "0")}`;
+}
+
+export async function createQuote(client: Client, values: Omit<Database["public"]["Tables"]["quotes"]["Insert"], "quote_number">) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const quoteNumber = await nextQuoteNumber(client, values.business_id, values.quote_date ?? new Date().toISOString().slice(0, 10));
+    const result = await client.from("quotes").insert({ ...values, quote_number: quoteNumber }).select("id").single();
+    if (!result.error && result.data) return result.data;
+    if (result.error?.code !== "23505") throw new Error(`Unable to create quote: ${result.error?.message}`);
+  }
+  throw new Error("Unable to generate a unique quote number.");
+}
+
+export async function updateQuote(client: Client, businessId: number, quoteId: number, values: Database["public"]["Tables"]["quotes"]["Update"]) {
+  const result = await client.from("quotes").update(values).eq("business_id", businessId).eq("id", quoteId).select("id").maybeSingle();
+  if (result.error) throw new Error(`Unable to update quote: ${result.error.message}`);
+  return result.data;
+}
+
+export async function convertQuote(client: Client, quoteId: number) {
+  const result = await client.rpc("convert_quote_to_job", { target_quote_id: quoteId });
+  if (result.error) throw new Error(result.error.message);
+  return result.data;
+}
+
+export async function quoteDashboardSummary(client: Client, businessId: number, monthStart: string, monthEnd: string) {
+  const result = await client.from("quotes").select("status, quoted_price, job_id, quote_date").eq("business_id", businessId);
+  const quotes = dataOrThrow(result.data, result.error, "Unable to load quote summary");
+  const decided = quotes.filter((q) => q.quote_date >= monthStart && q.quote_date < monthEnd && ["accepted", "converted", "declined", "no_response", "expired"].includes(q.status));
+  const accepted = decided.filter((q) => ["accepted", "converted"].includes(q.status));
+  return {
+    draftCount: quotes.filter((q) => q.status === "draft").length,
+    awaitingResponseCount: quotes.filter((q) => ["sent", "no_response"].includes(q.status)).length,
+    acceptedUnconvertedCount: quotes.filter((q) => q.status === "accepted" && !q.job_id).length,
+    outstandingValue: quotes.filter((q) => ["draft", "sent", "accepted"].includes(q.status)).reduce((sum, q) => sum + q.quoted_price, 0),
+    acceptanceRate: decided.length ? Math.round((accepted.length / decided.length) * 1000) / 10 : 0,
+  };
+}

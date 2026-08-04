@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, MapPin, Pencil, UserRound } from "lucide-react";
+import { CalendarDays, FilePlus2, MapPin, Pencil, UserRound } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { requireBusinessContext } from "@/lib/auth";
@@ -27,7 +27,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <PageHeader actions={<Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand hover:bg-brand-strong" href={`/jobs/${job.id}/edit`}><Pencil aria-hidden="true" size={16} />Edit job</Link>} description={job.source_job_number ? `Imported job ${job.source_job_number}` : `Job #${job.id}`} title={job.work_description || "Job details"} />
+      <PageHeader actions={<><Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong px-3 font-semibold hover:bg-surface-muted" href={`/invoices/new?jobId=${job.id}`}><FilePlus2 aria-hidden="true" size={16} />Create invoice</Link><Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand hover:bg-brand-strong" href={`/jobs/${job.id}/edit`}><Pencil aria-hidden="true" size={16} />Edit job</Link></>} description={job.source_job_number ? `Imported job ${job.source_job_number}` : `Job #${job.id}`} title={job.work_description || "Job details"} />
 
       <div className="grid gap-5 py-6 lg:grid-cols-[0.72fr_1.28fr]">
         <div className="space-y-5">
@@ -47,7 +47,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
           <section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="font-bold">Schedule and completion</h2><dl className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"><Detail label="Job date" value={formatDate(job.job_date)} /><Detail label="Scheduled date" value={formatDate(job.scheduled_date)} /><Detail label="Start time" value={job.scheduled_start_time ? formatTime(job.scheduled_start_time) : "Not set"} /><Detail label="Estimated duration" value={formatMinutes(job.estimated_duration_minutes)} /><Detail label="Completion date" value={formatDate(job.completed_date)} /><Detail label="Paid date" value={formatDate(job.paid_date)} /></dl></section>
           <section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="font-bold">Time and payment</h2><dl className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"><Detail label="Travel" value={formatMinutes(job.travel_minutes)} /><Detail label="Grinding" value={formatMinutes(job.grinding_minutes)} /><Detail label="Cleanup" value={formatMinutes(job.cleanup_minutes)} /><Detail label="Machine hours" value={job.machine_hours?.toString()} /><Detail label="Payment method" value={job.payment_method} /><Detail label="Pro bono" value={job.pro_bono ? "Yes" : "No"} /></dl></section>
           {job.notes && <section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="font-bold">Internal notes</h2><p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-strong">{job.notes}</p></section>}
-          <section className="overflow-hidden rounded-lg border border-line bg-surface shadow-sm"><div className="border-b border-line px-5 py-4"><h2 className="font-bold">Invoices</h2></div>{job.invoices.length ? <div className="divide-y divide-line">{job.invoices.map((invoice) => <div className="flex items-center justify-between gap-4 px-5 py-4" key={invoice.id}><div><p className="font-semibold">{invoice.invoice_number}</p><p className="mt-1 text-sm text-muted">{formatDate(invoice.invoice_date)} · {invoice.status}</p></div><p className="font-semibold tabular-nums">{formatCurrency(invoice.amount)}</p></div>)}</div> : <p className="px-5 py-10 text-center text-sm text-muted">No invoice linked to this job.</p>}</section>
+          <section className="overflow-hidden rounded-lg border border-line bg-surface shadow-sm"><div className="border-b border-line px-5 py-4"><h2 className="font-bold">Invoices</h2></div>{job.invoices.length ? <div className="divide-y divide-line">{job.invoices.map((invoice) => <Link className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-page" href={`/invoices/${invoice.id}`} key={invoice.id}><div><p className="font-semibold">{invoice.invoice_number}</p><p className="mt-1 text-sm text-muted">{formatDate(invoice.invoice_date)} · {invoice.status}</p></div><p className="font-semibold tabular-nums">{formatCurrency(invoice.amount)}</p></Link>)}</div> : <p className="px-5 py-10 text-center text-sm text-muted">No invoice linked to this job.</p>}</section>
         </div>
       </div>
     </div>

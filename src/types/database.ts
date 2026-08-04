@@ -541,6 +541,56 @@ export type Database = {
           },
         ]
       }
+      job_imports: {
+        Row: {
+          business_id: number
+          created_at: string
+          created_by: string
+          customers_created: number
+          customers_updated: number
+          duplicates_skipped: number
+          file_name: string
+          id: number
+          jobs_created: number
+          row_count: number
+          source_sha256: string
+        }
+        Insert: {
+          business_id: number
+          created_at?: string
+          created_by: string
+          customers_created?: number
+          customers_updated?: number
+          duplicates_skipped?: number
+          file_name: string
+          id?: never
+          jobs_created?: number
+          row_count: number
+          source_sha256: string
+        }
+        Update: {
+          business_id?: number
+          created_at?: string
+          created_by?: string
+          customers_created?: number
+          customers_updated?: number
+          duplicates_skipped?: number
+          file_name?: string
+          id?: never
+          jobs_created?: number
+          row_count?: number
+          source_sha256?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_imports_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legacy_imports: {
         Row: {
           business_id: number
@@ -786,11 +836,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_maintenance_record: {
+        Args: {
+          due_hours?: number
+          due_on?: string
+          maintenance_cost?: number
+          maintenance_notes?: string
+          maintenance_type: string
+          meter_hours?: number
+          serviced_on: string
+          target_business_id: number
+          target_equipment_id: number
+        }
+        Returns: number
+      }
       accept_business_invitation: {
         Args: { invitation_id: string; member_full_name?: string }
         Returns: number
       }
       create_business: { Args: { business_name: string }; Returns: number }
+      convert_quote_to_job: { Args: { target_quote_id: number }; Returns: number }
+      create_invoice_record: {
+        Args: {
+          due_on?: string
+          invoice_amount: number
+          invoice_notes?: string
+          invoice_on: string
+          invoice_status: string
+          paid_on?: string
+          target_business_id: number
+          target_customer_id: number
+          target_job_id?: number
+          terms?: string
+        }
+        Returns: number
+      }
       import_legacy_snapshot: {
         Args: {
           import_payload: Json
@@ -800,7 +880,20 @@ export type Database = {
         }
         Returns: Json
       }
+      import_job_spreadsheet: {
+        Args: {
+          import_file_name: string
+          import_rows: Json
+          import_source_sha256: string
+          target_business_id: number
+        }
+        Returns: Json
+      }
       platform_setup_available: { Args: never; Returns: boolean }
+      set_invoice_status: {
+        Args: { invoice_status: string; paid_on?: string; target_invoice_id: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
