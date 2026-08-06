@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireBusinessContext } from "@/lib/auth";
-import { archiveExpense, getExpense, restoreExpense } from "@/lib/repositories/expense-repository";
+import { suggestTaxCategory } from "@/lib/domain/accounting";
+import { archiveExpense, getExpense, restoreExpense, updateExpense } from "@/lib/repositories/expense-repository";
 import { createExpenseRecord, updateExpenseRecord } from "@/lib/services/expenses";
 import { createClient } from "@/lib/supabase/server";
 import { expenseFormSchema, formValues, voidExpenseSchema } from "@/lib/validation/business-records";
@@ -20,7 +21,8 @@ function refreshFinancialPages(expenseId?: number) {
 export async function saveExpense(expenseId: number | null, _: ExpenseState, formData: FormData): Promise<ExpenseState> {
   const parsed = expenseFormSchema.safeParse(formValues(formData, [
     "expenseDate", "category", "vendor", "description", "amount", "paymentMethod", "jobId",
-    "equipmentId", "notes", "transactionType", "refundOfExpenseId",
+    "equipmentId", "notes", "transactionType", "refundOfExpenseId", "bankTransactionId",
+    "taxCategory", "deductiblePercent",
   ]));
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   if (!parsed.data.expenseDate || parsed.data.amount === undefined) return { message: "Expense date and amount are required." };
@@ -38,6 +40,9 @@ export async function saveExpense(expenseId: number | null, _: ExpenseState, for
     notes: parsed.data.notes ?? null,
     transaction_type: parsed.data.transactionType,
     refund_of_expense_id: parsed.data.refundOfExpenseId ?? null,
+    bank_transaction_id: parsed.data.bankTransactionId ?? null,
+    tax_category: parsed.data.taxCategory ?? parsed.data.category,
+    deductible_percent: parsed.data.deductiblePercent,
   };
   try {
     const saved = expenseId
@@ -70,4 +75,43 @@ export async function unvoidExpense(expenseId: number, previousState: ExpenseSta
   if (!restored) return { message: "That expense no longer exists." };
   refreshFinancialPages(expenseId);
   return { message: "Expense restored to financial totals." };
+}
+
+export async function prepareReceiptReview(expenseId: number) {
+  const { business } = await requireBusinessContext();
+  const client = await createClient();
+  const expense = await getExpense(client, business.id, expenseId);
+  if (!expense?.receipt_path) return;
+  const suggestedTaxCategory = suggestTaxCategory(expense);
+  await updateExpense(client, business.id, expenseId, {
+    receipt_review_status: "needs_review",
+    receipt_extracted_data: {
+      vendor: expense.vendor,
+      date: expense.expense_date,
+      amount: expense.amount,
+      suggestedTaxCategory,
+      source: "record_fields",
+    },
+    receipt_reviewed_at: null,
+    receipt_reviewed_by: null,
+  });
+  refreshFinancialPages(expenseId);
+}
+
+export async function approveReceiptReview(expenseId: number) {
+  const { business, user } = await requireBusinessContext();
+  const client = await createClient();
+  const expense = await getExpense(client, business.id, expenseId);
+  if (!expense || expense.receipt_review_status !== "needs_review") return;
+  const extracted = expense.receipt_extracted_data && typeof expense.receipt_extracted_data === "object" && !Array.isArray(expense.receipt_extracted_data)
+    ? expense.receipt_extracted_data
+    : {};
+  const suggested = typeof extracted.suggestedTaxCategory === "string" ? extracted.suggestedTaxCategory : expense.tax_category;
+  await updateExpense(client, business.id, expenseId, {
+    tax_category: suggested,
+    receipt_review_status: "approved",
+    receipt_reviewed_at: new Date().toISOString(),
+    receipt_reviewed_by: user.id,
+  });
+  refreshFinancialPages(expenseId);
 }

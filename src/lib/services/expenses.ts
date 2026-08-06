@@ -2,7 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createExpense, getExpense, updateExpense } from "@/lib/repositories/expense-repository";
+import { createExpense, getActiveRefundTotal, getExpense, updateExpense } from "@/lib/repositories/expense-repository";
 import type { Database } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
@@ -43,12 +43,17 @@ async function removeReceipt(client: Client, path: string | null) {
   await client.storage.from(receiptBucket).remove([path]);
 }
 
-async function validateRefundSource(client: Client, businessId: number, input: ExpenseInput) {
+async function validateRefundSource(client: Client, businessId: number, input: ExpenseInput, excludeExpenseId?: number) {
   if (input.transaction_type !== "refund") return;
   if (!input.refund_of_expense_id) throw new Error("Select the original expense for this refund.");
   const source = await getExpense(client, businessId, input.refund_of_expense_id);
   if (!source || source.voided_at || source.transaction_type === "refund") {
     throw new Error("The original expense is unavailable for a refund.");
+  }
+  const alreadyRefunded = await getActiveRefundTotal(client, businessId, source.id, excludeExpenseId);
+  if (alreadyRefunded + input.amount > source.amount) {
+    const remaining = Math.max(0, source.amount - alreadyRefunded).toFixed(2);
+    throw new Error(`This refund exceeds the $${remaining} remaining refundable amount.`);
   }
 }
 
@@ -77,7 +82,7 @@ export async function updateExpenseRecord(
 ) {
   const existing = await getExpense(client, businessId, expenseId);
   if (!existing) return null;
-  await validateRefundSource(client, businessId, input);
+  await validateRefundSource(client, businessId, input, expenseId);
   const replacementPath = await uploadReceipt(client, businessId, receiptValue);
   try {
     const updated = await updateExpense(client, businessId, expenseId, {

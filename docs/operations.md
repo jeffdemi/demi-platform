@@ -34,6 +34,42 @@ Reports show operating profit (`paid revenue - net operating expense`) separatel
 from cash net (`paid revenue - net cash outflow`). This prevents equipment
 purchases from distorting operating performance while retaining their cash impact.
 
+Refunds cannot exceed the unrefunded amount of their active source purchase. The
+service reports the remaining refundable balance, and PostgreSQL independently
+enforces the same ceiling for direct or concurrent writes.
+
+## Reconciliation and payments
+
+`/finance` manages business bank accounts and imported statement activity.
+`/finance/import` accepts `.csv` and `.xlsx` exports with Date, Description, and
+Amount columns, or separate Debit and Credit columns. Deposits are positive and
+withdrawals are negative. Previewing never writes data; confirmation is idempotent.
+
+Unreviewed withdrawals can prefill an expense, while deposits can prefill a
+customer payment. The database requires the linked source amount to match exactly.
+Nonbusiness transfers and duplicates can be excluded with a retained reason.
+
+Payments support partial invoice collections. A fully paid balance updates the
+invoice status and linked job totals. Existing paid invoices and paid jobs without
+invoices are backfilled once as legacy payments.
+
+## Ledger, tax, and receipts
+
+Every active expense, asset purchase, refund, and customer payment produces a
+balanced two-line journal. Corrections supersede the prior journal revision, so the
+general ledger retains its posting history. Ledger tables cannot be edited through
+normal client data access.
+
+Expense forms include a tax category and business-deductible percentage. These
+fields support preparation reports; they are not tax advice. `/reports` provides
+annual tax detail and general-ledger CSV exports for an accountant or bookkeeping
+system.
+
+Receipt review suggests a tax category from the verified vendor, description, and
+category already on the record. The extracted-data and review fields are ready for
+a future OCR provider, but this release does not send private receipts to an
+external AI service.
+
 ## Equipment and maintenance
 
 Maintenance records include service date/type, meter reading, cost, next due
@@ -61,7 +97,11 @@ Signed-in business members can request JSON from:
 /api/v1/quotes
 /api/v1/invoices
 /api/v1/expenses
+/api/v1/payments
+/api/v1/bank_transactions
 /api/v1/reports/summary
+/api/v1/reports/tax-summary
+/api/v1/reports/general-ledger
 ```
 
 Add `?format=csv` to a record endpoint for a spreadsheet-compatible download.

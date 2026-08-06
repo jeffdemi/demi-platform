@@ -52,6 +52,11 @@ SUPABASE_SECRET_KEY
 
 `NEXT_PUBLIC_SITE_URL` should be the canonical production URL. `SUPABASE_SECRET_KEY` must never be exposed to the browser, printed, or committed.
 
+The database keeps elevated setup and invitation implementations in the unexposed
+`private` schema. Public RPC functions are security-invoker wrappers. Supabase's
+leaked-password protection is an Auth service configuration, not a SQL migration;
+verify that it is enabled after applying the accounting-operations migration.
+
 ## Account Routes
 
 - `/setup` - one-time first-owner registration

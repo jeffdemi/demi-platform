@@ -2,10 +2,43 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/page-header";
 import { requireBusinessContext } from "@/lib/auth";
 import { dateInTimeZone } from "@/lib/domain/jobs";
+import { suggestTaxCategory } from "@/lib/domain/accounting";
+import { getBankTransaction } from "@/lib/repositories/accounting-repository";
 import { listActiveEquipmentOptions } from "@/lib/repositories/equipment-repository";
 import { listRefundableExpenseOptions } from "@/lib/repositories/expense-repository";
 import { listJobOptions } from "@/lib/repositories/job-repository";
 import { createClient } from "@/lib/supabase/server";
 import { ExpenseForm } from "../expense-form";
 export const metadata: Metadata = { title: "Add expense" };
-export default async function NewExpensePage({ searchParams }: { searchParams: Promise<{ refundOf?: string }> }) { const { refundOf } = await searchParams; const { business } = await requireBusinessContext(); const client = await createClient(); const [jobs, equipment, refundOptions] = await Promise.all([listJobOptions(client, business.id), listActiveEquipmentOptions(client, business.id), listRefundableExpenseOptions(client, business.id)]); const refundId = Number(refundOf); const source = refundOptions.find((expense) => expense.id === refundId); return <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8"><PageHeader description="Track operating expenses, asset purchases, and refunds without losing source records." title={source ? "Record refund" : "Add financial record"} /><ExpenseForm defaults={{ expenseDate: dateInTimeZone(business.timezone), transactionType: source ? "refund" : "expense", refundOfExpenseId: source?.id, category: source?.transaction_type === "asset" ? "Other" : undefined, vendor: source?.vendor ?? undefined, description: source ? `Refund for ${source.description || source.vendor || `expense #${source.id}`}` : undefined }} equipment={equipment} jobs={jobs} refundOptions={refundOptions} /></div>; }
+export default async function NewExpensePage({ searchParams }: { searchParams: Promise<{ refundOf?: string; bankTransaction?: string }> }) {
+  const { refundOf, bankTransaction } = await searchParams;
+  const { business } = await requireBusinessContext();
+  const client = await createClient();
+  const bankTransactionId = Number(bankTransaction);
+  const [jobs, equipment, refundOptions, bankRecord] = await Promise.all([
+    listJobOptions(client, business.id),
+    listActiveEquipmentOptions(client, business.id),
+    listRefundableExpenseOptions(client, business.id),
+    Number.isInteger(bankTransactionId) ? getBankTransaction(client, business.id, bankTransactionId) : null,
+  ]);
+  const refundId = Number(refundOf);
+  const source = refundOptions.find((expense) => expense.id === refundId);
+  const description = source
+    ? `Refund for ${source.description || source.vendor || `expense #${source.id}`}`
+    : bankRecord?.description;
+  return <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+    <PageHeader description="Track operating expenses, asset purchases, refunds, and reconciled withdrawals without losing source records." title={source ? "Record refund" : "Add financial record"} />
+    <ExpenseForm defaults={{
+      expenseDate: bankRecord?.transaction_date ?? dateInTimeZone(business.timezone),
+      transactionType: source ? "refund" : "expense",
+      refundOfExpenseId: source?.id,
+      bankTransactionId: bankRecord && bankRecord.amount < 0 ? bankRecord.id : undefined,
+      amount: bankRecord && bankRecord.amount < 0 ? Math.abs(bankRecord.amount) : undefined,
+      category: source?.transaction_type === "asset" ? "Other" : undefined,
+      vendor: source?.vendor ?? undefined,
+      description,
+      taxCategory: suggestTaxCategory({ vendor: source?.vendor, description }),
+      deductiblePercent: 100,
+    }} equipment={equipment} jobs={jobs} refundOptions={refundOptions} />
+  </div>;
+}

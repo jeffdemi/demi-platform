@@ -5,11 +5,15 @@ export type ReportData = {
   invoices: { status: string; amount: number; invoice_date: string }[];
   expenses: { amount: number; expense_date: string; category: string; transaction_type?: string; voided_at?: string | null }[];
   quotes: { status: string; quoted_price: number; quote_date: string }[];
+  payments?: { amount: number; payment_date: string; voided_at?: string | null }[];
 };
 
 export function buildReportSummary(data: ReportData) {
   const activeExpenses = data.expenses.filter((expense) => !expense.voided_at);
-  const paidRevenue = data.jobs.reduce((sum, job) => sum + (job.amount_paid ?? 0), 0);
+  const activePayments = data.payments?.filter((payment) => !payment.voided_at);
+  const paidRevenue = activePayments
+    ? activePayments.reduce((sum, payment) => sum + payment.amount, 0)
+    : data.jobs.reduce((sum, job) => sum + (job.amount_paid ?? 0), 0);
   const operatingExpenses = activeExpenses.reduce((sum, expense) => sum + operatingExpenseImpact(expense), 0);
   const assetPurchases = activeExpenses.filter((expense) => expense.transaction_type === "asset").reduce((sum, expense) => sum + expense.amount, 0);
   const refunds = activeExpenses.filter((expense) => expense.transaction_type === "refund").reduce((sum, expense) => sum + expense.amount, 0);
@@ -18,11 +22,11 @@ export function buildReportSummary(data: ReportData) {
   const accepted = decisions.filter((quote) => ["accepted", "converted"].includes(quote.status));
   const months = new Map<string, { revenue: number; operatingExpenses: number; assetPurchases: number; refunds: number; cashOutflow: number }>();
   const monthValue = (key: string) => months.get(key) ?? { revenue: 0, operatingExpenses: 0, assetPurchases: 0, refunds: 0, cashOutflow: 0 };
-  data.jobs.forEach((job) => {
-    if (!job.job_date) return;
-    const key = job.job_date.slice(0, 7);
+  (activePayments ?? data.jobs.map((job) => ({ payment_date: job.job_date, amount: job.amount_paid ?? 0 }))).forEach((payment) => {
+    if (!payment.payment_date) return;
+    const key = payment.payment_date.slice(0, 7);
     const value = monthValue(key);
-    value.revenue += job.amount_paid ?? 0;
+    value.revenue += payment.amount;
     months.set(key, value);
   });
   activeExpenses.forEach((expense) => {

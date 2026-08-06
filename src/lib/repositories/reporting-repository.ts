@@ -13,18 +13,21 @@ export async function getOperationalDashboard(client: Client, businessId: number
   const monthStart = `${today.slice(0, 7)}-01`;
   const yearStart = `${today.slice(0, 4)}-01-01`;
   const followingMonth = nextMonth(monthStart);
-  const [jobsResult, invoicesResult, expensesResult, maintenanceResult] = await Promise.all([
+  const [jobsResult, invoicesResult, expensesResult, maintenanceResult, paymentsResult, bankReviewResult] = await Promise.all([
     client.from("jobs").select("id, status, job_date, scheduled_date, scheduled_start_time, work_description, amount_paid, amount_quoted, machine_hours, referral_source, customers(first_name, last_name, company_name, customer_type)").eq("business_id", businessId).limit(5000),
     client.from("invoices").select("id, invoice_number, status, amount, invoice_date, due_date, customer_id, customers(first_name, last_name, company_name, customer_type)").eq("business_id", businessId).limit(5000),
     client.from("expenses").select("id, amount, expense_date, transaction_type, voided_at").eq("business_id", businessId).limit(5000),
     client.from("maintenance").select("id, equipment_id, next_due_date, next_due_hours, service_type, equipment(name, hour_meter)").eq("business_id", businessId).not("next_due_date", "is", null).order("next_due_date").limit(8),
+    client.from("payments").select("id, amount, payment_date, voided_at").eq("business_id", businessId).is("voided_at", null).limit(5000),
+    client.from("bank_transactions").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("status", "unreviewed"),
   ]);
-  for (const result of [jobsResult, invoicesResult, expensesResult, maintenanceResult]) if (result.error) throw new Error(`Unable to load dashboard: ${result.error.message}`);
+  for (const result of [jobsResult, invoicesResult, expensesResult, maintenanceResult, paymentsResult, bankReviewResult]) if (result.error) throw new Error(`Unable to load dashboard: ${result.error.message}`);
   const jobs = jobsResult.data ?? [];
   const invoices = invoicesResult.data ?? [];
   const expenses = (expensesResult.data ?? []).filter((expense) => !expense.voided_at);
   const paidJobs = jobs.filter((job) => (job.amount_paid ?? 0) > 0);
-  const revenue = (start: string, end?: string) => paidJobs.filter((job) => (job.job_date ?? job.scheduled_date ?? "") >= start && (!end || (job.job_date ?? job.scheduled_date ?? "") < end)).reduce((sum, job) => sum + (job.amount_paid ?? 0), 0);
+  const payments = paymentsResult.data ?? [];
+  const revenue = (start: string, end?: string) => payments.filter((payment) => payment.payment_date >= start && (!end || payment.payment_date < end)).reduce((sum, payment) => sum + payment.amount, 0);
   const referral = new Map<string, number>();
   paidJobs.forEach((job) => referral.set(job.referral_source || "Not recorded", (referral.get(job.referral_source || "Not recorded") ?? 0) + (job.amount_paid ?? 0)));
   return {
@@ -32,12 +35,13 @@ export async function getOperationalDashboard(client: Client, businessId: number
       revenueToday: revenue(today, new Date(new Date(`${today}T12:00:00Z`).valueOf() + 86400000).toISOString().slice(0, 10)),
       revenueMonth: revenue(monthStart, followingMonth), revenueYear: revenue(yearStart),
       outstandingInvoices: invoices.filter((invoice) => invoice.status === "unpaid").reduce((sum, invoice) => sum + invoice.amount, 0),
-      averagePaidJob: paidJobs.length ? paidJobs.reduce((sum, job) => sum + (job.amount_paid ?? 0), 0) / paidJobs.length : 0,
+      averagePaidJob: payments.length ? payments.reduce((sum, payment) => sum + payment.amount, 0) / payments.length : 0,
       expensesMonth: expenses.filter((expense) => expense.expense_date >= monthStart && expense.expense_date < followingMonth).reduce((sum, expense) => sum + operatingExpenseImpact(expense), 0),
       capitalPurchasesMonth: expenses.filter((expense) => expense.expense_date >= monthStart && expense.expense_date < followingMonth && expense.transaction_type === "asset").reduce((sum, expense) => sum + expense.amount, 0),
       refundsMonth: expenses.filter((expense) => expense.expense_date >= monthStart && expense.expense_date < followingMonth && expense.transaction_type === "refund").reduce((sum, expense) => sum + expense.amount, 0),
       cashOutflowMonth: expenses.filter((expense) => expense.expense_date >= monthStart && expense.expense_date < followingMonth).reduce((sum, expense) => sum + cashOutflowImpact(expense), 0),
       machineHours: jobs.reduce((sum, job) => sum + (job.machine_hours ?? 0), 0),
+      unreviewedBankTransactions: bankReviewResult.count ?? 0,
     },
     todayJobs: jobs.filter((job) => job.scheduled_date === today || job.job_date === today).sort((a, b) => (a.scheduled_start_time || "").localeCompare(b.scheduled_start_time || "")).slice(0, 8),
     upcomingJobs: jobs.filter((job) => job.scheduled_date && job.scheduled_date > today && !["paid", "cancelled"].includes(job.status)).sort((a, b) => (a.scheduled_date || "").localeCompare(b.scheduled_date || "")).slice(0, 8),
@@ -60,12 +64,13 @@ export async function getEntityCounts(client: Client, businessId: number) {
 }
 
 export async function getReportData(client: Client, businessId: number) {
-  const [jobs, invoices, expenses, quotes] = await Promise.all([
+  const [jobs, invoices, expenses, quotes, payments] = await Promise.all([
     client.from("jobs").select("id, status, job_date, amount_quoted, amount_paid, machine_hours, referral_source").eq("business_id", businessId).limit(10000),
     client.from("invoices").select("id, status, amount, invoice_date").eq("business_id", businessId).limit(10000),
     client.from("expenses").select("id, amount, expense_date, category, transaction_type, voided_at").eq("business_id", businessId).limit(10000),
     client.from("quotes").select("id, status, quoted_price, quote_date").eq("business_id", businessId).limit(10000),
+    client.from("payments").select("id, amount, payment_date, voided_at").eq("business_id", businessId).limit(10000),
   ]);
-  for (const result of [jobs, invoices, expenses, quotes]) if (result.error) throw new Error(`Unable to load reports: ${result.error.message}`);
-  return { jobs: jobs.data ?? [], invoices: invoices.data ?? [], expenses: expenses.data ?? [], quotes: quotes.data ?? [] };
+  for (const result of [jobs, invoices, expenses, quotes, payments]) if (result.error) throw new Error(`Unable to load reports: ${result.error.message}`);
+  return { jobs: jobs.data ?? [], invoices: invoices.data ?? [], expenses: expenses.data ?? [], quotes: quotes.data ?? [], payments: payments.data ?? [] };
 }

@@ -44,3 +44,18 @@ Financial records use additive classification and reversible archiving. Refunds
 retain positive source amounts and reference the original record; domain helpers
 apply the negative reporting impact consistently. Receipt objects are private and
 their storage policies reuse business-membership authorization.
+
+Bank imports are previewed in the application and committed through one
+caller-authorized PostgreSQL function. File hashes and transaction fingerprints
+make re-imports idempotent. Reconciliation links a bank row to at most one active
+expense or payment.
+
+Payments are the cash-revenue source of truth. Existing invoice/job payment fields
+remain for backward compatibility and are synchronized when a new payment is
+recorded. Expense and payment triggers post balanced journal revisions; prior
+revisions are superseded instead of overwritten. Ledger tables are read-only to
+normal clients and are written only by the database posting functions.
+
+Privileged owner setup and invitation implementations live in the unexposed
+`private` schema. Public RPC names are security-invoker wrappers, preserving the
+application contract without exposing elevated functions directly through the API.

@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_accounts: {
+        Row: { id: number; business_id: number; name: string; institution: string | null; account_type: string; last_four: string | null; currency: string; active: boolean; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; name: string; institution?: string | null; account_type?: string; last_four?: string | null; currency?: string; active?: boolean; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; name?: string; institution?: string | null; account_type?: string; last_four?: string | null; currency?: string; active?: boolean; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "bank_accounts_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
+      }
+      bank_imports: {
+        Row: { id: string; business_id: number; account_id: number; file_name: string; source_sha256: string; row_count: number; imported_by: string; created_at: string }
+        Insert: { id?: string; business_id: number; account_id: number; file_name: string; source_sha256: string; row_count: number; imported_by: string; created_at?: string }
+        Update: { id?: string; business_id?: number; account_id?: number; file_name?: string; source_sha256?: string; row_count?: number; imported_by?: string; created_at?: string }
+        Relationships: [{ foreignKeyName: "bank_imports_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["business_id", "id"] }]
+      }
+      bank_transactions: {
+        Row: { id: number; business_id: number; account_id: number; import_id: string; transaction_date: string; posted_date: string | null; description: string; amount: number; currency: string; external_id: string | null; fingerprint: string; status: string; excluded_reason: string | null; reviewed_at: string | null; reviewed_by: string | null; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; account_id: number; import_id: string; transaction_date: string; posted_date?: string | null; description: string; amount: number; currency?: string; external_id?: string | null; fingerprint: string; status?: string; excluded_reason?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; account_id?: number; import_id?: string; transaction_date?: string; posted_date?: string | null; description?: string; amount?: number; currency?: string; external_id?: string | null; fingerprint?: string; status?: string; excluded_reason?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "bank_transactions_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["business_id", "id"] }]
+      }
       business_invitations: {
         Row: {
           accepted_at: string | null
@@ -265,9 +283,11 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          bank_transaction_id: number | null
           business_id: number
           category: string
           created_at: string
+          deductible_percent: number
           description: string | null
           equipment_id: number | null
           expense_date: string
@@ -277,7 +297,12 @@ export type Database = {
           notes: string | null
           payment_method: string | null
           receipt_path: string | null
+          receipt_extracted_data: Json | null
+          receipt_review_status: string
+          receipt_reviewed_at: string | null
+          receipt_reviewed_by: string | null
           refund_of_expense_id: number | null
+          tax_category: string | null
           transaction_type: string
           updated_at: string
           vendor: string | null
@@ -287,9 +312,11 @@ export type Database = {
         }
         Insert: {
           amount: number
+          bank_transaction_id?: number | null
           business_id: number
           category: string
           created_at?: string
+          deductible_percent?: number
           description?: string | null
           equipment_id?: number | null
           expense_date?: string
@@ -299,7 +326,12 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           receipt_path?: string | null
+          receipt_extracted_data?: Json | null
+          receipt_review_status?: string
+          receipt_reviewed_at?: string | null
+          receipt_reviewed_by?: string | null
           refund_of_expense_id?: number | null
+          tax_category?: string | null
           transaction_type?: string
           updated_at?: string
           vendor?: string | null
@@ -309,9 +341,11 @@ export type Database = {
         }
         Update: {
           amount?: number
+          bank_transaction_id?: number | null
           business_id?: number
           category?: string
           created_at?: string
+          deductible_percent?: number
           description?: string | null
           equipment_id?: number | null
           expense_date?: string
@@ -321,7 +355,12 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           receipt_path?: string | null
+          receipt_extracted_data?: Json | null
+          receipt_review_status?: string
+          receipt_reviewed_at?: string | null
+          receipt_reviewed_by?: string | null
           refund_of_expense_id?: number | null
+          tax_category?: string | null
           transaction_type?: string
           updated_at?: string
           vendor?: string | null
@@ -434,6 +473,21 @@ export type Database = {
             referencedRelation: "jobs"
             referencedColumns: ["business_id", "id"]
           },
+        ]
+      }
+      journal_entries: {
+        Row: { id: number; business_id: number; entry_date: string; description: string; source_type: string; source_id: number | null; revision: number; status: string; created_by: string | null; created_at: string }
+        Insert: { id?: never; business_id: number; entry_date: string; description: string; source_type: string; source_id?: number | null; revision?: number; status?: string; created_by?: string | null; created_at?: string }
+        Update: { id?: never; business_id?: number; entry_date?: string; description?: string; source_type?: string; source_id?: number | null; revision?: number; status?: string; created_by?: string | null; created_at?: string }
+        Relationships: [{ foreignKeyName: "journal_entries_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
+      }
+      journal_lines: {
+        Row: { id: number; business_id: number; journal_entry_id: number; account_id: number; debit: number; credit: number; memo: string | null; created_at: string }
+        Insert: { id?: never; business_id: number; journal_entry_id: number; account_id: number; debit?: number; credit?: number; memo?: string | null; created_at?: string }
+        Update: { id?: never; business_id?: number; journal_entry_id?: number; account_id?: number; debit?: number; credit?: number; memo?: string | null; created_at?: string }
+        Relationships: [
+          { foreignKeyName: "journal_lines_business_id_journal_entry_id_fkey"; columns: ["business_id", "journal_entry_id"]; isOneToOne: false; referencedRelation: "journal_entries"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "journal_lines_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "ledger_accounts"; referencedColumns: ["business_id", "id"] }
         ]
       }
       jobs: {
@@ -565,6 +619,12 @@ export type Database = {
             referencedColumns: ["business_id", "id"]
           },
         ]
+      }
+      ledger_accounts: {
+        Row: { id: number; business_id: number; code: string; name: string; account_type: string; normal_balance: string; system_key: string | null; active: boolean; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; code: string; name: string; account_type: string; normal_balance: string; system_key?: string | null; active?: boolean; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; code?: string; name?: string; account_type?: string; normal_balance?: string; system_key?: string | null; active?: boolean; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "ledger_accounts_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
       }
       job_imports: {
         Row: {
@@ -712,6 +772,16 @@ export type Database = {
             referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      payments: {
+        Row: { id: number; business_id: number; customer_id: number | null; invoice_id: number | null; job_id: number | null; bank_transaction_id: number | null; payment_date: string; amount: number; method: string | null; reference: string | null; source: string; notes: string | null; voided_at: string | null; voided_by: string | null; void_reason: string | null; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; customer_id?: number | null; invoice_id?: number | null; job_id?: number | null; bank_transaction_id?: number | null; payment_date?: string; amount: number; method?: string | null; reference?: string | null; source?: string; notes?: string | null; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; customer_id?: number | null; invoice_id?: number | null; job_id?: number | null; bank_transaction_id?: number | null; payment_date?: string; amount?: number; method?: string | null; reference?: string | null; source?: string; notes?: string | null; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null; created_at?: string; updated_at?: string }
+        Relationships: [
+          { foreignKeyName: "payments_business_id_invoice_id_fkey"; columns: ["business_id", "invoice_id"]; isOneToOne: false; referencedRelation: "invoices"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "payments_business_id_job_id_fkey"; columns: ["business_id", "job_id"]; isOneToOne: false; referencedRelation: "jobs"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "payments_business_id_customer_id_fkey"; columns: ["business_id", "customer_id"]; isOneToOne: false; referencedRelation: "customers"; referencedColumns: ["business_id", "id"] }
         ]
       }
       profiles: {
@@ -914,7 +984,31 @@ export type Database = {
         }
         Returns: Json
       }
+      import_bank_statement: {
+        Args: {
+          import_file_name: string
+          import_rows: Json
+          import_source_sha256: string
+          target_account_id: number
+          target_business_id: number
+        }
+        Returns: Json
+      }
       platform_setup_available: { Args: never; Returns: boolean }
+      record_payment: {
+        Args: {
+          payment_amount: number
+          payment_method: string | null
+          payment_notes: string | null
+          payment_on: string
+          payment_reference: string | null
+          target_bank_transaction_id: number | null
+          target_business_id: number
+          target_invoice_id: number | null
+          target_job_id: number | null
+        }
+        Returns: number
+      }
       set_invoice_status: {
         Args: { invoice_status: string; paid_on?: string; target_invoice_id: number }
         Returns: number

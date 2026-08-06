@@ -58,6 +58,9 @@ export const expenseFormSchema = z.object({
   jobId: positiveId("a job", false), equipmentId: positiveId("equipment", false), notes: optionalText(),
   transactionType: z.enum(["expense", "asset", "refund"]),
   refundOfExpenseId: positiveId("an expense to refund", false),
+  bankTransactionId: positiveId("a bank transaction", false),
+  taxCategory: optionalText(150),
+  deductiblePercent: number("Deductible percentage").default(100),
 }).superRefine((value, context) => {
   if (value.transactionType === "refund" && !value.refundOfExpenseId) {
     context.addIssue({ code: "custom", path: ["refundOfExpenseId"], message: "Select the original expense for this refund." });
@@ -65,6 +68,34 @@ export const expenseFormSchema = z.object({
   if (value.transactionType !== "refund" && value.refundOfExpenseId) {
     context.addIssue({ code: "custom", path: ["refundOfExpenseId"], message: "Only refunds can reference an original expense." });
   }
+  if ((value.deductiblePercent ?? 0) > 100) {
+    context.addIssue({ code: "custom", path: ["deductiblePercent"], message: "Deductible percentage cannot exceed 100." });
+  }
+});
+
+export const bankAccountSchema = z.object({
+  name: requiredText("Account name", 150),
+  institution: optionalText(150),
+  accountType: z.enum(["checking", "savings", "credit_card", "cash", "other"]),
+  lastFour: z.preprocess((value) => typeof value === "string" ? value.trim() || undefined : value, z.string().regex(/^\d{4}$/, "Last four must contain exactly four digits.").optional()),
+});
+
+export const excludeBankTransactionSchema = z.object({
+  reason: requiredText("Reason", 500),
+});
+
+export const paymentFormSchema = z.object({
+  invoiceId: positiveId("an invoice", false),
+  jobId: positiveId("a job", false),
+  bankTransactionId: positiveId("a bank transaction", false),
+  paymentDate: date("Payment date", true),
+  amount: number("Amount", true),
+  method: optionalText(100),
+  reference: optionalText(250),
+  notes: optionalText(1000),
+}).superRefine((value, context) => {
+  if (!value.invoiceId && !value.jobId) context.addIssue({ code: "custom", path: ["invoiceId"], message: "Select an invoice or job." });
+  if ((value.amount ?? 0) <= 0) context.addIssue({ code: "custom", path: ["amount"], message: "Amount must be greater than zero." });
 });
 
 export const voidExpenseSchema = z.object({

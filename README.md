@@ -87,6 +87,11 @@ refunds; and provisions a private, business-scoped receipt bucket. Existing
 rows remain intact. Explicitly tagged imported assets and the known imported
 refund are classified in place without changing their source amounts.
 
+The accounting-operations migration adds statement reconciliation, source-linked
+payments, a balanced double-entry journal, tax metadata, and receipt review. It
+backfills payment and journal records from existing paid invoices, uninvoiced
+paid jobs, and active expenses without deleting or rewriting the source rows.
+
 The browser uses Supabase's publishable key. Authorization is enforced by authenticated sessions and business-membership RLS policies.
 
 ## Legacy Data
@@ -124,6 +129,10 @@ Daily operations currently provides:
 - Equipment records, maintenance history, hour-meter updates, and upcoming service queues
 - Financial, sales, referral, maintenance, and daily operating dashboard sections
 - Monthly reports, authenticated JSON APIs, and CSV exports
+- CSV/XLSX bank-statement imports, duplicate detection, and reconciliation queues
+- Partial customer payments linked to invoices, jobs, and bank deposits
+- Balanced expense/payment journals and annual tax-preparation exports
+- Receipt review with rule-based category suggestions
 - Preview-first `.xlsx` or `.csv` job import with duplicate protection and audit history
 
 Primary operational URLs:
@@ -135,12 +144,17 @@ Primary operational URLs:
 /quotes                    Sales pipeline and quote workflows
 /invoices                  Billing and payment status
 /expenses                  Operating costs, assets, refunds, and receipts
+/finance                   Bank accounts, imported transactions, and reconciliation
+/finance/import            Preview and import a bank statement
+/finance/payments/new      Record or reconcile a customer payment
 /equipment                 Assets and maintenance history
 /imports/jobs              Spreadsheet preview and import
 /reports                    Financial and operating reports/exports
 /api/v1/{resource}         Authenticated JSON records
 /api/v1/{resource}?format=csv
 /api/v1/reports/summary    Authenticated reporting summary
+/api/v1/reports/tax-summary?year=2026&format=csv
+/api/v1/reports/general-ledger?from=2026-01-01&to=2026-12-31&format=csv
 ```
 
 External SMS/email sending, payment collection, electronic signatures, customer

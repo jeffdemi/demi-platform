@@ -49,6 +49,15 @@ export async function listRefundableExpenseOptions(client: Client, businessId: n
   return result.data ?? [];
 }
 
+export async function getActiveRefundTotal(client: Client, businessId: number, sourceExpenseId: number, excludeExpenseId?: number) {
+  let query = client.from("expenses").select("amount").eq("business_id", businessId)
+    .eq("transaction_type", "refund").eq("refund_of_expense_id", sourceExpenseId).is("voided_at", null);
+  if (excludeExpenseId) query = query.neq("id", excludeExpenseId);
+  const result = await query;
+  if (result.error) throw new Error(`Unable to validate refund total: ${result.error.message}`);
+  return (result.data ?? []).reduce((sum, refund) => sum + refund.amount, 0);
+}
+
 export async function createExpense(client: Client, values: Database["public"]["Tables"]["expenses"]["Insert"]) {
   const result = await client.from("expenses").insert(values).select("id").single();
   if (result.error) throw new Error(`Unable to create expense: ${result.error.message}`);

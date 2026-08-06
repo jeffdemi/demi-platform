@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.2.0 - Accounting Operations
+
+### Added
+
+- Preview-first CSV/XLSX bank-statement imports with file and row duplicate protection
+- Bank-account register, reconciliation queue, expense/payment matching, and explicit exclusions
+- Source-linked payment records supporting partial payments and imported deposits
+- Double-entry chart of accounts and revision-preserving journals for expenses, assets, refunds, and customer payments
+- Tax categories, deductible percentages, annual tax-preparation summaries, and accountant-ready CSV exports
+- Receipt review and automatic category suggestions based on recorded vendor and description
+- Database and service-level controls preventing refunds from exceeding their original purchase
+
+### Database
+
+- Added business-scoped bank accounts, import batches, bank transactions, payments, ledger accounts, journal entries, and journal lines
+- Backfills paid invoices and uninvoiced paid jobs into the payment ledger without modifying source records
+- Backfills balanced journal revisions for active expenses and payments
+- Adds transaction matching, payment synchronization, refund ceilings, RLS, and targeted query indexes
+
+### Security
+
+- Moved setup and invitation `SECURITY DEFINER` implementations out of the exposed API schema
+- Preserved public RPC signatures through least-privilege `SECURITY INVOKER` wrappers
+- Leaked-password protection remains a Supabase Auth dashboard setting and must be enabled there
+
+### Deferred
+
+- Direct live bank feeds; this release imports bank-provided CSV/XLSX statements
+- Image OCR; receipt review currently suggests categories from verified record fields and retains an extraction-review schema for a future provider
+- Automated tax filing, depreciation decisions, and jurisdiction-specific tax advice
+- Direct QuickBooks/Xero synchronization; stable CSV exports are provided instead
+
 ## Unreleased - Financial Accuracy
 
 ### Added
