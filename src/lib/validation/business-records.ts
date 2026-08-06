@@ -56,6 +56,20 @@ export const expenseFormSchema = z.object({
   expenseDate: date("Expense date", true), category: requiredText("Category", 100), vendor: optionalText(250),
   description: optionalText(1000), amount: number("Amount", true), paymentMethod: optionalText(100),
   jobId: positiveId("a job", false), equipmentId: positiveId("equipment", false), notes: optionalText(),
+  transactionType: z.enum(["expense", "asset", "refund"]),
+  refundOfExpenseId: positiveId("an expense to refund", false),
+}).superRefine((value, context) => {
+  if (value.transactionType === "refund" && !value.refundOfExpenseId) {
+    context.addIssue({ code: "custom", path: ["refundOfExpenseId"], message: "Select the original expense for this refund." });
+  }
+  if (value.transactionType !== "refund" && value.refundOfExpenseId) {
+    context.addIssue({ code: "custom", path: ["refundOfExpenseId"], message: "Only refunds can reference an original expense." });
+  }
+});
+
+export const voidExpenseSchema = z.object({
+  reason: requiredText("Reason", 500),
+  confirm: z.literal("yes", { message: "Confirm that you want to archive this record." }),
 });
 
 export const equipmentFormSchema = z.object({

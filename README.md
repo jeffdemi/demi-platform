@@ -81,6 +81,12 @@ transactional functions for quote conversion, invoice creation, maintenance
 meter updates, and confirmed spreadsheet imports. Apply migrations in filename
 order before deploying application code that depends on them.
 
+The financial-accuracy migration classifies expense records as operating
+expenses, asset purchases, or refunds; adds reversible archiving and linked
+refunds; and provisions a private, business-scoped receipt bucket. Existing
+rows remain intact. Explicitly tagged imported assets and the known imported
+refund are classified in place without changing their source amounts.
+
 The browser uses Supabase's publishable key. Authorization is enforced by authenticated sessions and business-membership RLS policies.
 
 ## Legacy Data
@@ -113,7 +119,8 @@ Daily operations currently provides:
 - Clickable customer, job, and operational dashboard links
 - Quote create/edit/search/status workflows, customer-ready messages, PDFs, and one-time quote-to-job conversion
 - Invoice creation, job/customer linking, payment status, and PDFs
-- Expense entry with optional job and equipment links
+- Expense create/edit/detail workflows with operating, asset, and refund classification
+- Reversible expense archiving, linked refunds, and private receipt uploads
 - Equipment records, maintenance history, hour-meter updates, and upcoming service queues
 - Financial, sales, referral, maintenance, and daily operating dashboard sections
 - Monthly reports, authenticated JSON APIs, and CSV exports
@@ -127,7 +134,7 @@ Primary operational URLs:
 /jobs                      Search, status, and operational job views
 /quotes                    Sales pipeline and quote workflows
 /invoices                  Billing and payment status
-/expenses                  Business costs
+/expenses                  Operating costs, assets, refunds, and receipts
 /equipment                 Assets and maintenance history
 /imports/jobs              Spreadsheet preview and import
 /reports                    Financial and operating reports/exports

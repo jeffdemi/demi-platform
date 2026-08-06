@@ -1,0 +1,27 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { FileText, Pencil, RotateCcw } from "lucide-react";
+import { notFound } from "next/navigation";
+import { PageHeader } from "@/components/page-header";
+import { StatusBadge } from "@/components/status-badge";
+import { requireBusinessContext } from "@/lib/auth";
+import { cashOutflowImpact, expenseTypeLabel, operatingExpenseImpact } from "@/lib/domain/finance";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { getExpense } from "@/lib/repositories/expense-repository";
+import { createReceiptUrl } from "@/lib/services/expenses";
+import { createClient } from "@/lib/supabase/server";
+import { ArchiveExpenseForm } from "../archive-form";
+
+export const metadata: Metadata = { title: "Expense details" };
+
+export default async function ExpenseDetailPage({ params }: { params: Promise<{ expenseId: string }> }) {
+  const expenseId = Number((await params).expenseId);
+  if (!Number.isInteger(expenseId)) notFound();
+  const { business } = await requireBusinessContext();
+  const client = await createClient();
+  const expense = await getExpense(client, business.id, expenseId);
+  if (!expense) notFound();
+  const receiptUrl = await createReceiptUrl(client, expense.receipt_path);
+  const actions = <div className="flex flex-wrap gap-2"><Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong px-3 font-semibold" href={`/expenses/${expense.id}/edit`}><Pencil size={16} />Edit</Link>{expense.transaction_type !== "refund" && !expense.voided_at && <Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong px-3 font-semibold" href={`/expenses/new?refundOf=${expense.id}`}><RotateCcw size={16} />Record refund</Link>}</div>;
+  return <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8"><PageHeader actions={actions} description={formatDate(expense.expense_date)} title={expense.vendor || expense.description || `Expense #${expense.id}`} /><div className="grid gap-5 py-6 md:grid-cols-[1fr_0.7fr]"><section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><div className="flex items-center justify-between gap-3"><h2 className="font-bold">Financial record</h2><StatusBadge label={expense.voided_at ? "Archived" : expenseTypeLabel(expense.transaction_type)} status={expense.voided_at ? "void" : expense.transaction_type} /></div><dl className="mt-5 grid gap-5 sm:grid-cols-2"><div><dt className="text-xs uppercase text-muted">Source amount</dt><dd className="mt-1 text-xl font-bold">{formatCurrency(expense.amount)}</dd></div><div><dt className="text-xs uppercase text-muted">Operating impact</dt><dd className="mt-1 text-xl font-bold">{formatCurrency(operatingExpenseImpact(expense))}</dd></div><div><dt className="text-xs uppercase text-muted">Cash outflow impact</dt><dd className="mt-1 font-semibold">{formatCurrency(cashOutflowImpact(expense))}</dd></div><div><dt className="text-xs uppercase text-muted">Category</dt><dd className="mt-1 font-semibold">{expense.category}</dd></div><div><dt className="text-xs uppercase text-muted">Description</dt><dd className="mt-1">{expense.description || "Not recorded"}</dd></div><div><dt className="text-xs uppercase text-muted">Payment method</dt><dd className="mt-1">{expense.payment_method || "Not recorded"}</dd></div><div><dt className="text-xs uppercase text-muted">Linked record</dt><dd className="mt-1">{expense.jobs ? <Link className="font-semibold text-brand" href={`/jobs/${expense.jobs.id}`}>{expense.jobs.work_description || `Job #${expense.jobs.id}`}</Link> : expense.equipment?.name || "Not linked"}</dd></div><div><dt className="text-xs uppercase text-muted">Receipt</dt><dd className="mt-1">{receiptUrl ? <a className="inline-flex items-center gap-2 font-semibold text-brand" href={receiptUrl} rel="noreferrer" target="_blank"><FileText size={16} />Open receipt</a> : "Not attached"}</dd></div></dl>{expense.notes && <div className="mt-5 border-t border-line pt-5"><h3 className="font-semibold">Notes</h3><p className="mt-2 whitespace-pre-wrap text-sm text-muted">{expense.notes}</p></div>}{expense.voided_at && <div className="mt-5 border-t border-line pt-5"><h3 className="font-semibold text-danger">Archived</h3><p className="mt-2 text-sm">{expense.void_reason}</p><p className="mt-1 text-xs text-muted">Archived {formatDate(expense.voided_at)}</p></div>}</section><section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="font-bold">Record controls</h2><p className="mt-2 text-sm leading-6 text-muted">Archiving is reversible and never deletes the source record or receipt.</p><div className="mt-4"><ArchiveExpenseForm archived={Boolean(expense.voided_at)} expenseId={expense.id} /></div></section></div></div>;
+}

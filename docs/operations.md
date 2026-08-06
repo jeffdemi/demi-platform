@@ -17,7 +17,22 @@ customer documents.
 
 Invoice numbers use `INV-YYYY-NNNN`. Creating an invoice for a job updates the
 job to `invoiced`, or `paid` when the invoice is created paid. Invoice PDFs omit
-internal notes. Expenses can link to a job, equipment item, both, or neither.
+internal notes.
+
+Expense records use one of three financial types:
+
+- `expense`: included in operating expense and cash outflow
+- `asset`: excluded from operating expense but included in cash outflow
+- `refund`: linked to its original expense and subtracted from both operating expense and cash outflow
+
+Archived records remain stored but are excluded from every financial total.
+Archiving requires explicit confirmation and a reason and can be reversed.
+Receipts are limited to JPG, PNG, WebP, or PDF files up to 4 MB. They are stored
+in a private Supabase bucket and opened through short-lived signed URLs.
+
+Reports show operating profit (`paid revenue - net operating expense`) separately
+from cash net (`paid revenue - net cash outflow`). This prevents equipment
+purchases from distorting operating performance while retaining their cash impact.
 
 ## Equipment and maintenance
 

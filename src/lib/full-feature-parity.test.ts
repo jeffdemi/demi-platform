@@ -72,7 +72,7 @@ describe("billing and operating records", () => {
 
   it("rejects invalid financial and maintenance form values", () => {
     expect(invoiceFormSchema.safeParse({ customerId: "", amount: "bad", invoiceDate: "2026-02-31", status: "unpaid" }).success).toBe(false);
-    expect(expenseFormSchema.safeParse({ expenseDate: "bad", category: "", amount: "-1" }).success).toBe(false);
+    expect(expenseFormSchema.safeParse({ expenseDate: "bad", category: "", amount: "-1", transactionType: "expense" }).success).toBe(false);
     expect(maintenanceFormSchema.safeParse({ equipmentId: "", serviceDate: "bad", serviceType: "" }).success).toBe(false);
     expect(quoteFormSchema.safeParse({ customerId: "", status: "converted", quoteDate: "bad", quotedPrice: "x", proBono: false, pa811Required: false }).success).toBe(false);
   });
@@ -86,7 +86,7 @@ describe("spreadsheet import and reporting", () => {
   });
 
   it("calculates financial, pipeline, status, and monthly report values", () => {
-    const report = buildReportSummary({ jobs: [{ status: "paid", job_date: "2026-08-01", amount_paid: 300, amount_quoted: 300, machine_hours: 1.5, referral_source: "Web" }], invoices: [{ status: "unpaid", amount: 100, invoice_date: "2026-08-01" }], expenses: [{ amount: 50, expense_date: "2026-08-02", category: "Fuel" }], quotes: [{ status: "accepted", quoted_price: 300, quote_date: "2026-08-01" }, { status: "declined", quoted_price: 200, quote_date: "2026-08-02" }] });
+    const report = buildReportSummary({ jobs: [{ status: "paid", job_date: "2026-08-01", amount_paid: 300, amount_quoted: 300, machine_hours: 1.5, referral_source: "Web" }], invoices: [{ status: "unpaid", amount: 100, invoice_date: "2026-08-01" }], expenses: [{ amount: 50, expense_date: "2026-08-02", category: "Fuel", transaction_type: "expense", voided_at: null }], quotes: [{ status: "accepted", quoted_price: 300, quote_date: "2026-08-01" }, { status: "declined", quoted_price: 200, quote_date: "2026-08-02" }] });
     expect(report.paidRevenue).toBe(300); expect(report.net).toBe(250); expect(report.outstandingInvoices).toBe(100); expect(report.acceptanceRate).toBe(50); expect(report.months[0].net).toBe(250);
   });
 });

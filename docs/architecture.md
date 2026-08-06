@@ -18,6 +18,7 @@ Browser
 - PostgreSQL constraints preserve relationships and business invariants.
 - RLS enforces business isolation independently of application filters.
 - Dedicated PDF services build quote and invoice documents; route handlers only authorize and return responses.
+- The expense service validates refund sources and owns private receipt upload/replacement cleanup.
 - Authenticated API route handlers reuse the same request-scoped client and RLS policies as the web application.
 
 ## Tenancy
@@ -38,3 +39,8 @@ fingerprints already present, creates jobs, and writes an audit row atomically.
 Quote conversion, invoice creation with job-state synchronization, and
 maintenance hour-meter updates are also PostgreSQL transactions. Their functions
 run as the caller and remain subject to RLS; none bypass tenant authorization.
+
+Financial records use additive classification and reversible archiving. Refunds
+retain positive source amounts and reference the original record; domain helpers
+apply the negative reporting impact consistently. Receipt objects are private and
+their storage policies reuse business-membership authorization.

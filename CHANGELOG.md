@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased - Financial Accuracy
+
+### Added
+
+- Operating expense, asset purchase, and linked refund classifications
+- Expense detail/edit workflows and reversible archive/restore controls
+- Private receipt uploads with business-scoped Storage policies and signed URLs
+- Operating profit, capital purchase, refund, cash-outflow, and cash-net reporting
+- Monthly financial performance and operating expense category summaries
+
+### Database
+
+- Added expense classification, refund relationship, receipt path, and archive audit columns
+- Added active-record and refund-source indexes
+- Classified only explicitly tagged imported assets and the known imported refund
+- Preserved all original records and source amounts
+
+### Deferred
+
+- Depreciation schedules and formal fixed-asset accounting
+- Split transactions, sales-tax allocation, and accounting-platform synchronization
+- Invoice payment ledger, partial payments, and Stripe reconciliation
+
 ## Unreleased - Full Feature Parity
 
 ### Added
