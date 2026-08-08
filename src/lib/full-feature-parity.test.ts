@@ -54,6 +54,11 @@ describe("quote sales workflow", () => {
     expect(migration).toContain("status = 'converted', job_id = new_job_id");
   });
 
+  it("uses the quote job link explicitly when loading quote details", async () => {
+    const repository = await readFile(new URL("./repositories/quote-repository.ts", import.meta.url), "utf8");
+    expect(repository).toContain("jobs!quotes_business_job_fkey(id, status)");
+  });
+
   it("keeps invoice payment and its linked job in one status transaction", async () => {
     const migration = await readFile(new URL("../../supabase/migrations/20260804002500_invoice_workflow_hardening.sql", import.meta.url), "utf8");
     expect(migration).toContain("function public.set_invoice_status");

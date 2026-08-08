@@ -5,6 +5,7 @@ import type { Database } from "@/types/database";
 type Client = SupabaseClient<Database>;
 type JobLink = Pick<Database["public"]["Tables"]["jobs"]["Row"], "id" | "status">;
 export type QuoteDetail = QuoteWithCustomer & { jobs: JobLink | null };
+const QUOTE_DETAIL_SELECT = "*, customers!inner(company_name, customer_type, email, first_name, last_name, phone), jobs!quotes_business_job_fkey(id, status)";
 
 function dataOrThrow<T>(data: T | null, error: { message: string } | null, label: string): T {
   if (error || data === null) throw new Error(`${label}${error ? `: ${error.message}` : "."}`);
@@ -27,7 +28,7 @@ export async function listQuotes(client: Client, businessId: number, filters: { 
 
 export async function getQuote(client: Client, businessId: number, quoteId: number) {
   const result = await client.from("quotes")
-    .select("*, customers!inner(company_name, customer_type, email, first_name, last_name, phone), jobs(id, status)")
+    .select(QUOTE_DETAIL_SELECT)
     .eq("business_id", businessId).eq("id", quoteId).maybeSingle();
   if (result.error) throw new Error(`Unable to load quote: ${result.error.message}`);
   return result.data as QuoteDetail | null;
