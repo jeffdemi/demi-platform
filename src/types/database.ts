@@ -630,7 +630,7 @@ export type Database = {
         Row: {
           business_id: number
           created_at: string
-          created_by: string
+          created_by: string | null
           customers_created: number
           customers_updated: number
           duplicates_skipped: number
@@ -656,7 +656,7 @@ export type Database = {
         Update: {
           business_id?: number
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           customers_created?: number
           customers_updated?: number
           duplicates_skipped?: number
@@ -807,6 +807,197 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      quote_ai_messages: {
+        Row: {
+          business_id: number
+          content: string
+          created_at: string
+          created_by: string | null
+          id: number
+          quote_id: number
+          recommendation_id: number | null
+          role: string
+          thread_id: number
+        }
+        Insert: {
+          business_id: number
+          content: string
+          created_at?: string
+          created_by: string
+          id?: never
+          quote_id: number
+          recommendation_id?: number | null
+          role: string
+          thread_id: number
+        }
+        Update: {
+          business_id?: number
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: never
+          quote_id?: number
+          recommendation_id?: number | null
+          role?: string
+          thread_id?: number
+        }
+        Relationships: [
+          { foreignKeyName: "quote_ai_messages_business_quote_fkey"; columns: ["business_id", "quote_id"]; isOneToOne: false; referencedRelation: "quotes"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "quote_ai_messages_business_thread_fkey"; columns: ["business_id", "thread_id"]; isOneToOne: false; referencedRelation: "quote_ai_threads"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "quote_ai_messages_business_recommendation_fkey"; columns: ["business_id", "recommendation_id"]; isOneToOne: false; referencedRelation: "quote_ai_recommendations"; referencedColumns: ["business_id", "id"] },
+        ]
+      }
+      quote_ai_recommendations: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          assumptions: Json
+          business_id: number
+          confidence: string
+          created_at: string
+          created_by: string | null
+          customer_message_draft: string | null
+          id: number
+          model: string
+          observations: Json
+          prompt_version: string
+          questions: Json
+          quote_id: number
+          readiness: string
+          recommended_price: number | null
+          response_id: string | null
+          risk_flags: Json
+          suggested_price_high: number | null
+          suggested_price_low: number | null
+          suggested_scope: string | null
+          thread_id: number
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          assumptions?: Json
+          business_id: number
+          confidence: string
+          created_at?: string
+          created_by: string
+          customer_message_draft?: string | null
+          id?: never
+          model: string
+          observations?: Json
+          prompt_version: string
+          questions?: Json
+          quote_id: number
+          readiness: string
+          recommended_price?: number | null
+          response_id?: string | null
+          risk_flags?: Json
+          suggested_price_high?: number | null
+          suggested_price_low?: number | null
+          suggested_scope?: string | null
+          thread_id: number
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          assumptions?: Json
+          business_id?: number
+          confidence?: string
+          created_at?: string
+          created_by?: string | null
+          customer_message_draft?: string | null
+          id?: never
+          model?: string
+          observations?: Json
+          prompt_version?: string
+          questions?: Json
+          quote_id?: number
+          readiness?: string
+          recommended_price?: number | null
+          response_id?: string | null
+          risk_flags?: Json
+          suggested_price_high?: number | null
+          suggested_price_low?: number | null
+          suggested_scope?: string | null
+          thread_id?: number
+        }
+        Relationships: [
+          { foreignKeyName: "quote_ai_recommendations_business_quote_fkey"; columns: ["business_id", "quote_id"]; isOneToOne: false; referencedRelation: "quotes"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "quote_ai_recommendations_business_thread_fkey"; columns: ["business_id", "thread_id"]; isOneToOne: false; referencedRelation: "quote_ai_threads"; referencedColumns: ["business_id", "id"] },
+        ]
+      }
+      quote_ai_threads: {
+        Row: {
+          business_id: number
+          created_at: string
+          created_by: string | null
+          id: number
+          model: string
+          prompt_version: string
+          quote_id: number
+          updated_at: string
+        }
+        Insert: {
+          business_id: number
+          created_at?: string
+          created_by: string
+          id?: never
+          model: string
+          prompt_version: string
+          quote_id: number
+          updated_at?: string
+        }
+        Update: {
+          business_id?: number
+          created_at?: string
+          created_by?: string | null
+          id?: never
+          model?: string
+          prompt_version?: string
+          quote_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "quote_ai_threads_business_quote_fkey"; columns: ["business_id", "quote_id"]; isOneToOne: true; referencedRelation: "quotes"; referencedColumns: ["business_id", "id"] },
+        ]
+      }
+      quote_photos: {
+        Row: {
+          business_id: number
+          created_at: string
+          id: number
+          mime_type: string
+          original_name: string
+          quote_id: number
+          size_bytes: number
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          business_id: number
+          created_at?: string
+          id?: never
+          mime_type: string
+          original_name: string
+          quote_id: number
+          size_bytes: number
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          business_id?: number
+          created_at?: string
+          id?: never
+          mime_type?: string
+          original_name?: string
+          quote_id?: number
+          size_bytes?: number
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "quote_photos_business_quote_fkey"; columns: ["business_id", "quote_id"]; isOneToOne: false; referencedRelation: "quotes"; referencedColumns: ["business_id", "id"] },
+        ]
       }
       quotes: {
         Row: {

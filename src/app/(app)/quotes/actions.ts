@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireBusinessContext } from "@/lib/auth";
 import { dateInTimeZone } from "@/lib/domain/jobs";
-import { quoteStatusUpdate } from "@/lib/domain/quotes";
+import { quoteHasFinalPrice, quoteStatusUpdate } from "@/lib/domain/quotes";
 import { convertQuote, createQuote, getQuoteForEdit, updateQuote } from "@/lib/repositories/quote-repository";
 import { createClient } from "@/lib/supabase/server";
 import { formValues, quoteFormSchema, quoteStatusSchema } from "@/lib/validation/business-records";
@@ -21,14 +21,14 @@ export async function saveQuote(quoteId: number | null, _: QuoteFormState, formD
   if (quoteId !== null && !(await getQuoteForEdit(client, business.id, quoteId))) return { message: "That quote no longer exists." };
   const data = parsed.data;
   const values = {
-    business_id: business.id, customer_id: data.customerId as number, status: data.status,
+    business_id: business.id, customer_id: data.customerId as number, status: quoteId === null ? "draft" : data.status,
     quote_date: data.quoteDate as string, expiration_date: data.expirationDate ?? null, sent_date: data.sentDate ?? null,
     response_date: data.responseDate ?? null, contact_method: data.contactMethod ?? null,
     referral_source: data.referralSource ?? null, service_address: data.serviceAddress ?? null,
     municipality: data.municipality ?? null, property_location: data.propertyLocation ?? null,
     location_description: data.locationDescription ?? null, hazard_notes: data.hazardNotes ?? null,
     customer_scope: data.customerScope ?? null, internal_notes: data.internalNotes ?? null,
-    normal_price: data.normalPrice ?? null, quoted_price: data.proBono ? 0 : data.quotedPrice,
+    normal_price: data.normalPrice ?? null, quoted_price: data.proBono ? 0 : data.quotedPrice ?? 0,
     discount_reason: data.discountReason ?? null, pro_bono: data.proBono,
     accepted_method: data.acceptedMethod ?? null, acceptance_notes: data.acceptanceNotes ?? null,
     pa811_required: data.pa811Required,
@@ -52,6 +52,9 @@ export async function markQuoteStatus(quoteId: number, _state: QuoteFormState, f
   const quote = await getQuoteForEdit(client, business.id, quoteId);
   if (!quote) return { message: "That quote no longer exists." };
   if (quote.job_id !== null || quote.status === "converted") return { message: "Converted quotes are locked to preserve their job link." };
+  if (["sent", "accepted"].includes(parsed.data.status) && !quoteHasFinalPrice(quote)) {
+    return { message: "Add a quoted price or mark the quote pro bono before sending or accepting it." };
+  }
   const today = dateInTimeZone(business.timezone);
   const values = quoteStatusUpdate(parsed.data.status, today, quote.sent_date, parsed.data.acceptedMethod);
   try {

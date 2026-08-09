@@ -1,5 +1,37 @@
 # Changelog
 
+## Unreleased - Quote AI Workbench
+
+### Added
+
+- Private, phone-friendly multi-photo uploads for draft quotes
+- Reliable HEIC/HEIF conversion fallback for iPhone photos when the browser cannot decode them natively
+- Price-pending drafts so photos and AI preparation can happen before an amount is entered
+- Browser-side image resizing, JPEG conversion, and metadata removal before upload
+- A quote preparation screen with structured AI observations, questions, assumptions, price range, recommended price, scope, and customer wording
+- Persistent per-quote follow-up conversations that recalculate the recommendation as new information is supplied
+- Locally ranked, anonymized completed-job measurements as pricing evidence
+- Explicit operator approval before a recommendation changes the quote
+
+### Database
+
+- Added business-scoped quote photos, AI threads, messages, and recommendation history
+- Added a private `quote-photos` bucket with quote-aware Storage RLS and file restrictions
+- Added explicit authenticated-role grants for current Supabase Data API behavior
+- Preserved every existing quote, job, customer, and financial record
+
+### Privacy And Control
+
+- Keeps customer identity, exact service address, internal notes, hazard notes, and raw comparable-job descriptions out of AI requests
+- Uses short-lived signed photo URLs and disables OpenAI response storage
+- Requires an explicit photo-analysis confirmation and never sends or changes quote status automatically
+
+### Deferred
+
+- Automatic stump measurements from photos; the assistant asks for measurements when images do not establish scale
+- Customer-facing AI chat, automatic quote delivery, and autonomous pricing decisions
+- Calibration reports comparing recommendations with accepted price, actual work time, and job profitability
+
 ## v0.2.0 - Accounting Operations
 
 ### Added

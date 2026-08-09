@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import type { QuoteWithCustomer } from "./domain/quotes";
-import { customerQuoteMessage, quoteDocumentLines, quoteStatusOptions, quoteStatusUpdate } from "./domain/quotes";
+import { customerQuoteMessage, quoteDocumentLines, quotePriceLabel, quoteStatusOptions, quoteStatusUpdate } from "./domain/quotes";
 import { normalizeImportRows } from "./domain/imports";
 import { buildReportSummary } from "./domain/reports";
 import { buildInvoicePdf, buildQuotePdf, invoiceDocumentLines } from "./services/pdf";
@@ -31,6 +31,16 @@ describe("quote sales workflow", () => {
   it("uses friendly pro bono wording without a zero-dollar price", () => {
     const message = customerQuoteMessage({ ...quote, pro_bono: true, quoted_price: 0 });
     expect(message).toContain("at no charge"); expect(message).not.toContain("$0");
+  });
+
+  it("allows a draft price to remain pending without showing an awkward zero", () => {
+    const pendingQuote = { ...quote, quoted_price: 0, pro_bono: false };
+    const parsed = quoteFormSchema.safeParse({ customerId: "2", status: "draft", quoteDate: "2026-08-09", quotedPrice: "", proBono: false, pa811Required: false });
+    expect(parsed.success).toBe(true);
+    expect(quotePriceLabel(pendingQuote)).toBe("Price pending");
+    expect(customerQuoteMessage(pendingQuote)).toContain("will follow up with a price");
+    expect(customerQuoteMessage(pendingQuote)).not.toContain("$0");
+    expect(quoteDocumentLines(pendingQuote)).toContain("Price: Pending estimate");
   });
 
   it("records status dates and keeps converted out of normal status actions", () => {

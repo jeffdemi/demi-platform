@@ -29,6 +29,16 @@ export function quoteStatusLabel(value: string | null | undefined) {
   return quoteStatusOptions.find((option) => option.value === value)?.label ?? optionLabel(value);
 }
 
+export function quoteHasFinalPrice(quote: Pick<Quote, "pro_bono" | "quoted_price">) {
+  return quote.pro_bono || quote.quoted_price > 0;
+}
+
+export function quotePriceLabel(quote: Pick<Quote, "pro_bono" | "quoted_price">) {
+  if (quote.pro_bono) return "Pro bono";
+  if (!quoteHasFinalPrice(quote)) return "Price pending";
+  return quote.quoted_price.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
 export function quoteMatchesSearch(quote: QuoteWithCustomer, search: string) {
   const query = search.trim().toLowerCase();
   if (!query) return true;
@@ -63,7 +73,9 @@ export function customerQuoteMessage(quote: QuoteWithCustomer) {
   const lines = [`Hi ${greetingName}, thanks for sending the information and photos.`, ""];
   lines.push(quote.pro_bono
     ? `I can take care of ${stumpPhrase} at ${location} at no charge.`
-    : `I can grind ${stumpPhrase} at ${location} for $${quote.quoted_price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`);
+    : quoteHasFinalPrice(quote)
+      ? `I can grind ${stumpPhrase} at ${location} for $${quote.quoted_price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`
+      : `I am reviewing the details for ${stumpPhrase} at ${location} and will follow up with a price.`);
   lines.push("", `This includes ${scope}. The grindings will remain neatly on site unless otherwise noted.`);
   if (quote.expiration_date) lines.push("", `This quote is good through ${quote.expiration_date}.`);
   lines.push("", "Let me know if you'd like to move forward, and we'll find a time that works.", "", "Thanks,", "Jeff", "Demi Stump Grinding");
@@ -79,7 +91,7 @@ export function quoteDocumentLines(quote: QuoteWithCustomer) {
     quote.property_location ? `Property location: ${optionLabel(quote.property_location)}` : null,
     quote.location_description ? `Location details: ${quote.location_description}` : null,
     `Scope: ${quote.customer_scope || "Stump grinding work as discussed"}`,
-    quote.pro_bono ? "Price: No charge" : `Price: $${quote.quoted_price.toFixed(2)}`,
+    quote.pro_bono ? "Price: No charge" : quoteHasFinalPrice(quote) ? `Price: $${quote.quoted_price.toFixed(2)}` : "Price: Pending estimate",
     quote.expiration_date ? `Valid through: ${quote.expiration_date}` : null,
     "To accept this quote, contact Jeff at Demi Stump Grinding.",
   ].filter((line): line is string => Boolean(line));

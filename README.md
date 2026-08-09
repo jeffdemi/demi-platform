@@ -9,6 +9,8 @@ The hosted business operations platform for Demi Solutions LLC.
 - React 19
 - Tailwind CSS
 - Supabase PostgreSQL and Auth
+- Supabase private Storage for receipts and quote photos
+- OpenAI Responses API for draft quote analysis
 - Vercel deployment target
 - Vitest
 - pdf-lib for server-generated business PDFs
@@ -36,9 +38,15 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 SUPABASE_SECRET_KEY=
+OPENAI_API_KEY=
+OPENAI_QUOTE_MODEL=gpt-5.6-terra
 ```
 
 Only use a modern Supabase publishable key in browser-visible configuration. `SUPABASE_SECRET_KEY` is server-only and is used solely for owner-initiated team invitations. Never expose it through a `NEXT_PUBLIC_` variable.
+
+`OPENAI_API_KEY` is also server-only. It enables the quote preparation assistant.
+`OPENAI_QUOTE_MODEL` is optional and defaults to the cost-balanced multimodal
+model shown above. Never place either value in a `NEXT_PUBLIC_` variable.
 
 ## Account Setup
 
@@ -92,6 +100,12 @@ payments, a balanced double-entry journal, tax metadata, and receipt review. It
 backfills payment and journal records from existing paid invoices, uninvoiced
 paid jobs, and active expenses without deleting or rewriting the source rows.
 
+The quote AI workbench migration adds business-scoped quote photos, persistent AI
+threads and messages, structured recommendation history, and a private
+`quote-photos` Storage bucket. Uploads are limited to draft quotes, authenticated
+business members, twelve photos per quote, and six MB per prepared image. Apply
+the migration before deploying application code that reads these tables.
+
 The browser uses Supabase's publishable key. Authorization is enforced by authenticated sessions and business-membership RLS policies.
 
 ## Legacy Data
@@ -123,6 +137,7 @@ Daily operations currently provides:
 - Readable imported statuses that remain preserved until deliberately corrected
 - Clickable customer, job, and operational dashboard links
 - Quote create/edit/search/status workflows, customer-ready messages, PDFs, and one-time quote-to-job conversion
+- Price-pending draft preparation with private site photos, HEIC conversion, structured AI recommendations, follow-up chat, and operator-approved scope/price application
 - Invoice creation, job/customer linking, payment status, and PDFs
 - Expense create/edit/detail workflows with operating, asset, and refund classification
 - Reversible expense archiving, linked refunds, and private receipt uploads
@@ -142,6 +157,7 @@ Primary operational URLs:
 /customers                 Customer search and history
 /jobs                      Search, status, and operational job views
 /quotes                    Sales pipeline and quote workflows
+/quotes/{quoteId}          Draft photo review and AI quote preparation
 /invoices                  Billing and payment status
 /expenses                  Operating costs, assets, refunds, and receipts
 /finance                   Bank accounts, imported transactions, and reconciliation

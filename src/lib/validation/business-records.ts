@@ -33,7 +33,7 @@ export const quoteFormSchema = z.object({
   contactMethod: optionalText(50), referralSource: optionalText(250), serviceAddress: optionalText(500),
   municipality: optionalText(160), propertyLocation: optionalText(100), locationDescription: optionalText(),
   hazardNotes: optionalText(), customerScope: optionalText(), internalNotes: optionalText(),
-  normalPrice: number("Normal price"), quotedPrice: number("Quoted price", true), discountReason: optionalText(500),
+  normalPrice: number("Normal price"), quotedPrice: number("Quoted price"), discountReason: optionalText(500),
   proBono: z.boolean(), acceptedMethod: optionalText(50), acceptanceNotes: optionalText(), pa811Required: z.boolean(),
 }).superRefine((value, context) => {
   if (value.status === "converted") context.addIssue({ code: "custom", path: ["status"], message: "Use Convert to Job to mark a quote converted." });

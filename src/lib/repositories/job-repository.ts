@@ -7,6 +7,7 @@ import {
 } from "@/lib/domain/jobs";
 import type { Customer } from "@/lib/domain/customers";
 import type { Database } from "@/types/database";
+import type { ComparableJob } from "@/lib/domain/quote-ai";
 
 type Client = SupabaseClient<Database>;
 type CustomerFields = Pick<Customer, "company_name" | "customer_type" | "email" | "first_name" | "last_name" | "phone">;
@@ -100,4 +101,16 @@ export async function listJobOptions(client: Client, businessId: number, custome
   const result = await query;
   const jobs = requireData(result.data, result.error, "Unable to load job options");
   return jobs.map((job) => ({ ...job, label: job.source_job_number ? `${job.source_job_number} - ${job.work_description || job.service_address || "Job"}` : `#${job.id} - ${job.work_description || job.service_address || "Job"}` }));
+}
+
+export async function listCompletedJobsForQuoteComparison(client: Client, businessId: number) {
+  const result = await client.from("jobs")
+    .select("id, status, completed_date, municipality, property_location, work_description, amount_quoted, amount_paid, travel_minutes, grinding_minutes, cleanup_minutes, machine_hours, pro_bono, pa811_required")
+    .eq("business_id", businessId)
+    .in("status", ["completed", "invoiced", "paid"])
+    .not("amount_quoted", "is", null)
+    .order("completed_date", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false })
+    .limit(100);
+  return requireData(result.data as ComparableJob[] | null, result.error, "Unable to load comparable jobs");
 }
