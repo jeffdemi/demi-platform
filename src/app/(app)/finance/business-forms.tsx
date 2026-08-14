@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { FormFeedback } from "@/components/form-feedback";
 import { Field, inputClass, textAreaClass } from "@/components/form-fields";
-import { addCapitalTransaction, addCleanupItem, addDigitalAssetAccount, classifyRecord, importDigitalAssetCsv, postHistoricalCleanupItem, reconcileDigitalAssetAccount, updateBusinessIdentity, type BusinessFinanceState } from "./business-actions";
+import { addCapitalTransaction, addCleanupItem, addDigitalAssetAccount, classifyAllUnclassified, classifyRecord, importDigitalAssetCsv, postHistoricalCleanupItem, reconcileDigitalAssetAccount, updateBusinessIdentity, type BusinessFinanceState } from "./business-actions";
 
 type Option = { id: number; name: string };
 const initial = {} as BusinessFinanceState;
@@ -26,7 +26,13 @@ export function DigitalAssetReconciliationForm({ accounts, defaultDate }: { acco
 
 export function ClassificationForm({ recordType, recordId, lines, currentLineId }: { recordType: string; recordId: number; lines: Option[]; currentLineId: number | null }) {
   const [state, action, pending] = useActionState(classifyRecord, initial);
-  return <form action={action} className="flex min-w-[300px] items-center gap-2"><input name="recordType" type="hidden" value={recordType} /><input name="recordId" type="hidden" value={recordId} /><select aria-label="Business line" className="h-9 min-w-0 flex-1 rounded-md border border-line-strong bg-surface px-2" defaultValue={currentLineId ?? ""} name="businessLineId" required><option disabled value="">Unclassified</option>{lines.map((line) => <option key={line.id} value={line.id}>{line.name}</option>)}</select><button className="h-9 rounded-md border border-line-strong px-3 font-semibold" disabled={pending}>{pending ? "..." : "Save"}</button>{state.message ? <span className="sr-only">{state.message}</span> : null}</form>;
+  const [selectedLineId, setSelectedLineId] = useState(currentLineId?.toString() ?? "");
+  return <form action={action} className="flex min-w-[300px] flex-wrap items-center justify-end gap-2"><input name="recordType" type="hidden" value={recordType} /><input name="recordId" type="hidden" value={recordId} /><select aria-label="Business line" className="h-9 min-w-0 flex-1 rounded-md border border-line-strong bg-surface px-2" name="businessLineId" onChange={(event) => setSelectedLineId(event.target.value)} required value={selectedLineId}><option disabled value="">Unclassified</option>{lines.map((line) => <option key={line.id} value={line.id}>{line.name}</option>)}</select><button className="h-9 rounded-md border border-line-strong px-3 font-semibold disabled:opacity-60" disabled={pending || !selectedLineId}>{pending ? "Saving..." : "Save"}</button>{state.message ? <span className={`basis-full text-right text-xs ${state.success ? "text-success" : "text-danger"}`}>{state.message}</span> : null}</form>;
+}
+
+export function BulkClassificationForm({ lines }: { lines: Option[] }) {
+  const [state, action, pending] = useActionState(classifyAllUnclassified, initial);
+  return <form action={action} className="flex flex-wrap items-end gap-3 rounded-lg border border-line bg-surface p-4 shadow-sm"><Field errors={state.errors?.businessLineId} label="Assign every unclassified record to" name="businessLineId"><select className={inputClass} defaultValue="" name="businessLineId" required><option disabled value="">Select business line</option>{lines.map((line) => <option key={line.id} value={line.id}>{line.name}</option>)}</select></Field><button className={buttonClass} disabled={pending || !lines.length}>{pending ? "Assigning..." : "Assign all unclassified"}</button><div className="basis-full"><FormFeedback message={state.message} tone={state.success ? "success" : "danger"} /></div></form>;
 }
 
 export function CapitalTransactionForm({ lines, bankAccounts, defaultDate }: { lines: Option[]; bankAccounts: Option[]; defaultDate: string }) {

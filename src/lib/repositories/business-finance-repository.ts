@@ -65,6 +65,15 @@ export async function assignBusinessLine(client: Client, values: { businessId: n
   if (result.error) throw new Error(`Unable to classify record: ${result.error.message}`);
 }
 
+export async function assignAllUnclassifiedBusinessLine(client: Client, values: { businessId: number; businessLineId: number }) {
+  const result = await client.rpc("assign_unclassified_business_line", {
+    target_business_id: values.businessId,
+    target_business_line_id: values.businessLineId,
+  });
+  if (result.error) throw new Error(`Unable to classify records: ${result.error.message}`);
+  return result.data as { total: number };
+}
+
 export async function listClassificationRecords(client: Client, businessId: number) {
   const [jobs, expenses, equipment, labor, payments, journals] = await Promise.all([
     client.from("jobs").select("id, job_date, work_description, amount_paid, business_line_id").eq("business_id", businessId).order("job_date", { ascending: false }).limit(100),

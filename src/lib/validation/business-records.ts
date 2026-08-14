@@ -173,6 +173,10 @@ export const businessLineAssignmentSchema = z.object({
   businessLineId: positiveId("a business line"),
 });
 
+export const bulkBusinessLineAssignmentSchema = z.object({
+  businessLineId: positiveId("a business line"),
+});
+
 export const capitalTransactionSchema = z.object({
   businessLineId: positiveId("a business line", false),
   bankAccountId: positiveId("a bank account", false),

@@ -1400,6 +1400,7 @@ export type Database = {
     }
     Functions: {
       assign_business_line: { Args: { target_business_id: number; target_record_type: string; target_record_id: number; target_business_line_id: number }; Returns: undefined }
+      assign_unclassified_business_line: { Args: { target_business_id: number; target_business_line_id: number }; Returns: Json }
       import_digital_asset_transactions: { Args: { target_business_id: number; target_account_id: number; import_file_name: string; import_source_sha256: string; import_rows: Json }; Returns: Json }
       record_capital_transaction: { Args: { target_business_id: number; target_business_line_id: number | null; target_bank_account_id: number | null; target_date: string; target_type: string; target_amount: number; target_counterparty: string | null; target_memo: string }; Returns: number }
       post_bookkeeping_cleanup_item: { Args: { target_business_id: number; target_item_id: number }; Returns: number }
