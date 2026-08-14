@@ -57,6 +57,25 @@ revisions are superseded instead of overwritten. Ledger tables are read-only to
 normal clients and are written only by the database posting functions.
 
 Statement periods provide the bookkeeping control layer above bank imports.
+
+## Digital assets and operating segments
+
+Digital-asset imports are isolated from bank imports but use the same two-part
+idempotency model: a source-file SHA-256 prevents replay, and a normalized row
+fingerprint prevents duplicates across exports. Transactions retain units,
+gross USD value, price, fees, and transfer references. FIFO calculations are a
+pure domain operation; persisted lot and disposal tables provide the durable
+audit model for later tax-lot elections.
+
+`business_lines` is a tenant-owned dimension. Nullable composite foreign keys
+attach it to jobs, invoices, expenses, equipment, labor, payments, allocations,
+bank accounts, and journal entries without rewriting historical data. Reports
+filter posted entries by line or omit the filter for consolidated books.
+
+Owner activity and historical cleanup use separate tables. Capital activity
+posts through an authorized RPC; draws and estimated taxes debit owner
+distributions. Cleanup items remain off-ledger until an administrator explicitly
+posts a balanced opening-balance entry.
 Allocations, transfers, exclusions, and adjustments call security-invoker
 PostgreSQL functions so authorization, balancing, duplicate prevention, and
 period locks apply in one transaction. Journal lines carry optional bank-account

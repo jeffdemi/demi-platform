@@ -10,7 +10,9 @@ export async function GET(request: Request) {
   const from = /^\d{4}-\d{2}-\d{2}$/.test(query.get("from") ?? "") ? query.get("from")! : `${today.slice(0, 4)}-01-01`;
   const to = /^\d{4}-\d{2}-\d{2}$/.test(query.get("to") ?? "") ? query.get("to")! : today;
   const ledger = await getLedgerReport(context.client, context.businessId, undefined, to);
-  const reports = buildBookkeepingStatements({ entries: ledger.entries, lines: ledger.lines, from, to });
+  const line = query.get("line");
+  const businessLineId = line && /^\d+$/.test(line) ? Number(line) : undefined;
+  const reports = buildBookkeepingStatements({ entries: ledger.entries, lines: ledger.lines, from, to, businessLineId });
   const statement = query.get("statement") ?? "trial_balance";
   const rows = statement === "profit_loss"
     ? reports.profitLoss.rows.map((row) => ({ code: row.account.code, account: row.account.name, type: row.account.account_type, amount: row.balance }))

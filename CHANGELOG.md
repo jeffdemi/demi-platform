@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased - Digital Assets And Business Lines
+
+### Added
+
+- Digital-asset accounts, idempotent exchange CSV imports, transaction units, fees, transfer references, FIFO cost basis, sales, and realized gain/loss reporting
+- Stored exchange as-of reconciliations for BTC, ETH, ADA, USD cash, and future assets
+- Federal IT Contracting and Demi Stump Grinding classification across operating and ledger records
+- Separate business-line and consolidated profit-and-loss reporting and CSV exports
+- Chase checking promotion tracking plus original equipment and Chase business credit-card records
+- Owner contributions, related-party loans, repayments, draws, and estimated-tax entries that stay outside operating expenses
+- Legal-name, public-brand, tax-treatment, and fictitious-name review settings
+- Historical opening-balance, Venmo, owner-advance, and cleanup staging with explicit balanced posting
+
+### Database
+
+- Added tenant-scoped RLS tables, explicit Data API grants, foreign-key indexes, and security-invoker RPCs
+- Added nullable business-line dimensions without rewriting existing records
+- Seeded Demi Solutions LLC-specific lines and accounts only when that legal entity exists
+
+### Operational Safety
+
+- This migration is additive and is not applied automatically
+- Exchange imports are idempotent by file hash and transaction fingerprint
+- Internal digital-asset transfers do not create realized gains
+- Owner draws and estimated taxes post to owner equity, not business expenses
+
 ## Unreleased - Bookkeeping And Month-End Close
 
 ### Added

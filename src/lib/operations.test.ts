@@ -28,6 +28,7 @@ const customer = {
 const job = {
   id: 10,
   business_id: 1,
+  business_line_id: null,
   customer_id: 1,
   quote_id: null,
   legacy_id: null,

@@ -9,6 +9,7 @@ export type LedgerAccount = {
 
 export type BookkeepingEntry = {
   id: number;
+  business_line_id?: number | null;
   entry_date: string;
   description: string;
   source_type: string;
@@ -64,8 +65,10 @@ export function buildBookkeepingStatements(input: {
   lines: BookkeepingLine[];
   from: string;
   to: string;
+  businessLineId?: number;
 }) {
-  const entries = new Map(input.entries.map((entry) => [entry.id, entry]));
+  const selectedEntries = input.businessLineId === undefined ? input.entries : input.entries.filter((entry) => entry.business_line_id === input.businessLineId);
+  const entries = new Map(selectedEntries.map((entry) => [entry.id, entry]));
   const inRange = (line: BookkeepingLine) => {
     const date = entries.get(line.journal_entry_id)?.entry_date;
     return Boolean(date && date >= input.from && date <= input.to);

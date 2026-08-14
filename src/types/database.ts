@@ -15,9 +15,9 @@ export type Database = {
   public: {
     Tables: {
       bank_accounts: {
-        Row: { id: number; business_id: number; name: string; institution: string | null; account_type: string; last_four: string | null; currency: string; active: boolean; created_at: string; updated_at: string }
-        Insert: { id?: never; business_id: number; name: string; institution?: string | null; account_type?: string; last_four?: string | null; currency?: string; active?: boolean; created_at?: string; updated_at?: string }
-        Update: { id?: never; business_id?: number; name?: string; institution?: string | null; account_type?: string; last_four?: string | null; currency?: string; active?: boolean; created_at?: string; updated_at?: string }
+        Row: { id: number; business_id: number; business_line_id: number | null; name: string; institution: string | null; account_type: string; last_four: string | null; currency: string; active: boolean; purpose: string | null; opened_on: string | null; minimum_balance_target: number | null; minimum_balance_days: number | null; target_through: string | null; promotion_amount: number | null; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; business_line_id?: number | null; name: string; institution?: string | null; account_type?: string; last_four?: string | null; currency?: string; active?: boolean; purpose?: string | null; opened_on?: string | null; minimum_balance_target?: number | null; minimum_balance_days?: number | null; target_through?: string | null; promotion_amount?: number | null; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; business_line_id?: number | null; name?: string; institution?: string | null; account_type?: string; last_four?: string | null; currency?: string; active?: boolean; purpose?: string | null; opened_on?: string | null; minimum_balance_target?: number | null; minimum_balance_days?: number | null; target_through?: string | null; promotion_amount?: number | null; created_at?: string; updated_at?: string }
         Relationships: [{ foreignKeyName: "bank_accounts_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
       }
       bank_statement_periods: {
@@ -64,6 +64,66 @@ export type Database = {
           { foreignKeyName: "bookkeeping_adjustments_business_id_debit_account_id_fkey"; columns: ["business_id", "debit_account_id"]; isOneToOne: false; referencedRelation: "ledger_accounts"; referencedColumns: ["business_id", "id"] },
           { foreignKeyName: "bookkeeping_adjustments_business_id_credit_account_id_fkey"; columns: ["business_id", "credit_account_id"]; isOneToOne: false; referencedRelation: "ledger_accounts"; referencedColumns: ["business_id", "id"] }
         ]
+      }
+      business_lines: {
+        Row: { id: number; business_id: number; name: string; code: string; description: string | null; active: boolean; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; name: string; code: string; description?: string | null; active?: boolean; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; name?: string; code?: string; description?: string | null; active?: boolean; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "business_lines_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
+      }
+      business_identity_settings: {
+        Row: { business_id: number; legal_name: string; public_brand: string; tax_treatment: string; fictitious_name_status: string; fictitious_name_jurisdiction: string | null; notes: string | null; updated_by: string | null; created_at: string; updated_at: string }
+        Insert: { business_id: number; legal_name: string; public_brand: string; tax_treatment?: string; fictitious_name_status?: string; fictitious_name_jurisdiction?: string | null; notes?: string | null; updated_by?: string | null; created_at?: string; updated_at?: string }
+        Update: { business_id?: number; legal_name?: string; public_brand?: string; tax_treatment?: string; fictitious_name_status?: string; fictitious_name_jurisdiction?: string | null; notes?: string | null; updated_by?: string | null; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "business_identity_settings_business_id_fkey"; columns: ["business_id"]; isOneToOne: true; referencedRelation: "businesses"; referencedColumns: ["id"] }]
+      }
+      digital_asset_accounts: {
+        Row: { id: number; business_id: number; name: string; provider: string | null; account_type: string; external_reference: string | null; active: boolean; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; name: string; provider?: string | null; account_type?: string; external_reference?: string | null; active?: boolean; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; name?: string; provider?: string | null; account_type?: string; external_reference?: string | null; active?: boolean; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "digital_asset_accounts_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
+      }
+      digital_asset_imports: {
+        Row: { id: string; business_id: number; account_id: number; file_name: string; source_sha256: string; row_count: number; imported_by: string; created_at: string }
+        Insert: { id?: string; business_id: number; account_id: number; file_name: string; source_sha256: string; row_count: number; imported_by: string; created_at?: string }
+        Update: { id?: string; business_id?: number; account_id?: number; file_name?: string; source_sha256?: string; row_count?: number; imported_by?: string; created_at?: string }
+        Relationships: [{ foreignKeyName: "digital_asset_imports_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "digital_asset_accounts"; referencedColumns: ["business_id", "id"] }]
+      }
+      digital_asset_transactions: {
+        Row: { id: number; business_id: number; account_id: number; import_id: string | null; business_line_id: number | null; occurred_at: string; transaction_type: string; asset_symbol: string; units: number; unit_price_usd: number | null; gross_amount_usd: number; fee_usd: number; external_id: string | null; transfer_reference: string | null; memo: string | null; fingerprint: string; status: string; created_at: string }
+        Insert: { id?: never; business_id: number; account_id: number; import_id?: string | null; business_line_id?: number | null; occurred_at: string; transaction_type: string; asset_symbol: string; units: number; unit_price_usd?: number | null; gross_amount_usd?: number; fee_usd?: number; external_id?: string | null; transfer_reference?: string | null; memo?: string | null; fingerprint: string; status?: string; created_at?: string }
+        Update: { id?: never; business_id?: number; account_id?: number; import_id?: string | null; business_line_id?: number | null; occurred_at?: string; transaction_type?: string; asset_symbol?: string; units?: number; unit_price_usd?: number | null; gross_amount_usd?: number; fee_usd?: number; external_id?: string | null; transfer_reference?: string | null; memo?: string | null; fingerprint?: string; status?: string; created_at?: string }
+        Relationships: [{ foreignKeyName: "digital_asset_transactions_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "digital_asset_accounts"; referencedColumns: ["business_id", "id"] }]
+      }
+      digital_asset_lots: {
+        Row: { id: number; business_id: number; account_id: number; acquisition_transaction_id: number | null; asset_symbol: string; acquired_at: string; units_acquired: number; units_remaining: number; cost_basis_usd: number; created_at: string }
+        Insert: { id?: never; business_id: number; account_id: number; acquisition_transaction_id?: number | null; asset_symbol: string; acquired_at: string; units_acquired: number; units_remaining: number; cost_basis_usd: number; created_at?: string }
+        Update: { id?: never; business_id?: number; account_id?: number; acquisition_transaction_id?: number | null; asset_symbol?: string; acquired_at?: string; units_acquired?: number; units_remaining?: number; cost_basis_usd?: number; created_at?: string }
+        Relationships: []
+      }
+      digital_asset_disposals: {
+        Row: { id: number; business_id: number; sale_transaction_id: number; lot_id: number; units: number; proceeds_usd: number; cost_basis_usd: number; realized_gain_loss_usd: number; created_at: string }
+        Insert: { id?: never; business_id: number; sale_transaction_id: number; lot_id: number; units: number; proceeds_usd: number; cost_basis_usd: number; created_at?: string }
+        Update: { id?: never; business_id?: number; sale_transaction_id?: number; lot_id?: number; units?: number; proceeds_usd?: number; cost_basis_usd?: number; created_at?: string }
+        Relationships: []
+      }
+      digital_asset_reconciliations: {
+        Row: { id: number; business_id: number; account_id: number; as_of_date: string; reported_balances: Json; reported_cash_usd: number; notes: string | null; status: string; reconciled_at: string | null; reconciled_by: string | null; created_at: string }
+        Insert: { id?: never; business_id: number; account_id: number; as_of_date: string; reported_balances?: Json; reported_cash_usd?: number; notes?: string | null; status?: string; reconciled_at?: string | null; reconciled_by?: string | null; created_at?: string }
+        Update: { id?: never; business_id?: number; account_id?: number; as_of_date?: string; reported_balances?: Json; reported_cash_usd?: number; notes?: string | null; status?: string; reconciled_at?: string | null; reconciled_by?: string | null; created_at?: string }
+        Relationships: [{ foreignKeyName: "digital_asset_reconciliations_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "digital_asset_accounts"; referencedColumns: ["business_id", "id"] }]
+      }
+      capital_transactions: {
+        Row: { id: number; business_id: number; business_line_id: number | null; bank_account_id: number | null; transaction_date: string; transaction_type: string; amount: number; counterparty: string | null; memo: string; created_by: string | null; created_at: string }
+        Insert: { id?: never; business_id: number; business_line_id?: number | null; bank_account_id?: number | null; transaction_date: string; transaction_type: string; amount: number; counterparty?: string | null; memo: string; created_by?: string | null; created_at?: string }
+        Update: { id?: never; business_id?: number; business_line_id?: number | null; bank_account_id?: number | null; transaction_date?: string; transaction_type?: string; amount?: number; counterparty?: string | null; memo?: string; created_by?: string | null; created_at?: string }
+        Relationships: []
+      }
+      bookkeeping_cleanup_items: {
+        Row: { id: number; business_id: number; business_line_id: number | null; item_type: string; effective_date: string; description: string; amount: number | null; debit_account_id: number | null; credit_account_id: number | null; status: string; resolution_notes: string | null; posted_journal_entry_id: number | null; created_by: string | null; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; business_line_id?: number | null; item_type: string; effective_date: string; description: string; amount?: number | null; debit_account_id?: number | null; credit_account_id?: number | null; status?: string; resolution_notes?: string | null; posted_journal_entry_id?: number | null; created_by?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; business_line_id?: number | null; item_type?: string; effective_date?: string; description?: string; amount?: number | null; debit_account_id?: number | null; credit_account_id?: number | null; status?: string; resolution_notes?: string | null; posted_journal_entry_id?: number | null; created_by?: string | null; created_at?: string; updated_at?: string }
+        Relationships: []
       }
       business_invitations: {
         Row: {
@@ -264,6 +324,7 @@ export type Database = {
         Row: {
           active: boolean
           business_id: number
+          business_line_id: number | null
           created_at: string
           depreciation_method: string | null
           equipment_type: string | null
@@ -289,6 +350,7 @@ export type Database = {
         Insert: {
           active?: boolean
           business_id: number
+          business_line_id?: number | null
           created_at?: string
           depreciation_method?: string | null
           equipment_type?: string | null
@@ -314,6 +376,7 @@ export type Database = {
         Update: {
           active?: boolean
           business_id?: number
+          business_line_id?: number | null
           created_at?: string
           depreciation_method?: string | null
           equipment_type?: string | null
@@ -351,6 +414,7 @@ export type Database = {
           amount: number
           bank_transaction_id: number | null
           business_id: number
+          business_line_id: number | null
           category: string
           created_at: string
           deductible_percent: number
@@ -383,6 +447,7 @@ export type Database = {
           amount: number
           bank_transaction_id?: number | null
           business_id: number
+          business_line_id?: number | null
           category: string
           created_at?: string
           deductible_percent?: number
@@ -415,6 +480,7 @@ export type Database = {
           amount?: number
           bank_transaction_id?: number | null
           business_id?: number
+          business_line_id?: number | null
           category?: string
           created_at?: string
           deductible_percent?: number
@@ -529,6 +595,7 @@ export type Database = {
         Row: {
           amount: number
           business_id: number
+          business_line_id: number | null
           created_at: string
           customer_id: number
           due_date: string | null
@@ -546,6 +613,7 @@ export type Database = {
         Insert: {
           amount?: number
           business_id: number
+          business_line_id?: number | null
           created_at?: string
           customer_id: number
           due_date?: string | null
@@ -563,6 +631,7 @@ export type Database = {
         Update: {
           amount?: number
           business_id?: number
+          business_line_id?: number | null
           created_at?: string
           customer_id?: number
           due_date?: string | null
@@ -602,9 +671,9 @@ export type Database = {
         ]
       }
       journal_entries: {
-        Row: { id: number; business_id: number; entry_date: string; description: string; source_type: string; source_id: number | null; revision: number; status: string; created_by: string | null; created_at: string }
-        Insert: { id?: never; business_id: number; entry_date: string; description: string; source_type: string; source_id?: number | null; revision?: number; status?: string; created_by?: string | null; created_at?: string }
-        Update: { id?: never; business_id?: number; entry_date?: string; description?: string; source_type?: string; source_id?: number | null; revision?: number; status?: string; created_by?: string | null; created_at?: string }
+        Row: { id: number; business_id: number; business_line_id: number | null; entry_date: string; description: string; source_type: string; source_id: number | null; revision: number; status: string; created_by: string | null; created_at: string }
+        Insert: { id?: never; business_id: number; business_line_id?: number | null; entry_date: string; description: string; source_type: string; source_id?: number | null; revision?: number; status?: string; created_by?: string | null; created_at?: string }
+        Update: { id?: never; business_id?: number; business_line_id?: number | null; entry_date?: string; description?: string; source_type?: string; source_id?: number | null; revision?: number; status?: string; created_by?: string | null; created_at?: string }
         Relationships: [{ foreignKeyName: "journal_entries_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
       }
       journal_lines: {
@@ -622,6 +691,7 @@ export type Database = {
           amount_paid: number | null
           amount_quoted: number | null
           business_id: number
+          business_line_id: number | null
           cleanup_minutes: number | null
           completed_date: string | null
           created_at: string
@@ -657,6 +727,7 @@ export type Database = {
           amount_paid?: number | null
           amount_quoted?: number | null
           business_id: number
+          business_line_id?: number | null
           cleanup_minutes?: number | null
           completed_date?: string | null
           created_at?: string
@@ -692,6 +763,7 @@ export type Database = {
           amount_paid?: number | null
           amount_quoted?: number | null
           business_id?: number
+          business_line_id?: number | null
           cleanup_minutes?: number | null
           completed_date?: string | null
           created_at?: string
@@ -749,7 +821,7 @@ export type Database = {
       }
       labor_entries: {
         Row: {
-          id: number; business_id: number; job_id: number | null; worker_name: string; worker_type: string;
+          id: number; business_id: number; business_line_id: number | null; job_id: number | null; worker_name: string; worker_type: string;
           labor_class: string; period_start: string; period_end: string; paid_date: string | null;
           regular_hours: number; overtime_hours: number; gross_wages: number; employer_payroll_taxes: number;
           benefits: number; source: string; notes: string | null; voided_at: string | null;
@@ -757,7 +829,7 @@ export type Database = {
           created_at: string; updated_at: string
         }
         Insert: {
-          id?: never; business_id: number; job_id?: number | null; worker_name: string; worker_type?: string;
+          id?: never; business_id: number; business_line_id?: number | null; job_id?: number | null; worker_name: string; worker_type?: string;
           labor_class: string; period_start: string; period_end: string; paid_date?: string | null;
           regular_hours?: number; overtime_hours?: number; gross_wages?: number; employer_payroll_taxes?: number;
           benefits?: number; source?: string; notes?: string | null; voided_at?: string | null;
@@ -765,7 +837,7 @@ export type Database = {
           created_at?: string; updated_at?: string
         }
         Update: {
-          id?: never; business_id?: number; job_id?: number | null; worker_name?: string; worker_type?: string;
+          id?: never; business_id?: number; business_line_id?: number | null; job_id?: number | null; worker_name?: string; worker_type?: string;
           labor_class?: string; period_start?: string; period_end?: string; paid_date?: string | null;
           regular_hours?: number; overtime_hours?: number; gross_wages?: number; employer_payroll_taxes?: number;
           benefits?: number; source?: string; notes?: string | null; voided_at?: string | null;
@@ -980,9 +1052,9 @@ export type Database = {
         Relationships: [{ foreignKeyName: "owner_compensation_periods_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
       }
       payments: {
-        Row: { id: number; business_id: number; customer_id: number | null; invoice_id: number | null; job_id: number | null; bank_transaction_id: number | null; payment_date: string; amount: number; method: string | null; reference: string | null; source: string; notes: string | null; voided_at: string | null; voided_by: string | null; void_reason: string | null; created_at: string; updated_at: string }
-        Insert: { id?: never; business_id: number; customer_id?: number | null; invoice_id?: number | null; job_id?: number | null; bank_transaction_id?: number | null; payment_date?: string; amount: number; method?: string | null; reference?: string | null; source?: string; notes?: string | null; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null; created_at?: string; updated_at?: string }
-        Update: { id?: never; business_id?: number; customer_id?: number | null; invoice_id?: number | null; job_id?: number | null; bank_transaction_id?: number | null; payment_date?: string; amount?: number; method?: string | null; reference?: string | null; source?: string; notes?: string | null; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null; created_at?: string; updated_at?: string }
+        Row: { id: number; business_id: number; business_line_id: number | null; customer_id: number | null; invoice_id: number | null; job_id: number | null; bank_transaction_id: number | null; payment_date: string; amount: number; method: string | null; reference: string | null; source: string; notes: string | null; voided_at: string | null; voided_by: string | null; void_reason: string | null; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; business_line_id?: number | null; customer_id?: number | null; invoice_id?: number | null; job_id?: number | null; bank_transaction_id?: number | null; payment_date?: string; amount: number; method?: string | null; reference?: string | null; source?: string; notes?: string | null; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; business_line_id?: number | null; customer_id?: number | null; invoice_id?: number | null; job_id?: number | null; bank_transaction_id?: number | null; payment_date?: string; amount?: number; method?: string | null; reference?: string | null; source?: string; notes?: string | null; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null; created_at?: string; updated_at?: string }
         Relationships: [
           { foreignKeyName: "payments_business_id_invoice_id_fkey"; columns: ["business_id", "invoice_id"]; isOneToOne: false; referencedRelation: "invoices"; referencedColumns: ["business_id", "id"] },
           { foreignKeyName: "payments_business_id_job_id_fkey"; columns: ["business_id", "job_id"]; isOneToOne: false; referencedRelation: "jobs"; referencedColumns: ["business_id", "id"] },
@@ -1327,6 +1399,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_business_line: { Args: { target_business_id: number; target_record_type: string; target_record_id: number; target_business_line_id: number }; Returns: undefined }
+      import_digital_asset_transactions: { Args: { target_business_id: number; target_account_id: number; import_file_name: string; import_source_sha256: string; import_rows: Json }; Returns: Json }
+      record_capital_transaction: { Args: { target_business_id: number; target_business_line_id: number | null; target_bank_account_id: number | null; target_date: string; target_type: string; target_amount: number; target_counterparty: string | null; target_memo: string }; Returns: number }
+      post_bookkeeping_cleanup_item: { Args: { target_business_id: number; target_item_id: number }; Returns: number }
       add_bank_transaction_allocation: {
         Args: { target_business_id: number; target_bank_transaction_id: number; target_ledger_account_id: number; allocation_amount: number; allocation_memo: string; allocation_tax_category?: string | null; allocation_deductible_percent?: number }
         Returns: number

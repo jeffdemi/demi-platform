@@ -79,7 +79,7 @@ describe("quote sales workflow", () => {
 
 describe("billing and operating records", () => {
   it("builds an invoice PDF without internal notes", async () => {
-    const invoice = { id: 4, business_id: 1, customer_id: 2, job_id: 3, legacy_id: null, invoice_number: "INV-2026-0001", amount: 350, invoice_date: "2026-08-04", due_date: "2026-08-04", payment_terms: "Due on receipt", status: "unpaid", paid_date: null, notes: "Private collection note", created_at: "2026-08-04T00:00:00Z", updated_at: "2026-08-04T00:00:00Z", customers: quote.customers, jobs: { id: 3, work_description: quote.customer_scope, service_address: quote.service_address } };
+    const invoice = { id: 4, business_id: 1, business_line_id: null, customer_id: 2, job_id: 3, legacy_id: null, invoice_number: "INV-2026-0001", amount: 350, invoice_date: "2026-08-04", due_date: "2026-08-04", payment_terms: "Due on receipt", status: "unpaid", paid_date: null, notes: "Private collection note", created_at: "2026-08-04T00:00:00Z", updated_at: "2026-08-04T00:00:00Z", customers: quote.customers, jobs: { id: 3, work_description: quote.customer_scope, service_address: quote.service_address } };
     expect(invoiceDocumentLines(invoice).join(" ")).not.toContain(invoice.notes);
     const bytes = await buildInvoicePdf(business, invoice); expect(Buffer.from(bytes).subarray(0, 4).toString()).toBe("%PDF");
     if (process.env.PDF_OUTPUT_DIR) { await mkdir(process.env.PDF_OUTPUT_DIR, { recursive: true }); await writeFile(`${process.env.PDF_OUTPUT_DIR}/invoice.pdf`, bytes); }

@@ -7,22 +7,27 @@ import { buildBookkeepingStatements } from "@/lib/domain/bookkeeping";
 import { dateInTimeZone } from "@/lib/domain/jobs";
 import { formatCurrency } from "@/lib/format";
 import { getLedgerReport } from "@/lib/repositories/accounting-repository";
+import { listBusinessLines } from "@/lib/repositories/business-finance-repository";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Bookkeeping Reports" };
 
-export default async function BookkeepingReportsPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
+export default async function BookkeepingReportsPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; line?: string }> }) {
   const context = await requireBusinessContext();
   const today = dateInTimeZone(context.business.timezone);
   const query = await searchParams;
   const from = /^\d{4}-\d{2}-\d{2}$/.test(query.from ?? "") ? query.from! : `${today.slice(0, 4)}-01-01`;
   const to = /^\d{4}-\d{2}-\d{2}$/.test(query.to ?? "") ? query.to! : today;
-  const ledger = await getLedgerReport(await createClient(), context.business.id, undefined, to);
-  const statements = buildBookkeepingStatements({ entries: ledger.entries, lines: ledger.lines, from, to });
-  const exportLink = (statement: string) => `/api/v1/reports/bookkeeping?statement=${statement}&from=${from}&to=${to}&format=csv`;
+  const client = await createClient();
+  const [ledger, businessLines] = await Promise.all([getLedgerReport(client, context.business.id, undefined, to), listBusinessLines(client, context.business.id)]);
+  const selectedLineId = /^\d+$/.test(query.line ?? "") ? Number(query.line) : undefined;
+  const statements = buildBookkeepingStatements({ entries: ledger.entries, lines: ledger.lines, from, to, businessLineId: selectedLineId });
+  const segmentStatements = businessLines.map((line) => ({ line, statements: buildBookkeepingStatements({ entries: ledger.entries, lines: ledger.lines, from, to, businessLineId: line.id }) }));
+  const exportLink = (statement: string) => `/api/v1/reports/bookkeeping?statement=${statement}&from=${from}&to=${to}&format=csv${selectedLineId ? `&line=${selectedLineId}` : ""}`;
   return <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
     <PageHeader actions={<Link className="flex h-11 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold" href="/reports"><ArrowLeft size={17} />Reports</Link>} description="Ledger-based financial statements from posted, revision-preserving journal entries." title="Bookkeeping Reports" />
-    <form className="my-6 flex flex-wrap items-end gap-3 rounded-lg border border-line bg-surface p-4 shadow-sm"><label className="text-sm font-semibold">From<input className="mt-1 block h-10 rounded-md border border-line-strong bg-surface px-3" defaultValue={from} name="from" type="date" /></label><label className="text-sm font-semibold">To<input className="mt-1 block h-10 rounded-md border border-line-strong bg-surface px-3" defaultValue={to} name="to" type="date" /></label><button className="h-10 rounded-md bg-brand px-4 font-semibold text-on-brand">Apply</button></form>
+    <form className="my-6 flex flex-wrap items-end gap-3 rounded-lg border border-line bg-surface p-4 shadow-sm"><label className="text-sm font-semibold">From<input className="mt-1 block h-10 rounded-md border border-line-strong bg-surface px-3" defaultValue={from} name="from" type="date" /></label><label className="text-sm font-semibold">To<input className="mt-1 block h-10 rounded-md border border-line-strong bg-surface px-3" defaultValue={to} name="to" type="date" /></label><label className="text-sm font-semibold">Business line<select className="mt-1 block h-10 rounded-md border border-line-strong bg-surface px-3" defaultValue={selectedLineId ?? ""} name="line"><option value="">Consolidated</option>{businessLines.map((line) => <option key={line.id} value={line.id}>{line.name}</option>)}</select></label><button className="h-10 rounded-md bg-brand px-4 font-semibold text-on-brand">Apply</button></form>
+    <section className="mb-5 grid gap-3 md:grid-cols-3"><div className="rounded-lg border border-line bg-surface p-4"><p className="font-bold">Consolidated</p><p className="mt-1 text-sm text-muted">Net income {formatCurrency(buildBookkeepingStatements({ entries: ledger.entries, lines: ledger.lines, from, to }).profitLoss.netIncome)}</p></div>{segmentStatements.map(({ line, statements: segment }) => <div className="rounded-lg border border-line bg-surface p-4" key={line.id}><p className="font-bold">{line.name}</p><p className="mt-1 text-sm text-muted">Revenue {formatCurrency(segment.profitLoss.revenue)} · Net {formatCurrency(segment.profitLoss.netIncome)}</p></div>)}</section>
     <section className="grid grid-cols-2 gap-3 pb-6 sm:grid-cols-4">{[["Revenue", formatCurrency(statements.profitLoss.revenue)], ["Net income", formatCurrency(statements.profitLoss.netIncome)], ["Assets", formatCurrency(statements.balanceSheet.assets)], ["Net cash change", formatCurrency(statements.cashFlow.netChange)]].map(([label, value]) => <div className="rounded-lg border border-line bg-surface p-4 shadow-sm" key={label}><p className="text-xl font-bold tabular-nums">{value}</p><p className="mt-1 text-xs text-muted">{label}</p></div>)}</section>
     <div className="grid gap-5 xl:grid-cols-2">
       <StatementTable exportHref={exportLink("profit_loss")} rows={statements.profitLoss.rows.map((row) => [row.account.code, row.account.name, row.balance])} title="Profit & loss" totals={[["Revenue", statements.profitLoss.revenue], ["Expenses", statements.profitLoss.expenses], ["Net income", statements.profitLoss.netIncome]]} />

@@ -154,6 +154,59 @@ export const bookkeepingAdjustmentSchema = z.object({
 
 export const reopenAccountingMonthSchema = z.object({ reason: requiredText("Reason", 500) });
 
+export const digitalAssetAccountSchema = z.object({
+  name: requiredText("Account name", 150),
+  provider: optionalText(150),
+  accountType: z.enum(["exchange", "wallet", "custodian", "other"]),
+  externalReference: optionalText(250),
+});
+
+export const digitalAssetImportSchema = z.object({ accountId: positiveId("a digital asset account") });
+export const digitalAssetReconciliationSchema = z.object({
+  accountId: positiveId("a digital asset account"), asOfDate: date("As-of date", true),
+  balances: requiredText("Reported balances", 2000), reportedCashUsd: signedNumber("Reported cash").default(0), notes: optionalText(2000),
+});
+
+export const businessLineAssignmentSchema = z.object({
+  recordType: z.enum(["job", "invoice", "expense", "equipment", "labor", "payment", "journal_entry"]),
+  recordId: positiveId("a record"),
+  businessLineId: positiveId("a business line"),
+});
+
+export const capitalTransactionSchema = z.object({
+  businessLineId: positiveId("a business line", false),
+  bankAccountId: positiveId("a bank account", false),
+  transactionDate: date("Transaction date", true),
+  transactionType: z.enum(["owner_contribution", "owner_loan", "loan_repayment", "owner_draw", "estimated_tax"]),
+  amount: number("Amount", true),
+  counterparty: optionalText(250),
+  memo: requiredText("Memo", 1000),
+});
+
+export const businessIdentitySchema = z.object({
+  legalName: requiredText("Legal name", 250),
+  publicBrand: requiredText("Public brand", 250),
+  taxTreatment: z.enum(["single_member_disregarded", "s_corporation", "c_corporation", "partnership", "other"]),
+  fictitiousNameStatus: z.enum(["not_required", "needs_review", "planned", "filed"]),
+  fictitiousNameJurisdiction: optionalText(150),
+  notes: optionalText(2000),
+});
+
+export const cleanupItemSchema = z.object({
+  businessLineId: positiveId("a business line", false),
+  itemType: z.enum(["opening_balance", "owner_advance", "venmo_history", "uncategorized", "other"]),
+  effectiveDate: date("Effective date", true),
+  description: requiredText("Description", 1000),
+  amount: signedNumber("Amount"),
+  debitAccountId: positiveId("a debit account", false),
+  creditAccountId: positiveId("a credit account", false),
+  resolutionNotes: optionalText(2000),
+}).superRefine((value, context) => {
+  if (value.debitAccountId && value.debitAccountId === value.creditAccountId) {
+    context.addIssue({ code: "custom", path: ["creditAccountId"], message: "Debit and credit accounts must differ." });
+  }
+});
+
 export const paymentFormSchema = z.object({
   invoiceId: positiveId("an invoice", false),
   jobId: positiveId("a job", false),

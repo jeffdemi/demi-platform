@@ -126,6 +126,12 @@ adds bank-account attribution to journal lines and a standard small-business
 chart of accounts. The upgrade is additive: existing source records, imported
 transactions, payments, expenses, and journal history remain intact.
 
+The next additive release separates Federal IT Contracting from Demi Stump
+Grinding while retaining consolidated books. It adds exchange CSV imports and
+FIFO digital-asset reporting, owner-capital activity, business identity settings,
+and an off-ledger historical cleanup queue. The included migration is local only
+until explicitly approved for production.
+
 The browser uses Supabase's publishable key. Authorization is enforced by authenticated sessions and business-membership RLS policies.
 
 ## Legacy Data
@@ -201,6 +207,11 @@ Primary operational URLs:
 /finance/transactions/{id} Split, match, transfer, or exclude an imported row
 /finance/adjustments/new   Record a balanced correcting or noncash entry
 /finance/month-end         Monthly balances, close checklist, lock, and reopen
+/finance/digital-assets    Exchange import, units, basis, sales, gains, and reconciliation
+/finance/classification    Business-line classification workbench
+/finance/capital           Contributions, loans, repayments, draws, and estimated taxes
+/finance/business-settings Legal entity, public brand, and fictitious-name status
+/finance/cleanup           Historical opening balances and cleanup workflow
 /labor                    Labor and payroll entry/history
 /equipment                 Assets and maintenance history
 /equipment/{id}/financials Depreciation and equipment-loan assumptions

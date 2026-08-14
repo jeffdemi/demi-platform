@@ -150,3 +150,21 @@ Browser requests use the normal session cookie. External callers may send a
 Supabase user access token in `Authorization: Bearer <token>`. Both paths use the
 same business Row Level Security policies as the application. Service-role
 credentials are never used.
+
+## Digital assets and business lines
+
+Use `/finance/digital-assets` to add an exchange or wallet, import a CSV, and
+save an as-of reconciliation. CSV files require Date, Type, Asset, and Units;
+Price USD, Gross USD, Fee USD, IDs, transfer references, and memos are optional.
+Re-importing the same file or duplicate normalized rows is safe.
+
+Use `/finance/classification` to assign Federal IT Contracting or Demi Stump
+Grinding to operating records and journals. `/reports/books` shows consolidated
+and per-line P&L results; pass `line={businessLineId}` to the bookkeeping API or
+CSV export for a segment-only result.
+
+Use `/finance/capital` for owner contributions, loans, repayments, draws, and
+estimated taxes. Personal transfers are owner draws, never deductible expenses.
+Use `/finance/cleanup` to research Venmo history, related-party advances, and
+opening balances. Posting is explicit and requires a positive amount plus two
+different ledger accounts.

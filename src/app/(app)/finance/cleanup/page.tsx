@@ -1,0 +1,14 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { StatusBadge } from "@/components/status-badge";
+import { requireBusinessContext } from "@/lib/auth";
+import { dateInTimeZone } from "@/lib/domain/jobs";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { listLedgerAccounts } from "@/lib/repositories/accounting-repository";
+import { listBusinessLines, listCleanupItems } from "@/lib/repositories/business-finance-repository";
+import { createClient } from "@/lib/supabase/server";
+import { CleanupItemForm, PostCleanupItemForm } from "../business-forms";
+export const metadata: Metadata = { title: "Historical Cleanup" };
+export default async function CleanupPage() { const context = await requireBusinessContext(); const client = await createClient(); const [lines, accounts, items] = await Promise.all([listBusinessLines(client, context.business.id), listLedgerAccounts(client, context.business.id), listCleanupItems(client, context.business.id)]); return <div className="mx-auto w-full max-w-[1200px] px-4 py-6"><PageHeader actions={<Link className="flex h-11 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold" href="/finance"><ArrowLeft size={17} />Finance</Link>} description="Research opening balances, Venmo history, and owner advances before anything posts to the ledger." title="Historical Opening & Cleanup" /><div className="grid gap-5 py-6 lg:grid-cols-[1fr_430px]"><section className="overflow-hidden rounded-lg border border-line bg-surface shadow-sm"><div className="divide-y divide-line">{items.map((item) => <div className="px-5 py-4" key={item.id}><div className="flex justify-between gap-4"><div><p className="font-semibold">{item.description}</p><p className="text-sm text-muted">{formatDate(item.effective_date)} · {item.item_type.replaceAll("_", " ")}</p></div><div className="text-right"><StatusBadge label={item.status} status={item.status} />{item.amount !== null && <p className="mt-1 font-bold">{formatCurrency(item.amount)}</p>}</div></div>{item.status !== "posted" && item.amount && item.debit_account_id && item.credit_account_id ? <div className="mt-3"><PostCleanupItemForm itemId={item.id} /></div> : null}</div>)}{!items.length && <p className="p-8 text-sm text-muted">No historical cleanup items.</p>}</div></section><section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="mb-2 font-bold">Add research item</h2><p className="mb-4 text-sm text-muted">Items remain off-ledger until reviewed; posting creates one balanced, auditable opening-balance journal.</p><CleanupItemForm accounts={accounts} defaultDate={dateInTimeZone(context.business.timezone)} lines={lines} /></section></div></div>; }
