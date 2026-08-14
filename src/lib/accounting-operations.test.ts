@@ -47,6 +47,31 @@ describe("bank statement normalization", () => {
     expect(result.rows[1].amount).toBe(1027.56);
   });
 
+  it("imports Bank of America business-card exports with summaries and debit-credit types", () => {
+    const result = normalizeBankRows([
+      ["Description", "", "", "", "Summary Amt."],
+      ["Total credits", "", "", "", "-8267.74"],
+      ["Total debits", "", "", "", "10330.96"],
+      [],
+      ["CardHolder Name", "Account/Card Number - last 4 digits", "Posting Date", "Trans. Date", "Reference ID", "Description", "Amount", "MCC", "Merchant Category", "Transaction Type", "Expense Category"],
+      ["JEFFREY R DEMI", "6631", "05/11/2026", "05/07/2026", "Ref: 85180896128980175340292", "BRANDYWINE AUTO - WEST", "8.62", "5533", "AUTOMOTIVE PARTS", "D", "Automobiles and Vehicles"],
+      ["JEFFREY R DEMI", "6631", "04/24/2026", "04/23/2026", "Ref: 55500366113726167000635", "ROCK AUTO", "-79.24", "5533", "AUTOMOTIVE PARTS", "C", "Automobiles and Vehicles"],
+      ["DEMI SOLUTIONS LLC", "3472", "04/10/2026", "04/10/2026", "Ref: 10020405720072821644899", "PAYMENT ADJUSTMENT", "7000.00", "0000", "", "D", ""],
+    ]);
+
+    expect(result.errors).toEqual([]);
+    expect(result.rows).toHaveLength(3);
+    expect(result.rows[0]).toMatchObject({
+      rowNumber: 6,
+      transactionDate: "2026-05-07",
+      postedDate: "2026-05-11",
+      externalId: "Ref: 85180896128980175340292",
+      amount: -8.62,
+    });
+    expect(result.rows[1].amount).toBe(79.24);
+    expect(result.rows[2].amount).toBe(-7000);
+  });
+
   it("reports malformed rows without importing them", () => {
     const result = normalizeBankRows([
       ["Date", "Description", "Amount"],

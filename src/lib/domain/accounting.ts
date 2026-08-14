@@ -20,13 +20,14 @@ export type TaxExpense = {
 };
 
 const headerAliases = {
-  date: ["date", "transaction date", "trans date", "posted date"],
+  date: ["date", "transaction date", "trans date", "trans. date", "posted date"],
   postedDate: ["posted date", "posting date"],
   description: ["description", "memo", "name", "details", "merchant", "payee"],
   amount: ["amount", "transaction amount"],
   debit: ["debit", "withdrawal", "money out"],
   credit: ["credit", "deposit", "money in"],
-  externalId: ["transaction id", "id", "reference", "reference number", "check number"],
+  externalId: ["transaction id", "id", "reference", "reference id", "reference number", "check number"],
+  transactionType: ["transaction type"],
 } as const;
 
 function cleaned(value: unknown) {
@@ -73,7 +74,16 @@ export function bankFingerprint(row: Omit<BankImportRow, "fingerprint" | "rowNum
 
 export function normalizeBankRows(rawRows: unknown[][]) {
   if (!rawRows.length) return { rows: [] as BankImportRow[], errors: ["The statement is empty."] };
-  const headers = rawRows[0].map(cleaned);
+  const headerIndex = rawRows.findIndex((candidate) => {
+    const candidateHeaders = candidate.map(cleaned);
+    return position(candidateHeaders, headerAliases.date) !== null
+      && position(candidateHeaders, headerAliases.description) !== null
+      && (position(candidateHeaders, headerAliases.amount) !== null
+        || position(candidateHeaders, headerAliases.debit) !== null
+        || position(candidateHeaders, headerAliases.credit) !== null);
+  });
+  if (headerIndex < 0) return { rows: [] as BankImportRow[], errors: ["The statement needs Date, Description, and either Amount or Debit/Credit columns."] };
+  const headers = rawRows[headerIndex].map(cleaned);
   const dateIndex = position(headers, headerAliases.date);
   const descriptionIndex = position(headers, headerAliases.description);
   const amountIndex = position(headers, headerAliases.amount);
@@ -81,21 +91,28 @@ export function normalizeBankRows(rawRows: unknown[][]) {
   const creditIndex = position(headers, headerAliases.credit);
   const postedIndex = position(headers, headerAliases.postedDate);
   const externalIndex = position(headers, headerAliases.externalId);
+  const transactionTypeIndex = position(headers, headerAliases.transactionType);
   const errors: string[] = [];
   const rows: BankImportRow[] = [];
   if (dateIndex === null || descriptionIndex === null || (amountIndex === null && debitIndex === null && creditIndex === null)) {
     return { rows, errors: ["The statement needs Date, Description, and either Amount or Debit/Credit columns."] };
   }
-  rawRows.slice(1).forEach((raw, index) => {
+  rawRows.slice(headerIndex + 1).forEach((raw, index) => {
     if (!raw.some((value) => cleaned(value))) return;
     const transactionDate = isoDate(raw[dateIndex]);
     const description = cleaned(raw[descriptionIndex]);
-    const signedAmount = amountIndex !== null
+    let signedAmount = amountIndex !== null
       ? money(raw[amountIndex])
       : (money(raw[creditIndex ?? -1]) ?? 0) - (money(raw[debitIndex ?? -1]) ?? 0);
-    if (!transactionDate) errors.push(`Row ${index + 2}: Date is invalid.`);
-    if (!description) errors.push(`Row ${index + 2}: Description is required.`);
-    if (signedAmount === null || Number.isNaN(signedAmount) || signedAmount === 0) errors.push(`Row ${index + 2}: Amount must be a non-zero number.`);
+    const transactionType = transactionTypeIndex === null ? "" : cleaned(raw[transactionTypeIndex]).toUpperCase();
+    if (signedAmount !== null && !Number.isNaN(signedAmount)) {
+      if (transactionType === "D" || transactionType === "DEBIT") signedAmount = -Math.abs(signedAmount);
+      if (transactionType === "C" || transactionType === "CREDIT") signedAmount = Math.abs(signedAmount);
+    }
+    const rowNumber = headerIndex + index + 2;
+    if (!transactionDate) errors.push(`Row ${rowNumber}: Date is invalid.`);
+    if (!description) errors.push(`Row ${rowNumber}: Description is required.`);
+    if (signedAmount === null || Number.isNaN(signedAmount) || signedAmount === 0) errors.push(`Row ${rowNumber}: Amount must be a non-zero number.`);
     if (!transactionDate || !description || signedAmount === null || Number.isNaN(signedAmount) || signedAmount === 0) return;
     const base = {
       transactionDate,
@@ -104,7 +121,7 @@ export function normalizeBankRows(rawRows: unknown[][]) {
       amount: signedAmount,
       externalId: externalIndex === null ? null : cleaned(raw[externalIndex]) || null,
     };
-    rows.push({ rowNumber: index + 2, ...base, fingerprint: bankFingerprint(base) });
+    rows.push({ rowNumber, ...base, fingerprint: bankFingerprint(base) });
   });
   return { rows, errors };
 }
