@@ -31,6 +31,27 @@ describe("digital asset imports and FIFO basis", () => {
     expect(result.rows[2]).toMatchObject({ transactionType: "transfer_out", assetSymbol: "USD", units: 7068.99, grossAmountUsd: 6945.28, feeUsd: 123.71 });
   });
 
+  it("calculates portfolios when Postgres decimals arrive as strings", () => {
+    const transactions = [{
+      id: 1,
+      occurredAt: "2026-04-02T15:13:11.000Z",
+      transactionType: "reward",
+      assetSymbol: "USDC",
+      units: "0.023934000000",
+      unitPriceUsd: "1.00000000",
+      grossAmountUsd: "0.02",
+      feeUsd: "0.00",
+      externalId: "reward-id",
+      transferReference: null,
+      memo: "Coinbase reward",
+      fingerprint: "fingerprint",
+    }] as unknown as Parameters<typeof calculateFifoPortfolio>[0];
+    expect(calculateFifoPortfolio(transactions)).toMatchObject({
+      holdings: [{ assetSymbol: "USDC", units: 0.023934, costBasis: 0.02 }],
+      realizedGainLoss: 0,
+    });
+  });
+
   it("calculates FIFO cost basis and does not realize matched internal transfers", () => {
     const base = { rowNumber: 0, unitPriceUsd: null, externalId: null, memo: null, fingerprint: "a".repeat(64) };
     const portfolio = calculateFifoPortfolio([

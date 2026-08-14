@@ -148,7 +148,13 @@ export function calculateFifoPortfolio(transactions: DigitalAssetLedgerRow[]) {
   type Lot = { transactionId: number; acquiredAt: string; units: number; costBasis: number };
   const lots = new Map<string, Lot[]>();
   const disposals: { saleTransactionId: number; assetSymbol: string; units: number; proceeds: number; costBasis: number; gainLoss: number }[] = [];
-  const sorted = [...transactions].filter((row) => row.transactionType !== "fee").sort((left, right) => left.occurredAt.localeCompare(right.occurredAt) || left.id - right.id);
+  const sorted = transactions.map((row) => ({
+    ...row,
+    units: Number(row.units),
+    unitPriceUsd: row.unitPriceUsd === null ? null : Number(row.unitPriceUsd),
+    grossAmountUsd: Number(row.grossAmountUsd),
+    feeUsd: Number(row.feeUsd),
+  })).filter((row) => row.transactionType !== "fee").sort((left, right) => left.occurredAt.localeCompare(right.occurredAt) || left.id - right.id);
   const internalTransferReferences = new Set(sorted.filter((row) => row.transactionType === "transfer_out" && row.transferReference).map((row) => row.transferReference));
   sorted.forEach((transaction) => {
     const assetLots = lots.get(transaction.assetSymbol) ?? [];
