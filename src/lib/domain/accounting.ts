@@ -20,13 +20,13 @@ export type TaxExpense = {
 };
 
 const headerAliases = {
-  date: ["date", "transaction date", "trans date"],
+  date: ["date", "transaction date", "trans date", "posted date"],
   postedDate: ["posted date", "posting date"],
-  description: ["description", "memo", "name", "details", "merchant"],
+  description: ["description", "memo", "name", "details", "merchant", "payee"],
   amount: ["amount", "transaction amount"],
   debit: ["debit", "withdrawal", "money out"],
   credit: ["credit", "deposit", "money in"],
-  externalId: ["transaction id", "id", "reference", "check number"],
+  externalId: ["transaction id", "id", "reference", "reference number", "check number"],
 } as const;
 
 function cleaned(value: unknown) {

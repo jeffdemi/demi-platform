@@ -28,6 +28,25 @@ describe("bank statement normalization", () => {
     expect(result.rows.map((row) => row.amount)).toEqual([-125.2, 500]);
   });
 
+  it("imports Bank of America credit-card CSV exports", () => {
+    const result = normalizeBankRows([
+      ["Posted Date", "Reference Number", "Payee", "Address", "Amount"],
+      ["04/27/2026", "24692166117401642014015", "AMAZON MKTPL*BJ3X597T2 Amzn.com/billWA", "Amzn.com/bill WA", "-46.99"],
+      ["04/27/2026", "11620401050071198040559", "PAYMENT FROM CHK 8010 CONF#11z5luefa", "", "1027.56"],
+    ]);
+
+    expect(result.errors).toEqual([]);
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0]).toMatchObject({
+      transactionDate: "2026-04-27",
+      postedDate: "2026-04-27",
+      description: "AMAZON MKTPL*BJ3X597T2 Amzn.com/billWA",
+      amount: -46.99,
+      externalId: "24692166117401642014015",
+    });
+    expect(result.rows[1].amount).toBe(1027.56);
+  });
+
   it("reports malformed rows without importing them", () => {
     const result = normalizeBankRows([
       ["Date", "Description", "Amount"],
