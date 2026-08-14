@@ -8,12 +8,16 @@ export function formatCurrency(value: number | null | undefined) {
 
 export function formatDate(value: string | null | undefined) {
   if (!value) return "Not set";
-  const [year, month, day] = value.split("-").map(Number);
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  const date = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(value);
+  if (Number.isNaN(date.valueOf())) return "Invalid date";
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(new Date(year, month - 1, day));
+  }).format(date);
 }
 
 export function formatTime(value: string | null | undefined) {
