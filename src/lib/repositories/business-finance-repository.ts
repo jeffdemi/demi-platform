@@ -65,23 +65,20 @@ export async function assignBusinessLine(client: Client, values: { businessId: n
   if (result.error) throw new Error(`Unable to classify record: ${result.error.message}`);
 }
 
-export async function assignAllUnclassifiedBusinessLine(client: Client, values: { businessId: number; businessLineId: number }) {
-  const result = await client.rpc("assign_unclassified_business_line", {
-    target_business_id: values.businessId,
-    target_business_line_id: values.businessLineId,
-  });
-  if (result.error) throw new Error(`Unable to classify records: ${result.error.message}`);
-  return result.data as { total: number };
-}
+export type BusinessLineFilter = "all" | "unclassified" | number;
 
-export async function listClassificationRecords(client: Client, businessId: number) {
+export async function listClassificationRecords(client: Client, businessId: number, filter: BusinessLineFilter = "unclassified") {
+  const applyFilter = <T extends { eq: (column: "business_line_id", value: number) => T; is: (column: "business_line_id", value: null) => T }>(query: T) => {
+    if (filter === "all") return query;
+    return filter === "unclassified" ? query.is("business_line_id", null) : query.eq("business_line_id", filter);
+  };
   const [jobs, expenses, equipment, labor, payments, journals] = await Promise.all([
-    client.from("jobs").select("id, job_date, work_description, amount_paid, business_line_id").eq("business_id", businessId).order("job_date", { ascending: false }).limit(100),
-    client.from("expenses").select("id, expense_date, description, vendor, amount, business_line_id").eq("business_id", businessId).is("voided_at", null).order("expense_date", { ascending: false }).limit(100),
-    client.from("equipment").select("id, name, purchase_cost, business_line_id").eq("business_id", businessId).eq("active", true).order("name").limit(100),
-    client.from("labor_entries").select("id, period_end, worker_name, gross_wages, business_line_id").eq("business_id", businessId).is("voided_at", null).order("period_end", { ascending: false }).limit(100),
-    client.from("payments").select("id, payment_date, amount, reference, business_line_id").eq("business_id", businessId).is("voided_at", null).order("payment_date", { ascending: false }).limit(100),
-    client.from("journal_entries").select("id, entry_date, description, business_line_id").eq("business_id", businessId).eq("status", "posted").order("entry_date", { ascending: false }).limit(100),
+    applyFilter(client.from("jobs").select("id, job_date, work_description, amount_paid, business_line_id").eq("business_id", businessId)).order("job_date", { ascending: false }).limit(100),
+    applyFilter(client.from("expenses").select("id, expense_date, description, vendor, amount, business_line_id").eq("business_id", businessId).is("voided_at", null)).order("expense_date", { ascending: false }).limit(100),
+    applyFilter(client.from("equipment").select("id, name, purchase_cost, business_line_id").eq("business_id", businessId).eq("active", true)).order("name").limit(100),
+    applyFilter(client.from("labor_entries").select("id, period_end, worker_name, gross_wages, business_line_id").eq("business_id", businessId).is("voided_at", null)).order("period_end", { ascending: false }).limit(100),
+    applyFilter(client.from("payments").select("id, payment_date, amount, reference, business_line_id").eq("business_id", businessId).is("voided_at", null)).order("payment_date", { ascending: false }).limit(100),
+    applyFilter(client.from("journal_entries").select("id, entry_date, description, business_line_id").eq("business_id", businessId).eq("status", "posted")).order("entry_date", { ascending: false }).limit(100),
   ]);
   for (const result of [jobs, expenses, equipment, labor, payments, journals]) if (result.error) throw new Error(`Unable to load classification workbench: ${result.error.message}`);
   return { jobs: jobs.data ?? [], expenses: expenses.data ?? [], equipment: equipment.data ?? [], labor: labor.data ?? [], payments: payments.data ?? [], journals: journals.data ?? [] };

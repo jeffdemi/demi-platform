@@ -5,11 +5,11 @@ import { revalidatePath } from "next/cache";
 import { requireBusinessContext } from "@/lib/auth";
 import { normalizeDigitalAssetRows, parseCsv } from "@/lib/domain/digital-assets";
 import {
-  assignAllUnclassifiedBusinessLine, assignBusinessLine, createCleanupItem, createDigitalAssetAccount, importDigitalAssetTransactions, postCleanupItem,
+  assignBusinessLine, createCleanupItem, createDigitalAssetAccount, importDigitalAssetTransactions, postCleanupItem,
   recordCapitalTransaction, saveBusinessIdentity, saveDigitalAssetReconciliation,
 } from "@/lib/repositories/business-finance-repository";
 import { createClient } from "@/lib/supabase/server";
-import { bulkBusinessLineAssignmentSchema, businessIdentitySchema, businessLineAssignmentSchema, capitalTransactionSchema, cleanupItemSchema, digitalAssetAccountSchema, digitalAssetImportSchema, digitalAssetReconciliationSchema, formValues } from "@/lib/validation/business-records";
+import { businessIdentitySchema, businessLineAssignmentSchema, capitalTransactionSchema, cleanupItemSchema, digitalAssetAccountSchema, digitalAssetImportSchema, digitalAssetReconciliationSchema, formValues } from "@/lib/validation/business-records";
 
 export type BusinessFinanceState = { message?: string; success?: boolean; errors?: Record<string, string[]> };
 
@@ -81,20 +81,6 @@ export async function classifyRecord(_: BusinessFinanceState, formData: FormData
     revalidatePath("/finance/classification"); revalidatePath("/reports/books");
     return { success: true, message: "Business line updated." };
   } catch (error) { return { message: error instanceof Error ? error.message : "The classification could not be saved." }; }
-}
-
-export async function classifyAllUnclassified(_: BusinessFinanceState, formData: FormData): Promise<BusinessFinanceState> {
-  const parsed = bulkBusinessLineAssignmentSchema.safeParse(formValues(formData, ["businessLineId"]));
-  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
-  try {
-    const context = await adminContext();
-    const result = await assignAllUnclassifiedBusinessLine(await createClient(), {
-      businessId: context.business.id,
-      businessLineId: parsed.data.businessLineId!,
-    });
-    revalidatePath("/finance/classification"); revalidatePath("/reports/books");
-    return { success: true, message: result.total ? `Updated ${result.total} unclassified records.` : "Everything is already classified." };
-  } catch (error) { return { message: error instanceof Error ? error.message : "The records could not be classified." }; }
 }
 
 export async function addCapitalTransaction(_: BusinessFinanceState, formData: FormData): Promise<BusinessFinanceState> {
