@@ -13,7 +13,7 @@ describe("financial guide", () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(financialGuideTerms.length).toBeGreaterThanOrEqual(60);
     expect(financialGuideCategories.every((category) => financialGuideTerms.some((term) => term.category === category))).toBe(true);
-    for (const id of ["total-ler", "roic", "owner-market-salary", "cash-reconciliation", "straight-line-depreciation"]) {
+    for (const id of ["total-ler", "roic", "owner-market-salary", "cash-reconciliation", "statement-period", "trial-balance", "balance-sheet", "cash-flow-statement", "straight-line-depreciation"]) {
       expect(getFinancialGuideTerm(id)?.definition).toBeTruthy();
     }
   });
@@ -23,6 +23,7 @@ describe("financial guide", () => {
     expect(contextualFinancialGuideAnchor("/reports")).toBe("reporting-metrics");
     expect(contextualFinancialGuideAnchor("/labor")).toBe("labor-payroll");
     expect(contextualFinancialGuideAnchor("/finance/month-end")).toBe("month-end");
+    expect(contextualFinancialGuideAnchor("/finance/reconciliations/3")).toBe("bookkeeping");
     expect(contextualFinancialGuideAnchor("/expenses/12/edit")).toBe("expense-classifications");
     expect(contextualFinancialGuideAnchor("/equipment/1/financials")).toBe("equipment-finance");
     expect(contextualFinancialGuideAnchor("/jobs/16")).toBe("financial-workflow");

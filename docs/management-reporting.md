@@ -41,11 +41,15 @@ the monthly workflow diagram and a searchable glossary.
    in `/labor`.
 3. Record owner market salary, actual wages, distributions, and contributions in
    `/reports/settings`.
-4. Review imported bank transactions and clear unmatched items in `/finance`.
-5. Enter book cash, bank cash, receivables, payables, debt, taxes, inventory, and
-   net fixed assets in `/finance/month-end`.
-6. Resolve the month-end checklist, then review the normalized P&L and scorecard
-   in `/reports`.
+4. Import each bank and credit-card statement, clear unmatched items, and create
+   a reconciliation period in `/finance/reconciliations/new`.
+5. Reconcile imported activity and journal activity to every statement closing
+   balance. Review the trial balance, P&L, balance sheet, and cash flow in
+   `/reports/books`.
+6. Enter receivables, payables, debt, taxes, inventory, and net fixed assets in
+   `/finance/month-end`, resolve the checklist, then close the month.
+7. Review the normalized management P&L and scorecard in `/reports`. Reopen a
+   closed month only to make a necessary correction and record the reason.
 
 ## Data Discipline
 
@@ -66,6 +70,11 @@ schedule for tax depreciation and your lender's statement for official payoff.
 
 ## Current Boundaries
 
+- Bank activity is imported from CSV/XLSX statements; direct bank feeds and
+  statement PDF storage are deferred.
+- Bookkeeping reports are ledger-based, but this is not a complete GAAP accrual
+  system with inventory, payroll, and receivable/payable subledgers.
+- Manual adjustments currently support one debit and one credit per entry.
 - The app records payroll totals but does not calculate checks, withholdings, or
   payroll tax filings.
 - Accounts receivable in the close checklist compares the entered month-end

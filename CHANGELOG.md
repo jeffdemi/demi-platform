@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased - Bookkeeping And Month-End Close
+
+### Added
+
+- Bank and credit-card statement periods with opening, closing, imported, and book-balance reconciliation
+- Split transaction allocations, bank-transfer matching, and retained exclusion reasons
+- Balanced manual adjustments for depreciation, loan, owner-equity, and correcting entries
+- Ledger-based profit and loss, balance sheet, cash flow, and trial balance reports with CSV exports
+- Account-level month-end reconciliation and a close lock that blocks changes to closed source periods
+- Owner/admin reopening with a required reason and retained close/reopen audit fields
+
+### Database
+
+- Added statement periods, allocation history, transfer links, and bookkeeping adjustment records
+- Added bank-account attribution to journal lines and expanded the default chart of accounts
+- Added business-scoped RLS, targeted indexes, security-invoker posting functions, and period-open guards
+- Preserved existing transactions and journal history; the migration is additive and performs no deletes
+
+### Deferred
+
+- Direct bank feeds and automatic bank credential synchronization
+- Statement PDF storage, OCR, and automatic transaction categorization
+- Automated payroll posting, loan amortization, and depreciation generation
+- Multi-line adjustment worksheets beyond the current balanced two-line entry
+- Tax filing, CPA review, and a full GAAP accrual/subledger implementation
+
 ## Unreleased - Paid Amount Integrity
 
 ### Fixed

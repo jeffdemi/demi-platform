@@ -276,6 +276,7 @@ export type MonthEndChecklistInput = {
   laborRecorded: boolean;
   unreviewedExpenseClassifications: number;
   unreviewedBankTransactions: number;
+  unreconciledBankAccounts?: number;
   snapshot?: Snapshot | null;
   expectedAccountsReceivable: number;
   incompleteEquipmentSchedules: number;
@@ -294,6 +295,7 @@ export function buildMonthEndChecklist(input: MonthEndChecklistInput) {
     { key: "labor", label: "Labor and payroll recorded", complete: !input.hasNonOwnerLabor || input.laborRecorded, href: "/labor" },
     { key: "classifications", label: "Expense classifications reviewed", complete: input.unreviewedExpenseClassifications === 0, detail: `${input.unreviewedExpenseClassifications} remaining`, href: "/expenses?classificationReview=missing" },
     { key: "bank", label: "Imported bank transactions reviewed", complete: input.unreviewedBankTransactions === 0, detail: `${input.unreviewedBankTransactions} remaining`, href: "/finance?status=unreviewed" },
+    { key: "statements", label: "Every active bank and credit account reconciled", complete: (input.unreconciledBankAccounts ?? 0) === 0, detail: `${input.unreconciledBankAccounts ?? 0} remaining`, href: "/finance/reconciliations/new" },
     { key: "balance", label: "Month-end balances entered", complete: Boolean(input.snapshot), href: "/finance/month-end" },
     { key: "cash", label: "Book cash reconciles to bank cash", complete: cashDifference === 0 && Boolean(input.snapshot?.reconciled_at), detail: cashDifference === null ? "Balance not entered" : `${cashDifference.toFixed(2)} difference`, href: "/finance/month-end" },
     { key: "receivables", label: "Accounts receivable agrees with unpaid invoices", complete: receivableDifference === 0, detail: receivableDifference === null ? "Balance not entered" : `${receivableDifference.toFixed(2)} difference`, href: "/finance/month-end" },

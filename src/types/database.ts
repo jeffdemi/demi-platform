@@ -20,6 +20,12 @@ export type Database = {
         Update: { id?: never; business_id?: number; name?: string; institution?: string | null; account_type?: string; last_four?: string | null; currency?: string; active?: boolean; created_at?: string; updated_at?: string }
         Relationships: [{ foreignKeyName: "bank_accounts_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
       }
+      bank_statement_periods: {
+        Row: { id: number; business_id: number; account_id: number; statement_start_date: string; statement_end_date: string; opening_balance: number; closing_balance: number; notes: string | null; status: string; reconciled_at: string | null; reconciled_by: string | null; closed_at: string | null; closed_by: string | null; created_by: string | null; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; account_id: number; statement_start_date: string; statement_end_date: string; opening_balance: number; closing_balance: number; notes?: string | null; status?: string; reconciled_at?: string | null; reconciled_by?: string | null; closed_at?: string | null; closed_by?: string | null; created_by?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; account_id?: number; statement_start_date?: string; statement_end_date?: string; opening_balance?: number; closing_balance?: number; notes?: string | null; status?: string; reconciled_at?: string | null; reconciled_by?: string | null; closed_at?: string | null; closed_by?: string | null; created_by?: string | null; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "bank_statement_periods_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["business_id", "id"] }]
+      }
       bank_imports: {
         Row: { id: string; business_id: number; account_id: number; file_name: string; source_sha256: string; row_count: number; imported_by: string; created_at: string }
         Insert: { id?: string; business_id: number; account_id: number; file_name: string; source_sha256: string; row_count: number; imported_by: string; created_at?: string }
@@ -27,10 +33,37 @@ export type Database = {
         Relationships: [{ foreignKeyName: "bank_imports_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["business_id", "id"] }]
       }
       bank_transactions: {
-        Row: { id: number; business_id: number; account_id: number; import_id: string; transaction_date: string; posted_date: string | null; description: string; amount: number; currency: string; external_id: string | null; fingerprint: string; status: string; excluded_reason: string | null; reviewed_at: string | null; reviewed_by: string | null; created_at: string; updated_at: string }
-        Insert: { id?: never; business_id: number; account_id: number; import_id: string; transaction_date: string; posted_date?: string | null; description: string; amount: number; currency?: string; external_id?: string | null; fingerprint: string; status?: string; excluded_reason?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; created_at?: string; updated_at?: string }
-        Update: { id?: never; business_id?: number; account_id?: number; import_id?: string; transaction_date?: string; posted_date?: string | null; description?: string; amount?: number; currency?: string; external_id?: string | null; fingerprint?: string; status?: string; excluded_reason?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; created_at?: string; updated_at?: string }
-        Relationships: [{ foreignKeyName: "bank_transactions_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["business_id", "id"] }]
+        Row: { id: number; business_id: number; account_id: number; import_id: string; statement_period_id: number | null; transaction_date: string; posted_date: string | null; description: string; amount: number; currency: string; external_id: string | null; fingerprint: string; status: string; excluded_reason: string | null; reviewed_at: string | null; reviewed_by: string | null; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; account_id: number; import_id: string; statement_period_id?: number | null; transaction_date: string; posted_date?: string | null; description: string; amount: number; currency?: string; external_id?: string | null; fingerprint: string; status?: string; excluded_reason?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; account_id?: number; import_id?: string; statement_period_id?: number | null; transaction_date?: string; posted_date?: string | null; description?: string; amount?: number; currency?: string; external_id?: string | null; fingerprint?: string; status?: string; excluded_reason?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; created_at?: string; updated_at?: string }
+        Relationships: [
+          { foreignKeyName: "bank_transactions_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "bank_transactions_statement_period_fkey"; columns: ["business_id", "statement_period_id"]; isOneToOne: false; referencedRelation: "bank_statement_periods"; referencedColumns: ["business_id", "id"] }
+        ]
+      }
+      bank_transaction_allocations: {
+        Row: { id: number; business_id: number; bank_transaction_id: number; ledger_account_id: number; amount: number; memo: string; tax_category: string | null; deductible_percent: number; created_by: string | null; created_at: string; voided_at: string | null; voided_by: string | null; void_reason: string | null }
+        Insert: { id?: never; business_id: number; bank_transaction_id: number; ledger_account_id: number; amount: number; memo: string; tax_category?: string | null; deductible_percent?: number; created_by?: string | null; created_at?: string; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null }
+        Update: { id?: never; business_id?: number; bank_transaction_id?: number; ledger_account_id?: number; amount?: number; memo?: string; tax_category?: string | null; deductible_percent?: number; created_by?: string | null; created_at?: string; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null }
+        Relationships: [
+          { foreignKeyName: "bank_transaction_allocations_business_id_bank_transaction_id_fkey"; columns: ["business_id", "bank_transaction_id"]; isOneToOne: false; referencedRelation: "bank_transactions"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "bank_transaction_allocations_business_id_ledger_account_id_fkey"; columns: ["business_id", "ledger_account_id"]; isOneToOne: false; referencedRelation: "ledger_accounts"; referencedColumns: ["business_id", "id"] }
+        ]
+      }
+      bank_transfer_links: {
+        Row: { id: number; business_id: number; outgoing_transaction_id: number; incoming_transaction_id: number; transfer_date: string; amount: number; memo: string | null; status: string; created_by: string | null; created_at: string; voided_at: string | null; voided_by: string | null; void_reason: string | null }
+        Insert: { id?: never; business_id: number; outgoing_transaction_id: number; incoming_transaction_id: number; transfer_date: string; amount: number; memo?: string | null; status?: string; created_by?: string | null; created_at?: string; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null }
+        Update: { id?: never; business_id?: number; outgoing_transaction_id?: number; incoming_transaction_id?: number; transfer_date?: string; amount?: number; memo?: string | null; status?: string; created_by?: string | null; created_at?: string; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null }
+        Relationships: []
+      }
+      bookkeeping_adjustments: {
+        Row: { id: number; business_id: number; entry_date: string; description: string; debit_account_id: number; credit_account_id: number; amount: number; reason: string; status: string; created_by: string | null; created_at: string; voided_at: string | null; voided_by: string | null; void_reason: string | null }
+        Insert: { id?: never; business_id: number; entry_date: string; description: string; debit_account_id: number; credit_account_id: number; amount: number; reason: string; status?: string; created_by?: string | null; created_at?: string; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null }
+        Update: { id?: never; business_id?: number; entry_date?: string; description?: string; debit_account_id?: number; credit_account_id?: number; amount?: number; reason?: string; status?: string; created_by?: string | null; created_at?: string; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null }
+        Relationships: [
+          { foreignKeyName: "bookkeeping_adjustments_business_id_debit_account_id_fkey"; columns: ["business_id", "debit_account_id"]; isOneToOne: false; referencedRelation: "ledger_accounts"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "bookkeeping_adjustments_business_id_credit_account_id_fkey"; columns: ["business_id", "credit_account_id"]; isOneToOne: false; referencedRelation: "ledger_accounts"; referencedColumns: ["business_id", "id"] }
+        ]
       }
       business_invitations: {
         Row: {
@@ -575,12 +608,13 @@ export type Database = {
         Relationships: [{ foreignKeyName: "journal_entries_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
       }
       journal_lines: {
-        Row: { id: number; business_id: number; journal_entry_id: number; account_id: number; debit: number; credit: number; memo: string | null; created_at: string }
-        Insert: { id?: never; business_id: number; journal_entry_id: number; account_id: number; debit?: number; credit?: number; memo?: string | null; created_at?: string }
-        Update: { id?: never; business_id?: number; journal_entry_id?: number; account_id?: number; debit?: number; credit?: number; memo?: string | null; created_at?: string }
+        Row: { id: number; business_id: number; journal_entry_id: number; account_id: number; bank_account_id: number | null; debit: number; credit: number; memo: string | null; created_at: string }
+        Insert: { id?: never; business_id: number; journal_entry_id: number; account_id: number; bank_account_id?: number | null; debit?: number; credit?: number; memo?: string | null; created_at?: string }
+        Update: { id?: never; business_id?: number; journal_entry_id?: number; account_id?: number; bank_account_id?: number | null; debit?: number; credit?: number; memo?: string | null; created_at?: string }
         Relationships: [
           { foreignKeyName: "journal_lines_business_id_journal_entry_id_fkey"; columns: ["business_id", "journal_entry_id"]; isOneToOne: false; referencedRelation: "journal_entries"; referencedColumns: ["business_id", "id"] },
-          { foreignKeyName: "journal_lines_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "ledger_accounts"; referencedColumns: ["business_id", "id"] }
+          { foreignKeyName: "journal_lines_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "ledger_accounts"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "journal_lines_bank_account_fkey"; columns: ["business_id", "bank_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["business_id", "id"] }
         ]
       }
       jobs: {
@@ -902,21 +936,27 @@ export type Database = {
           id: number; business_id: number; period_month: string; cash_book_balance: number; cash_bank_balance: number;
           accounts_receivable: number; accounts_payable: number; inventory: number; taxes_payable: number;
           credit_card_balance: number; short_term_debt: number; long_term_debt: number; fixed_assets_net: number;
-          notes: string | null; reconciled_at: string | null; reconciled_by: string | null; created_by: string | null;
+          notes: string | null; reconciled_at: string | null; reconciled_by: string | null; close_status: string;
+          closed_at: string | null; closed_by: string | null; reopened_at: string | null; reopened_by: string | null;
+          reopen_reason: string | null; created_by: string | null;
           created_at: string; updated_at: string
         }
         Insert: {
           id?: never; business_id: number; period_month: string; cash_book_balance?: number; cash_bank_balance?: number;
           accounts_receivable?: number; accounts_payable?: number; inventory?: number; taxes_payable?: number;
           credit_card_balance?: number; short_term_debt?: number; long_term_debt?: number; fixed_assets_net?: number;
-          notes?: string | null; reconciled_at?: string | null; reconciled_by?: string | null; created_by?: string | null;
+          notes?: string | null; reconciled_at?: string | null; reconciled_by?: string | null; close_status?: string;
+          closed_at?: string | null; closed_by?: string | null; reopened_at?: string | null; reopened_by?: string | null;
+          reopen_reason?: string | null; created_by?: string | null;
           created_at?: string; updated_at?: string
         }
         Update: {
           id?: never; business_id?: number; period_month?: string; cash_book_balance?: number; cash_bank_balance?: number;
           accounts_receivable?: number; accounts_payable?: number; inventory?: number; taxes_payable?: number;
           credit_card_balance?: number; short_term_debt?: number; long_term_debt?: number; fixed_assets_net?: number;
-          notes?: string | null; reconciled_at?: string | null; reconciled_by?: string | null; created_by?: string | null;
+          notes?: string | null; reconciled_at?: string | null; reconciled_by?: string | null; close_status?: string;
+          closed_at?: string | null; closed_by?: string | null; reopened_at?: string | null; reopened_by?: string | null;
+          reopen_reason?: string | null; created_by?: string | null;
           created_at?: string; updated_at?: string
         }
         Relationships: [{ foreignKeyName: "monthly_financial_snapshots_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
@@ -1287,6 +1327,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_bank_transaction_allocation: {
+        Args: { target_business_id: number; target_bank_transaction_id: number; target_ledger_account_id: number; allocation_amount: number; allocation_memo: string; allocation_tax_category?: string | null; allocation_deductible_percent?: number }
+        Returns: number
+      }
       add_maintenance_record: {
         Args: {
           due_hours?: number
@@ -1306,6 +1350,14 @@ export type Database = {
         Returns: number
       }
       create_business: { Args: { business_name: string }; Returns: number }
+      create_bank_transfer: {
+        Args: { target_business_id: number; target_outgoing_transaction_id: number; target_incoming_transaction_id: number; target_memo?: string | null }
+        Returns: number
+      }
+      create_bookkeeping_adjustment: {
+        Args: { target_business_id: number; adjustment_date: string; adjustment_description: string; target_debit_account_id: number; target_credit_account_id: number; adjustment_amount: number; adjustment_reason: string }
+        Returns: number
+      }
       convert_quote_to_job: { Args: { target_quote_id: number }; Returns: number }
       create_invoice_record: {
         Args: {
@@ -1351,6 +1403,10 @@ export type Database = {
         Returns: Json
       }
       platform_setup_available: { Args: never; Returns: boolean }
+      reconcile_bank_statement_period: {
+        Args: { target_business_id: number; target_period_id: number }
+        Returns: Json
+      }
       record_payment: {
         Args: {
           payment_amount: number
@@ -1364,6 +1420,22 @@ export type Database = {
           target_job_id: number | null
         }
         Returns: number
+      }
+      save_bank_statement_period: {
+        Args: { target_business_id: number; target_account_id: number; statement_start: string; statement_end: string; statement_opening_balance: number; statement_closing_balance: number; statement_notes?: string | null }
+        Returns: number
+      }
+      close_accounting_month: {
+        Args: { target_business_id: number; target_period_month: string }
+        Returns: undefined
+      }
+      reopen_accounting_month: {
+        Args: { target_business_id: number; target_period_month: string; target_reason: string }
+        Returns: undefined
+      }
+      void_bank_transaction_allocation: {
+        Args: { target_business_id: number; target_allocation_id: number; target_reason: string }
+        Returns: undefined
       }
       set_invoice_status: {
         Args: { invoice_status: string; paid_on?: string; target_invoice_id: number }

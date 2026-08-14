@@ -7,15 +7,25 @@ import { readSheet } from "read-excel-file/node";
 import { requireBusinessContext } from "@/lib/auth";
 import { normalizeBankRows, type BankImportRow } from "@/lib/domain/accounting";
 import {
+  addBankTransactionAllocation,
+  createBankTransfer,
   createBankAccount,
+  createBookkeepingAdjustment,
   excludeBankTransaction,
   getBankTransaction,
   importBankStatement,
+  reconcileBankStatementPeriod,
   recordPayment,
+  saveBankStatementPeriod,
+  voidBankTransactionAllocation,
 } from "@/lib/repositories/accounting-repository";
 import { createClient } from "@/lib/supabase/server";
 import {
   bankAccountSchema,
+  bankStatementPeriodSchema,
+  bankTransactionAllocationSchema,
+  bankTransferSchema,
+  bookkeepingAdjustmentSchema,
   excludeBankTransactionSchema,
   formValues,
   paymentFormSchema,
@@ -161,5 +171,138 @@ export async function savePayment(_: FinanceState, formData: FormData): Promise<
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
     return { message: error instanceof Error ? error.message : "The payment could not be recorded." };
+  }
+}
+
+export async function createStatementPeriod(_: FinanceState, formData: FormData): Promise<FinanceState> {
+  const parsed = bankStatementPeriodSchema.safeParse(formValues(formData, [
+    "accountId", "statementStart", "statementEnd", "openingBalance", "closingBalance", "notes",
+  ]));
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+  const context = await requireBusinessContext();
+  if (context.role === "employee") return { message: "Only an owner or administrator can reconcile statements." };
+  try {
+    const id = await saveBankStatementPeriod(await createClient(), {
+      businessId: context.business.id,
+      accountId: parsed.data.accountId!,
+      statementStart: parsed.data.statementStart!,
+      statementEnd: parsed.data.statementEnd!,
+      openingBalance: parsed.data.openingBalance!,
+      closingBalance: parsed.data.closingBalance!,
+      notes: parsed.data.notes,
+    });
+    refreshFinance();
+    redirect(`/finance/reconciliations/${id}`);
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    return { message: error instanceof Error ? error.message : "The statement period could not be created." };
+  }
+}
+
+export async function saveTransactionAllocation(transactionId: number, _: FinanceState, formData: FormData): Promise<FinanceState> {
+  const parsed = bankTransactionAllocationSchema.safeParse(formValues(formData, [
+    "ledgerAccountId", "amount", "memo", "taxCategory", "deductiblePercent",
+  ]));
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+  const context = await requireBusinessContext();
+  if (context.role === "employee") return { message: "Only an owner or administrator can allocate transactions." };
+  try {
+    await addBankTransactionAllocation(await createClient(), {
+      businessId: context.business.id,
+      transactionId,
+      ledgerAccountId: parsed.data.ledgerAccountId!,
+      amount: parsed.data.amount!,
+      memo: parsed.data.memo,
+      taxCategory: parsed.data.taxCategory,
+      deductiblePercent: parsed.data.deductiblePercent ?? 100,
+    });
+    refreshFinance();
+    revalidatePath(`/finance/transactions/${transactionId}`);
+    return { message: "Allocation posted." };
+  } catch (error) {
+    return { message: error instanceof Error ? error.message : "The allocation could not be saved." };
+  }
+}
+
+export async function reverseTransactionAllocation(transactionId: number, allocationId: number, _: FinanceState, formData: FormData): Promise<FinanceState> {
+  const parsed = excludeBankTransactionSchema.safeParse({ reason: formData.get("reason") });
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+  const context = await requireBusinessContext();
+  if (context.role === "employee") return { message: "Only an owner or administrator can reverse allocations." };
+  try {
+    await voidBankTransactionAllocation(await createClient(), context.business.id, allocationId, parsed.data.reason);
+    refreshFinance();
+    revalidatePath(`/finance/transactions/${transactionId}`);
+    return { message: "Allocation reversed with its audit history retained." };
+  } catch (error) {
+    return { message: error instanceof Error ? error.message : "The allocation could not be reversed." };
+  }
+}
+
+export async function saveBankTransfer(transactionId: number, _: FinanceState, formData: FormData): Promise<FinanceState> {
+  const parsed = bankTransferSchema.safeParse(formValues(formData, ["otherTransactionId", "memo"]));
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+  const context = await requireBusinessContext();
+  if (context.role === "employee") return { message: "Only an owner or administrator can record transfers." };
+  try {
+    const client = await createClient();
+    const [current, other] = await Promise.all([
+      getBankTransaction(client, context.business.id, transactionId),
+      getBankTransaction(client, context.business.id, parsed.data.otherTransactionId!),
+    ]);
+    if (!current || !other) return { message: "The matching transfer transaction could not be found." };
+    const outgoing = current.amount < 0 ? current : other;
+    const incoming = current.amount > 0 ? current : other;
+    await createBankTransfer(client, {
+      businessId: context.business.id,
+      outgoingTransactionId: outgoing.id,
+      incomingTransactionId: incoming.id,
+      memo: parsed.data.memo,
+    });
+    refreshFinance();
+    redirect("/finance?status=unreviewed");
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
+    return { message: error instanceof Error ? error.message : "The transfer could not be recorded." };
+  }
+}
+
+export async function postBookkeepingAdjustment(_: FinanceState, formData: FormData): Promise<FinanceState> {
+  const parsed = bookkeepingAdjustmentSchema.safeParse(formValues(formData, [
+    "entryDate", "description", "debitAccountId", "creditAccountId", "amount", "reason",
+  ]));
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+  const context = await requireBusinessContext();
+  if (context.role === "employee") return { message: "Only an owner or administrator can post adjustments." };
+  try {
+    await createBookkeepingAdjustment(await createClient(), {
+      businessId: context.business.id,
+      entryDate: parsed.data.entryDate!,
+      description: parsed.data.description,
+      debitAccountId: parsed.data.debitAccountId!,
+      creditAccountId: parsed.data.creditAccountId!,
+      amount: parsed.data.amount!,
+      reason: parsed.data.reason,
+    });
+    refreshFinance();
+    revalidatePath("/reports/books");
+    return { message: "Balanced adjustment posted." };
+  } catch (error) {
+    return { message: error instanceof Error ? error.message : "The adjustment could not be posted." };
+  }
+}
+
+export async function reconcileStatement(periodId: number, previousState: FinanceState): Promise<FinanceState> {
+  void previousState;
+  const context = await requireBusinessContext();
+  if (context.role === "employee") return { message: "Only an owner or administrator can reconcile statements." };
+  try {
+    await reconcileBankStatementPeriod(await createClient(), context.business.id, periodId);
+    refreshFinance();
+    revalidatePath(`/finance/reconciliations/${periodId}`);
+    revalidatePath("/finance/month-end");
+    return { message: "Statement reconciled to both imported and book activity." };
+  } catch (error) {
+    return { message: error instanceof Error ? error.message : "The statement could not be reconciled." };
   }
 }

@@ -272,6 +272,47 @@ export const financialGuideTerms: FinancialGuideTerm[] = [
     action: "The app permits marking cash reconciled only when the balances agree within one cent.",
   },
   {
+    id: "statement-period",
+    term: "Statement period",
+    category: "Month end & equipment",
+    definition: "The start date, end date, and opening and closing balances from one bank or credit-card statement.",
+    action: "Create one period for each active account and statement month.",
+  },
+  {
+    id: "imported-activity",
+    term: "Imported statement activity",
+    category: "Month end & equipment",
+    definition: "The net deposits and withdrawals imported from the financial institution for a statement period.",
+    formula: "Imported activity = deposits - withdrawals",
+  },
+  {
+    id: "book-activity",
+    term: "Book activity",
+    category: "Month end & equipment",
+    definition: "The net change posted to one bank account by balanced journal entries during a statement period.",
+    formula: "Book activity = bank-account debits - bank-account credits",
+  },
+  {
+    id: "transaction-allocation",
+    term: "Transaction allocation",
+    category: "Month end & equipment",
+    definition: "All or part of an imported bank row assigned to a ledger account. Several allocations may split one transaction across categories.",
+    action: "The allocated total must equal the imported amount before the transaction is fully matched.",
+  },
+  {
+    id: "bank-transfer",
+    term: "Bank transfer",
+    category: "Month end & equipment",
+    definition: "Money moved between two business bank or credit accounts. It changes account balances but is not revenue or expense.",
+  },
+  {
+    id: "period-lock",
+    term: "Closed accounting month",
+    category: "Month end & equipment",
+    definition: "A reconciled month protected from new or changed source-dated bookkeeping activity.",
+    action: "An owner or admin may reopen it for a necessary correction, but must record the reason.",
+  },
+  {
     id: "purchase-date",
     term: "Equipment purchase date",
     category: "Month end & equipment",
@@ -339,6 +380,33 @@ export const financialGuideTerms: FinancialGuideTerm[] = [
     category: "Reports & metrics",
     definition: "Business income recognized during the reporting period according to the selected cash or accrual basis.",
     source: "Payment-ledger receipts, or a historical job's paid total when no payment row exists, on cash basis; eligible invoices on accrual basis.",
+  },
+  {
+    id: "trial-balance",
+    term: "Trial balance",
+    category: "Reports & metrics",
+    definition: "Every ledger account's debit or credit balance at a point in time, used to prove total debits equal total credits.",
+    formula: "Difference = total debits - total credits",
+  },
+  {
+    id: "profit-and-loss",
+    term: "Profit and loss statement",
+    category: "Reports & metrics",
+    definition: "Revenue and expenses for a selected period, ending in net income or loss.",
+    formula: "Net income = revenue - expenses",
+  },
+  {
+    id: "balance-sheet",
+    term: "Balance sheet",
+    category: "Reports & metrics",
+    definition: "Assets, liabilities, and equity accumulated through the report end date.",
+    formula: "Assets = liabilities + equity",
+  },
+  {
+    id: "cash-flow-statement",
+    term: "Cash flow statement",
+    category: "Reports & metrics",
+    definition: "Cash movement grouped into operating, investing, and financing activity for a selected period.",
   },
   {
     id: "gross-margin",
@@ -489,9 +557,11 @@ export function getFinancialGuideTerm(id: string) {
 
 export function contextualFinancialGuideAnchor(pathname: string) {
   if (pathname.startsWith("/reports/settings")) return "owner-compensation";
+  if (pathname.startsWith("/reports/books")) return "bookkeeping";
   if (pathname.startsWith("/reports")) return "reporting-metrics";
   if (pathname.startsWith("/labor")) return "labor-payroll";
   if (pathname.startsWith("/finance/month-end")) return "month-end";
+  if (pathname.startsWith("/finance/reconciliations") || pathname.startsWith("/finance/transactions") || pathname.startsWith("/finance/adjustments")) return "bookkeeping";
   if (pathname.startsWith("/finance")) return "monthly-workflow";
   if (pathname.startsWith("/expenses")) return "expense-classifications";
   if (pathname.startsWith("/equipment")) return "equipment-finance";

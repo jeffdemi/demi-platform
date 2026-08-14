@@ -12,8 +12,10 @@ const workflow = [
   { title: "Record labor", description: "Enter wages, payroll burden, hours, and labor class for each pay period.", href: "/labor", icon: UsersRound },
   { title: "Track ownership", description: "Record monthly owner wages, distributions, contributions, and market pay.", href: "/reports/settings#owner-compensation", icon: Calculator },
   { title: "Update equipment", description: "Maintain depreciation assumptions and current equipment loan balances.", href: "/equipment", icon: Wrench },
-  { title: "Close the month", description: "Reconcile bank activity, enter balances, and resolve missing information.", href: "/finance/month-end", icon: Landmark },
-  { title: "Review results", description: "Read the normalized P&L, LER, core capital, and ROIC together.", href: "/reports", icon: BookOpen },
+  { title: "Reconcile the books", description: "Prove every statement against imported rows and balanced journal activity.", href: "/finance/reconciliations/new", icon: Landmark },
+  { title: "Review statements", description: "Check the trial balance, P&L, balance sheet, and cash flow.", href: "/reports/books", icon: BookOpen },
+  { title: "Close the month", description: "Resolve missing information, save balances, and lock the completed period.", href: "/finance/month-end", icon: Landmark },
+  { title: "Review results", description: "Read normalized profit, LER, core capital, and ROIC together.", href: "/reports", icon: BookOpen },
 ] as const;
 
 const sectionLinks = [
@@ -21,6 +23,7 @@ const sectionLinks = [
   ["Expense classes", "expense-classifications"],
   ["Labor", "labor-payroll"],
   ["Owner compensation", "owner-compensation"],
+  ["Bookkeeping", "bookkeeping"],
   ["Month end", "month-end"],
   ["Equipment", "equipment-finance"],
   ["Metrics", "reporting-metrics"],
@@ -48,7 +51,7 @@ export default function FinancialGuidePage() {
     <section className="border-y border-line py-6" id="monthly-workflow">
       <h2 className="text-xl font-bold">Month-end sequence</h2>
       <ol className="mt-4 grid gap-x-8 gap-y-3 md:grid-cols-2">
-        {["Review and classify every expense.", "Record labor and payroll for the month.", "Record owner compensation and equity activity.", "Review imported bank transactions and unmatched items.", "Update equipment schedules and lender balances.", "Enter the balance snapshot and reconcile cash.", "Resolve all month-end checklist exceptions.", "Review the normalized P&L and scorecard together."].map((item, index) => <li className="flex gap-3 text-sm leading-6" key={item}><span className="grid size-6 shrink-0 place-items-center rounded-full bg-brand text-xs font-bold text-on-brand">{index + 1}</span><span>{item}</span></li>)}
+        {["Review and classify every expense.", "Record labor, owner compensation, and equity activity.", "Import every bank and credit-card statement.", "Split, match, transfer, or exclude every imported row.", "Reconcile imported and book activity to each statement.", "Review the trial balance and financial statements.", "Enter the balance snapshot and resolve checklist exceptions.", "Close and lock the month, then review management metrics."].map((item, index) => <li className="flex gap-3 text-sm leading-6" key={item}><span className="grid size-6 shrink-0 place-items-center rounded-full bg-brand text-xs font-bold text-on-brand">{index + 1}</span><span>{item}</span></li>)}
       </ol>
     </section>
 
@@ -56,6 +59,7 @@ export default function FinancialGuidePage() {
       <section className="scroll-mt-5" id="expense-classifications"><h2 className="text-xl font-bold">Expense classifications</h2><p className="mt-2 text-sm leading-6 text-muted">Use COGS for direct non-labor delivery costs, operating for overhead, labor only for labor outside payroll detail, asset for long-lived purchases, and owner distribution for returns on ownership. Tax category and deductibility remain separate decisions.</p><Link className="mt-3 inline-flex font-semibold text-brand" href="/expenses?classificationReview=missing">Review unclassified expenses</Link></section>
       <section className="scroll-mt-5" id="labor-payroll"><h2 className="text-xl font-bold">Labor and payroll</h2><p className="mt-2 text-sm leading-6 text-muted">Separate direct, management, and sales labor. Record gross wages, employer payroll taxes, benefits, hours, and the covered period. Never duplicate payroll as a labor-classified expense.</p><Link className="mt-3 inline-flex font-semibold text-brand" href="/labor">Open Labor & Payroll</Link></section>
       <section className="scroll-mt-5" id="owner-compensation"><h2 className="text-xl font-bold">Owner compensation</h2><p className="mt-2 text-sm leading-6 text-muted">Management reports replace actual owner wages with a market-rate wage. Distributions are returns on ownership and do not reduce operating profit; contributions represent owner capital added to the company.</p><Link className="mt-3 inline-flex font-semibold text-brand" href="/reports/settings">Open owner compensation</Link></section>
+      <section className="scroll-mt-5" id="bookkeeping"><h2 className="text-xl font-bold">Bookkeeping and reconciliation</h2><p className="mt-2 text-sm leading-6 text-muted">For every bank and credit-card statement, prove both the imported activity and the posted journal balance. Split mixed purchases, pair transfers between business accounts, and use balanced adjustments for noncash or correcting entries.</p><div className="mt-3 flex flex-wrap gap-4"><Link className="font-semibold text-brand" href="/finance/reconciliations/new">Start reconciliation</Link><Link className="font-semibold text-brand" href="/reports/books">Review financial statements</Link></div></section>
       <section className="scroll-mt-5" id="month-end"><h2 className="text-xl font-bold">Month-end balances</h2><p className="mt-2 text-sm leading-6 text-muted">Capture book cash, bank cash, receivables, payables, inventory, fixed assets, taxes, credit cards, and debt. Reconcile cash and compare receivables with unpaid invoices before relying on capital metrics.</p><Link className="mt-3 inline-flex font-semibold text-brand" href="/finance/month-end">Open Month-End Close</Link></section>
       <section className="scroll-mt-5" id="equipment-finance"><h2 className="text-xl font-bold">Equipment finance</h2><p className="mt-2 text-sm leading-6 text-muted">Management depreciation uses purchase cost, salvage value, in-service date, and useful life. Current lender balances support invested-capital reporting but do not replace official payoff statements.</p><Link className="mt-3 inline-flex font-semibold text-brand" href="/equipment">Review equipment</Link></section>
       <section className="scroll-mt-5" id="reporting-metrics"><h2 className="text-xl font-bold">Reporting metrics</h2><p className="mt-2 text-sm leading-6 text-muted">Read profit, LER, salary capacity, core capital, and ROIC as a group. A metric marked Not ready is missing a required denominator or month-end balance rather than being zero.</p><Link className="mt-3 inline-flex font-semibold text-brand" href="/reports">Open Reports</Link></section>

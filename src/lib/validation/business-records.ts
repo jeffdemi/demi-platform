@@ -109,6 +109,51 @@ export const excludeBankTransactionSchema = z.object({
   reason: requiredText("Reason", 500),
 });
 
+export const bankStatementPeriodSchema = z.object({
+  accountId: positiveId("a bank account"),
+  statementStart: date("Statement start", true),
+  statementEnd: date("Statement end", true),
+  openingBalance: signedNumber("Opening balance", true),
+  closingBalance: signedNumber("Closing balance", true),
+  notes: optionalText(1000),
+}).superRefine((value, context) => {
+  if (value.statementStart && value.statementEnd && value.statementEnd < value.statementStart) {
+    context.addIssue({ code: "custom", path: ["statementEnd"], message: "Statement end cannot be before statement start." });
+  }
+});
+
+export const bankTransactionAllocationSchema = z.object({
+  ledgerAccountId: positiveId("a ledger account"),
+  amount: number("Allocation amount", true),
+  memo: requiredText("Memo", 500),
+  taxCategory: optionalText(150),
+  deductiblePercent: number("Deductible percentage").default(100),
+}).superRefine((value, context) => {
+  if ((value.deductiblePercent ?? 0) > 100) {
+    context.addIssue({ code: "custom", path: ["deductiblePercent"], message: "Deductible percentage cannot exceed 100." });
+  }
+});
+
+export const bankTransferSchema = z.object({
+  otherTransactionId: positiveId("the matching transfer transaction"),
+  memo: optionalText(500),
+});
+
+export const bookkeepingAdjustmentSchema = z.object({
+  entryDate: date("Entry date", true),
+  description: requiredText("Description", 500),
+  debitAccountId: positiveId("a debit account"),
+  creditAccountId: positiveId("a credit account"),
+  amount: number("Amount", true),
+  reason: requiredText("Reason", 1000),
+}).superRefine((value, context) => {
+  if (value.debitAccountId && value.debitAccountId === value.creditAccountId) {
+    context.addIssue({ code: "custom", path: ["creditAccountId"], message: "Debit and credit accounts must differ." });
+  }
+});
+
+export const reopenAccountingMonthSchema = z.object({ reason: requiredText("Reason", 500) });
+
 export const paymentFormSchema = z.object({
   invoiceId: positiveId("an invoice", false),
   jobId: positiveId("a job", false),

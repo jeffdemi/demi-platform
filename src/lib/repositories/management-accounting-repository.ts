@@ -93,7 +93,7 @@ export async function saveMonthlySnapshot(
 }
 
 export async function getMonthEndInputs(client: Client, businessId: number, periodMonth: string, monthEnd: string) {
-  const [settings, ownerCompensation, labor, expenses, bank, snapshot, invoices, equipment] = await Promise.all([
+  const [settings, ownerCompensation, labor, expenses, bank, snapshot, invoices, equipment, bankAccounts, statementPeriods] = await Promise.all([
     getFinancialSettings(client, businessId),
     client.from("owner_compensation_periods").select("id", { count: "exact", head: true })
       .eq("business_id", businessId).eq("period_month", periodMonth),
@@ -102,13 +102,17 @@ export async function getMonthEndInputs(client: Client, businessId: number, peri
     client.from("expenses").select("id", { count: "exact", head: true })
       .eq("business_id", businessId).is("voided_at", null).eq("financial_classification_reviewed", false).lte("expense_date", monthEnd),
     client.from("bank_transactions").select("id", { count: "exact", head: true })
-      .eq("business_id", businessId).eq("status", "unreviewed").lte("transaction_date", monthEnd),
+      .eq("business_id", businessId).in("status", ["unreviewed", "partially_matched"]).lte("transaction_date", monthEnd),
     getMonthlySnapshot(client, businessId, periodMonth),
     client.from("invoices").select("amount").eq("business_id", businessId).eq("status", "unpaid").lte("invoice_date", monthEnd),
     client.from("equipment").select("purchase_cost, in_service_date, useful_life_months, depreciation_method, loan_original_amount, loan_balance")
       .eq("business_id", businessId).eq("active", true),
+    client.from("bank_accounts").select("id, name, account_type").eq("business_id", businessId)
+      .eq("active", true).neq("account_type", "cash").order("name"),
+    client.from("bank_statement_periods").select("id, account_id, statement_start_date, statement_end_date, opening_balance, closing_balance, status, bank_accounts(name)")
+      .eq("business_id", businessId).gte("statement_end_date", periodMonth).lte("statement_end_date", monthEnd).order("statement_end_date"),
   ]);
-  for (const result of [ownerCompensation, labor, expenses, bank, invoices, equipment]) {
+  for (const result of [ownerCompensation, labor, expenses, bank, invoices, equipment, bankAccounts, statementPeriods]) {
     if (result.error) throw new Error(`Unable to build month-end checklist: ${result.error.message}`);
   }
   const incompleteEquipmentSchedules = (equipment.data ?? []).filter((item) => {
@@ -117,6 +121,9 @@ export async function getMonthEndInputs(client: Client, businessId: number, peri
     const loanIncomplete = (item.loan_original_amount ?? 0) > 0 && item.loan_balance === null;
     return depreciationIncomplete || loanIncomplete;
   }).length;
+  const reconciledAccountIds = new Set((statementPeriods.data ?? [])
+    .filter((period) => ["reconciled", "closed"].includes(period.status))
+    .map((period) => period.account_id));
   return {
     settings,
     ownerCompensationRecorded: (ownerCompensation.count ?? 0) > 0,
@@ -126,6 +133,9 @@ export async function getMonthEndInputs(client: Client, businessId: number, peri
     snapshot,
     expectedAccountsReceivable: (invoices.data ?? []).reduce((sum, invoice) => sum + invoice.amount, 0),
     incompleteEquipmentSchedules,
+    bankAccounts: bankAccounts.data ?? [],
+    statementPeriods: statementPeriods.data ?? [],
+    unreconciledBankAccounts: (bankAccounts.data ?? []).filter((account) => !reconciledAccountIds.has(account.id)).length,
   };
 }
 

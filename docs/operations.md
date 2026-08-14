@@ -49,6 +49,19 @@ Unreviewed withdrawals can prefill an expense, while deposits can prefill a
 customer payment. The database requires the linked source amount to match exactly.
 Nonbusiness transfers and duplicates can be excluded with a retained reason.
 
+Create a statement period at `/finance/reconciliations/new` for each bank or
+credit-card statement. Enter the statement opening and closing balances using
+the signed balance shown by the institution. For a credit card, amounts owed are
+normally negative. The reconciliation page proves two independent totals:
+
+- imported activity must explain the statement movement
+- posted journal activity must explain the statement closing balance
+
+Review individual rows at `/finance/transactions/{id}`. A row may be allocated
+across multiple ledger accounts, linked to an existing expense or payment,
+paired with the other side of a bank transfer, or deliberately excluded with a
+reason. Partial allocations remain visibly incomplete.
+
 Payments support partial invoice collections. A fully paid balance updates the
 invoice status and linked job totals. Existing paid invoices and paid jobs without
 invoices are backfilled once as legacy payments.
@@ -69,6 +82,29 @@ Receipt review suggests a tax category from the verified vendor, description, an
 category already on the record. The extracted-data and review fields are ready for
 a future OCR provider, but this release does not send private receipts to an
 external AI service.
+
+Use `/finance/adjustments/new` for balanced noncash or correcting entries such
+as depreciation, loan principal corrections, opening balances, and owner-equity
+adjustments. The form creates equal debit and credit lines. Corrections are
+voided or superseded through retained records rather than deleting journal
+history.
+
+## Month-end close
+
+The monthly workflow is:
+
+1. Import every bank and credit-card statement.
+2. Classify, match, transfer, or exclude every imported row.
+3. Reconcile every active noncash account for the statement month.
+4. Review the trial balance, profit and loss, balance sheet, and cash flow at
+   `/reports/books`.
+5. Complete the management snapshot and checklist at `/finance/month-end`.
+6. Close the month to lock source transactions in that period.
+
+Only an owner or admin may close or reopen a month. Reopening requires a reason
+and retains the prior close and reopen audit details. The period guard protects
+payments, expenses, bank transactions, labor, owner compensation, and manual
+adjustments whose source date falls in a closed month.
 
 ## Equipment and maintenance
 
@@ -102,7 +138,12 @@ Signed-in business members can request JSON from:
 /api/v1/reports/summary
 /api/v1/reports/tax-summary
 /api/v1/reports/general-ledger
+/api/v1/reports/bookkeeping
 ```
+
+The bookkeeping report accepts `from`, `to`, and an optional `statement`
+(`profit-loss`, `balance-sheet`, `cash-flow`, or `trial-balance`). Add
+`format=csv` for a spreadsheet-compatible export.
 
 Add `?format=csv` to a record endpoint for a spreadsheet-compatible download.
 Browser requests use the normal session cookie. External callers may send a

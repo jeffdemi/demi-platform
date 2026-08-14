@@ -119,6 +119,13 @@ cash reports, and management reports display or calculate from actual receipts;
 quoted amounts remain separately labeled for estimating, quoting, job details,
 and invoice preparation.
 
+The bookkeeping and month-end-close migration adds bank statement periods,
+split transaction allocations, bank-transfer matching, balanced adjustments,
+account-level reconciliation, and auditable month close/reopen controls. It also
+adds bank-account attribution to journal lines and a standard small-business
+chart of accounts. The upgrade is additive: existing source records, imported
+transactions, payments, expenses, and journal history remain intact.
+
 The browser uses Supabase's publishable key. Authorization is enforced by authenticated sessions and business-membership RLS policies.
 
 ## Legacy Data
@@ -158,6 +165,9 @@ Daily operations currently provides:
 - Financial, sales, referral, maintenance, and daily operating dashboard sections
 - Monthly reports, authenticated JSON APIs, and CSV exports
 - CSV/XLSX bank-statement imports, duplicate detection, and reconciliation queues
+- Statement-period reconciliation against both imported and book activity
+- Split transaction classification, bank-transfer matching, and auditable exclusions
+- Balanced bookkeeping adjustments with reversal-preserving journal history
 - Partial customer payments linked to invoices, jobs, and bank deposits
 - Balanced expense/payment journals and annual tax-preparation exports
 - Receipt review with rule-based category suggestions
@@ -165,6 +175,8 @@ Daily operations currently provides:
 - Owner market-compensation normalization separated from owner distributions
 - COGS, operating, labor, asset, and owner-distribution classifications
 - Monthly balance snapshots, cash reconciliation, and a close checklist
+- Month locks that protect closed source periods, with reasoned owner/admin reopening
+- Ledger-based profit and loss, balance sheet, cash flow, and trial balance reports
 - Equipment straight-line management depreciation and loan-balance tracking
 - Configurable LER, profit-to-gross-margin, core-capital, and ROIC targets
 - A normalized management P&L and Simple Numbers-style scorecard
@@ -184,12 +196,17 @@ Primary operational URLs:
 /finance                   Bank accounts, imported transactions, and reconciliation
 /finance/import            Preview and import a bank statement
 /finance/payments/new      Record or reconcile a customer payment
-/finance/month-end         Monthly balances, reconciliation, and close checklist
+/finance/reconciliations/new Start a bank or credit-card statement reconciliation
+/finance/reconciliations/{id} Prove statement, imported, and book balances
+/finance/transactions/{id} Split, match, transfer, or exclude an imported row
+/finance/adjustments/new   Record a balanced correcting or noncash entry
+/finance/month-end         Monthly balances, close checklist, lock, and reopen
 /labor                    Labor and payroll entry/history
 /equipment                 Assets and maintenance history
 /equipment/{id}/financials Depreciation and equipment-loan assumptions
 /imports/jobs              Spreadsheet preview and import
 /reports                    Financial and operating reports/exports
+/reports/books              P&L, balance sheet, cash flow, and trial balance
 /reports/settings           Owner compensation and management targets
 /help/financial-guide        Workflow, definitions, formulas, and field guidance
 /api/v1/{resource}         Authenticated JSON records
@@ -197,6 +214,8 @@ Primary operational URLs:
 /api/v1/reports/summary    Authenticated reporting summary
 /api/v1/reports/tax-summary?year=2026&format=csv
 /api/v1/reports/general-ledger?from=2026-01-01&to=2026-12-31&format=csv
+/api/v1/reports/bookkeeping?from=2026-01-01&to=2026-12-31
+/api/v1/reports/bookkeeping?statement=trial-balance&format=csv
 ```
 
 External SMS/email sending, payment collection, electronic signatures, customer

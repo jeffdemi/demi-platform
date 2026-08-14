@@ -56,6 +56,20 @@ recorded. Expense and payment triggers post balanced journal revisions; prior
 revisions are superseded instead of overwritten. Ledger tables are read-only to
 normal clients and are written only by the database posting functions.
 
+Statement periods provide the bookkeeping control layer above bank imports.
+Allocations, transfers, exclusions, and adjustments call security-invoker
+PostgreSQL functions so authorization, balancing, duplicate prevention, and
+period locks apply in one transaction. Journal lines carry optional bank-account
+attribution, allowing statement activity to be proven against book activity
+without rewriting historical source amounts.
+
+Bookkeeping statements are derived from posted journal entries rather than from
+quoted job values or dashboard approximations. The reporting domain builds a
+trial balance, period profit and loss, cumulative balance sheet, and categorized
+cash flow from the same ledger query. Closing a month requires completed account
+reconciliations and blocks source-dated changes until an owner/admin records a
+reopen reason.
+
 Privileged owner setup and invitation implementations live in the unexposed
 `private` schema. Public RPC names are security-invoker wrappers, preserving the
 application contract without exposing elevated functions directly through the API.
