@@ -106,6 +106,13 @@ threads and messages, structured recommendation history, and a private
 business members, twelve photos per quote, and six MB per prepared image. Apply
 the migration before deploying application code that reads these tables.
 
+The management-reporting migration adds owner/admin-only labor entries, owner
+compensation periods, reporting targets, and monthly balance snapshots. It also
+adds management classifications to expenses and depreciation/loan fields to
+equipment. Existing expenses default to operating and remain marked for review;
+known asset purchases and linked refunds are backfilled without deleting or
+replacing any source record.
+
 The browser uses Supabase's publishable key. Authorization is enforced by authenticated sessions and business-membership RLS policies.
 
 ## Legacy Data
@@ -148,6 +155,14 @@ Daily operations currently provides:
 - Partial customer payments linked to invoices, jobs, and bank deposits
 - Balanced expense/payment journals and annual tax-preparation exports
 - Receipt review with rule-based category suggestions
+- Direct, management, and sales labor/payroll entry with reversible corrections
+- Owner market-compensation normalization separated from owner distributions
+- COGS, operating, labor, asset, and owner-distribution classifications
+- Monthly balance snapshots, cash reconciliation, and a close checklist
+- Equipment straight-line management depreciation and loan-balance tracking
+- Configurable LER, profit-to-gross-margin, core-capital, and ROIC targets
+- A normalized management P&L and Simple Numbers-style scorecard
+- A searchable financial guide with context-aware navigation and inline term definitions
 - Preview-first `.xlsx` or `.csv` job import with duplicate protection and audit history
 
 Primary operational URLs:
@@ -163,9 +178,14 @@ Primary operational URLs:
 /finance                   Bank accounts, imported transactions, and reconciliation
 /finance/import            Preview and import a bank statement
 /finance/payments/new      Record or reconcile a customer payment
+/finance/month-end         Monthly balances, reconciliation, and close checklist
+/labor                    Labor and payroll entry/history
 /equipment                 Assets and maintenance history
+/equipment/{id}/financials Depreciation and equipment-loan assumptions
 /imports/jobs              Spreadsheet preview and import
 /reports                    Financial and operating reports/exports
+/reports/settings           Owner compensation and management targets
+/help/financial-guide        Workflow, definitions, formulas, and field guidance
 /api/v1/{resource}         Authenticated JSON records
 /api/v1/{resource}?format=csv
 /api/v1/reports/summary    Authenticated reporting summary
@@ -176,3 +196,6 @@ Primary operational URLs:
 External SMS/email sending, payment collection, electronic signatures, customer
 portal access, PA 811 submission, municipality lookup, and travel-time services
 remain intentionally deferred.
+
+See [Management Reporting](docs/management-reporting.md) for definitions, the
+monthly workflow, and the remaining accounting boundaries.

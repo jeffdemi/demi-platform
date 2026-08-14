@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowDownToLine, ArrowUpFromLine, Landmark, Upload } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, CalendarCheck, Landmark, Upload } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { requireBusinessContext } from "@/lib/auth";
@@ -13,7 +13,8 @@ export const metadata: Metadata = { title: "Finance" };
 
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const { status } = await searchParams;
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  const { business } = context;
   const client = await createClient();
   const [accounts, transactions] = await Promise.all([
     listBankAccounts(client, business.id),
@@ -23,7 +24,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const unreviewed = allTransactions.filter((transaction) => transaction.status === "unreviewed");
   const deposits = allTransactions.filter((transaction) => transaction.amount > 0).reduce((sum, transaction) => sum + transaction.amount, 0);
   const withdrawals = allTransactions.filter((transaction) => transaction.amount < 0).reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
-  const actions = <Link className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand" href="/finance/import"><Upload size={17} />Import statement</Link>;
+  const actions = <div className="flex flex-wrap gap-2">{context.role !== "employee" ? <Link className="flex h-11 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold" href="/finance/month-end"><CalendarCheck size={17} />Month-end close</Link> : null}<Link className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand" href="/finance/import"><Upload size={17} />Import statement</Link></div>;
   return <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
     <PageHeader actions={actions} description="Reconcile actual cash activity with expenses and customer payments." title="Finance" />
     <section className="grid grid-cols-2 gap-3 py-6 sm:grid-cols-4">

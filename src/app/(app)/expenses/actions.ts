@@ -22,7 +22,7 @@ export async function saveExpense(expenseId: number | null, _: ExpenseState, for
   const parsed = expenseFormSchema.safeParse(formValues(formData, [
     "expenseDate", "category", "vendor", "description", "amount", "paymentMethod", "jobId",
     "equipmentId", "notes", "transactionType", "refundOfExpenseId", "bankTransactionId",
-    "taxCategory", "deductiblePercent",
+    "taxCategory", "deductiblePercent", "financialClassification", "laborClass",
   ]));
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   if (!parsed.data.expenseDate || parsed.data.amount === undefined) return { message: "Expense date and amount are required." };
@@ -43,6 +43,9 @@ export async function saveExpense(expenseId: number | null, _: ExpenseState, for
     bank_transaction_id: parsed.data.bankTransactionId ?? null,
     tax_category: parsed.data.taxCategory ?? parsed.data.category,
     deductible_percent: parsed.data.deductiblePercent,
+    financial_classification: parsed.data.financialClassification,
+    labor_class: parsed.data.laborClass ?? null,
+    financial_classification_reviewed: true,
   };
   try {
     const saved = expenseId

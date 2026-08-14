@@ -20,9 +20,17 @@ const number = (label: string, required = false) => z.preprocess(
   (value) => typeof value === "string" ? value.trim().replaceAll("$", "").replaceAll(",", "") || undefined : value,
   z.coerce.number().finite(`${label} must be a valid number.`).nonnegative(`${label} cannot be negative.`)[required ? "nonoptional" : "optional"](),
 );
+const signedNumber = (label: string, required = false) => z.preprocess(
+  (value) => typeof value === "string" ? value.trim().replaceAll("$", "").replaceAll(",", "") || undefined : value,
+  z.coerce.number().finite(`${label} must be a valid number.`)[required ? "nonoptional" : "optional"](),
+);
 const positiveId = (label: string, required = true) => z.preprocess(
   (value) => value === "" || value === null ? undefined : value,
   z.coerce.number().int().positive(`Select ${label}.`)[required ? "nonoptional" : "optional"](),
+);
+const optionalLaborClass = z.preprocess(
+  (value) => value === "" || value === null ? undefined : value,
+  z.enum(["direct", "management", "sales"]).optional(),
 );
 
 export const quoteFormSchema = z.object({
@@ -61,6 +69,8 @@ export const expenseFormSchema = z.object({
   bankTransactionId: positiveId("a bank transaction", false),
   taxCategory: optionalText(150),
   deductiblePercent: number("Deductible percentage").default(100),
+  financialClassification: z.enum(["cogs", "operating", "labor", "asset", "owner_distribution"]).default("operating"),
+  laborClass: optionalLaborClass,
 }).superRefine((value, context) => {
   if (value.transactionType === "refund" && !value.refundOfExpenseId) {
     context.addIssue({ code: "custom", path: ["refundOfExpenseId"], message: "Select the original expense for this refund." });
@@ -70,6 +80,21 @@ export const expenseFormSchema = z.object({
   }
   if ((value.deductiblePercent ?? 0) > 100) {
     context.addIssue({ code: "custom", path: ["deductiblePercent"], message: "Deductible percentage cannot exceed 100." });
+  }
+  if (value.financialClassification === "labor" && !value.laborClass) {
+    context.addIssue({ code: "custom", path: ["laborClass"], message: "Select a labor classification." });
+  }
+  if (value.financialClassification !== "labor" && value.laborClass) {
+    context.addIssue({ code: "custom", path: ["laborClass"], message: "Labor class is only used for labor records." });
+  }
+  if (value.transactionType === "asset" && value.financialClassification !== "asset") {
+    context.addIssue({ code: "custom", path: ["financialClassification"], message: "Asset purchases must use the asset classification." });
+  }
+  if (value.transactionType !== "asset" && value.transactionType !== "refund" && value.financialClassification === "asset") {
+    context.addIssue({ code: "custom", path: ["transactionType"], message: "Use the asset purchase record type for asset classifications." });
+  }
+  if (value.financialClassification === "owner_distribution" && (value.deductiblePercent ?? 0) !== 0) {
+    context.addIssue({ code: "custom", path: ["deductiblePercent"], message: "Owner distributions are not deductible business expenses." });
   }
 });
 
@@ -106,6 +131,110 @@ export const voidExpenseSchema = z.object({
 export const equipmentFormSchema = z.object({
   name: requiredText("Equipment name", 250), equipmentType: optionalText(100), makeModel: optionalText(250),
   serialNumber: optionalText(250), hourMeter: number("Hour meter"), active: z.boolean(), notes: optionalText(),
+});
+
+export const equipmentFinancialsSchema = z.object({
+  purchaseDate: date("Purchase date"),
+  inServiceDate: date("In-service date"),
+  purchaseCost: number("Purchase cost"),
+  salvageValue: number("Salvage value").default(0),
+  usefulLifeMonths: number("Useful life").refine(
+    (value) => value === undefined || Number.isInteger(value),
+    "Useful life must be a whole number of months.",
+  ),
+  depreciationMethod: z.enum(["straight_line"]).optional(),
+  loanLender: optionalText(250),
+  loanOriginalAmount: number("Original loan amount"),
+  loanBalance: number("Loan balance"),
+  loanInterestRate: number("Interest rate"),
+  loanMaturityDate: date("Loan maturity date"),
+}).superRefine((value, context) => {
+  if ((value.salvageValue ?? 0) > (value.purchaseCost ?? 0) && value.purchaseCost !== undefined) {
+    context.addIssue({ code: "custom", path: ["salvageValue"], message: "Salvage value cannot exceed purchase cost." });
+  }
+  const depreciationValues = [value.inServiceDate, value.purchaseCost, value.usefulLifeMonths, value.depreciationMethod];
+  if (depreciationValues.some(Boolean) && !depreciationValues.every(Boolean)) {
+    context.addIssue({ code: "custom", path: ["depreciationMethod"], message: "In-service date, purchase cost, useful life, and method are all required for depreciation." });
+  }
+  if ((value.loanInterestRate ?? 0) > 100) {
+    context.addIssue({ code: "custom", path: ["loanInterestRate"], message: "Interest rate cannot exceed 100%." });
+  }
+});
+
+export const laborEntrySchema = z.object({
+  workerName: requiredText("Worker name", 250),
+  workerType: z.enum(["employee", "owner", "contractor"]),
+  laborClass: z.enum(["direct", "management", "sales"]),
+  periodStart: date("Period start", true),
+  periodEnd: date("Period end", true),
+  paidDate: date("Paid date"),
+  regularHours: number("Regular hours").default(0),
+  overtimeHours: number("Overtime hours").default(0),
+  grossWages: number("Gross wages").default(0),
+  employerPayrollTaxes: number("Employer payroll taxes").default(0),
+  benefits: number("Benefits").default(0),
+  jobId: positiveId("a job", false),
+  notes: optionalText(1000),
+}).superRefine((value, context) => {
+  if (value.periodStart && value.periodEnd && value.periodEnd < value.periodStart) {
+    context.addIssue({ code: "custom", path: ["periodEnd"], message: "Period end cannot be before period start." });
+  }
+  if ((value.grossWages ?? 0) + (value.employerPayrollTaxes ?? 0) + (value.benefits ?? 0) <= 0) {
+    context.addIssue({ code: "custom", path: ["grossWages"], message: "Enter wages, payroll taxes, or benefits." });
+  }
+});
+
+export const voidLaborEntrySchema = z.object({ reason: requiredText("Reason", 500) });
+
+export const financialSettingsSchema = z.object({
+  ownerMarketSalaryAnnual: number("Owner market salary"),
+  ownerLaborClass: z.enum(["direct", "management", "sales"]),
+  hasNonOwnerLabor: z.boolean(),
+  reportingBasis: z.enum(["cash", "accrual"]),
+  targetTotalLer: number("Target total LER", true),
+  minimumProfitPercent: number("Minimum profit target", true),
+  targetProfitPercent: number("Profit target", true),
+  stretchProfitPercent: number("Stretch profit target", true),
+  coreCapitalMonths: number("Core capital months", true),
+  minimumRoicPercent: number("Minimum ROIC", true),
+}).superRefine((value, context) => {
+  if ((value.targetTotalLer ?? 0) <= 0) context.addIssue({ code: "custom", path: ["targetTotalLer"], message: "Target LER must be greater than zero." });
+  if ((value.coreCapitalMonths ?? 0) <= 0) context.addIssue({ code: "custom", path: ["coreCapitalMonths"], message: "Core capital months must be greater than zero." });
+  for (const [key, amount] of [["minimumProfitPercent", value.minimumProfitPercent], ["targetProfitPercent", value.targetProfitPercent], ["stretchProfitPercent", value.stretchProfitPercent]] as const) {
+    if ((amount ?? 0) > 100) context.addIssue({ code: "custom", path: [key], message: "Profit targets cannot exceed 100%." });
+  }
+  if ((value.minimumProfitPercent ?? 0) > (value.targetProfitPercent ?? 0) || (value.targetProfitPercent ?? 0) > (value.stretchProfitPercent ?? 0)) {
+    context.addIssue({ code: "custom", path: ["targetProfitPercent"], message: "Profit targets must increase from minimum to target to stretch." });
+  }
+});
+
+export const ownerCompensationSchema = z.object({
+  periodMonth: date("Month", true),
+  marketSalaryAmount: number("Market salary amount").default(0),
+  actualWages: number("Actual wages").default(0),
+  distributions: number("Distributions").default(0),
+  contributions: number("Contributions").default(0),
+  notes: optionalText(1000),
+});
+
+export const monthlyFinancialSnapshotSchema = z.object({
+  periodMonth: date("Month", true),
+  cashBookBalance: signedNumber("Book cash", true),
+  cashBankBalance: signedNumber("Bank cash", true),
+  accountsReceivable: number("Accounts receivable").default(0),
+  accountsPayable: number("Accounts payable").default(0),
+  inventory: number("Inventory").default(0),
+  taxesPayable: number("Taxes payable").default(0),
+  creditCardBalance: number("Credit card balance").default(0),
+  shortTermDebt: number("Short-term debt").default(0),
+  longTermDebt: number("Long-term debt").default(0),
+  fixedAssetsNet: number("Net fixed assets").default(0),
+  notes: optionalText(1000),
+  reconcile: z.boolean(),
+}).superRefine((value, context) => {
+  if (value.reconcile && Math.abs((value.cashBankBalance ?? 0) - (value.cashBookBalance ?? 0)) > 0.01) {
+    context.addIssue({ code: "custom", path: ["cashBankBalance"], message: "Book cash and bank cash must agree before reconciliation." });
+  }
 });
 
 export const maintenanceFormSchema = z.object({

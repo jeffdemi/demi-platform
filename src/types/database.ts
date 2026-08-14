@@ -232,43 +232,76 @@ export type Database = {
           active: boolean
           business_id: number
           created_at: string
+          depreciation_method: string | null
           equipment_type: string | null
           hour_meter: number | null
           id: number
+          in_service_date: string | null
           legacy_id: number | null
+          loan_balance: number | null
+          loan_interest_rate: number | null
+          loan_lender: string | null
+          loan_maturity_date: string | null
+          loan_original_amount: number | null
           make_model: string | null
           name: string
           notes: string | null
+          purchase_cost: number | null
+          purchase_date: string | null
+          salvage_value: number | null
           serial_number: string | null
           updated_at: string
+          useful_life_months: number | null
         }
         Insert: {
           active?: boolean
           business_id: number
           created_at?: string
+          depreciation_method?: string | null
           equipment_type?: string | null
           hour_meter?: number | null
           id?: never
+          in_service_date?: string | null
           legacy_id?: number | null
+          loan_balance?: number | null
+          loan_interest_rate?: number | null
+          loan_lender?: string | null
+          loan_maturity_date?: string | null
+          loan_original_amount?: number | null
           make_model?: string | null
           name: string
           notes?: string | null
+          purchase_cost?: number | null
+          purchase_date?: string | null
+          salvage_value?: number | null
           serial_number?: string | null
           updated_at?: string
+          useful_life_months?: number | null
         }
         Update: {
           active?: boolean
           business_id?: number
           created_at?: string
+          depreciation_method?: string | null
           equipment_type?: string | null
           hour_meter?: number | null
           id?: never
+          in_service_date?: string | null
           legacy_id?: number | null
+          loan_balance?: number | null
+          loan_interest_rate?: number | null
+          loan_lender?: string | null
+          loan_maturity_date?: string | null
+          loan_original_amount?: number | null
           make_model?: string | null
           name?: string
           notes?: string | null
+          purchase_cost?: number | null
+          purchase_date?: string | null
+          salvage_value?: number | null
           serial_number?: string | null
           updated_at?: string
+          useful_life_months?: number | null
         }
         Relationships: [
           {
@@ -291,8 +324,11 @@ export type Database = {
           description: string | null
           equipment_id: number | null
           expense_date: string
+          financial_classification: string
+          financial_classification_reviewed: boolean
           id: number
           job_id: number | null
+          labor_class: string | null
           legacy_id: number | null
           notes: string | null
           payment_method: string | null
@@ -320,8 +356,11 @@ export type Database = {
           description?: string | null
           equipment_id?: number | null
           expense_date?: string
+          financial_classification?: string
+          financial_classification_reviewed?: boolean
           id?: never
           job_id?: number | null
+          labor_class?: string | null
           legacy_id?: number | null
           notes?: string | null
           payment_method?: string | null
@@ -349,8 +388,11 @@ export type Database = {
           description?: string | null
           equipment_id?: number | null
           expense_date?: string
+          financial_classification?: string
+          financial_classification_reviewed?: boolean
           id?: never
           job_id?: number | null
+          labor_class?: string | null
           legacy_id?: number | null
           notes?: string | null
           payment_method?: string | null
@@ -398,6 +440,57 @@ export type Database = {
             referencedColumns: ["business_id", "id"]
           },
         ]
+      }
+      financial_settings: {
+        Row: {
+          id: number
+          business_id: number
+          owner_market_salary_annual: number | null
+          owner_labor_class: string
+          has_non_owner_labor: boolean
+          reporting_basis: string
+          target_total_ler: number
+          minimum_profit_to_gross_margin: number
+          target_profit_to_gross_margin: number
+          stretch_profit_to_gross_margin: number
+          core_capital_months: number
+          minimum_roic: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: never
+          business_id: number
+          owner_market_salary_annual?: number | null
+          owner_labor_class?: string
+          has_non_owner_labor?: boolean
+          reporting_basis?: string
+          target_total_ler?: number
+          minimum_profit_to_gross_margin?: number
+          target_profit_to_gross_margin?: number
+          stretch_profit_to_gross_margin?: number
+          core_capital_months?: number
+          minimum_roic?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: never
+          business_id?: number
+          owner_market_salary_annual?: number | null
+          owner_labor_class?: string
+          has_non_owner_labor?: boolean
+          reporting_basis?: string
+          target_total_ler?: number
+          minimum_profit_to_gross_margin?: number
+          target_profit_to_gross_margin?: number
+          stretch_profit_to_gross_margin?: number
+          core_capital_months?: number
+          minimum_roic?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [{ foreignKeyName: "financial_settings_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
       }
       invoices: {
         Row: {
@@ -620,6 +713,36 @@ export type Database = {
           },
         ]
       }
+      labor_entries: {
+        Row: {
+          id: number; business_id: number; job_id: number | null; worker_name: string; worker_type: string;
+          labor_class: string; period_start: string; period_end: string; paid_date: string | null;
+          regular_hours: number; overtime_hours: number; gross_wages: number; employer_payroll_taxes: number;
+          benefits: number; source: string; notes: string | null; voided_at: string | null;
+          voided_by: string | null; void_reason: string | null; created_by: string | null;
+          created_at: string; updated_at: string
+        }
+        Insert: {
+          id?: never; business_id: number; job_id?: number | null; worker_name: string; worker_type?: string;
+          labor_class: string; period_start: string; period_end: string; paid_date?: string | null;
+          regular_hours?: number; overtime_hours?: number; gross_wages?: number; employer_payroll_taxes?: number;
+          benefits?: number; source?: string; notes?: string | null; voided_at?: string | null;
+          voided_by?: string | null; void_reason?: string | null; created_by?: string | null;
+          created_at?: string; updated_at?: string
+        }
+        Update: {
+          id?: never; business_id?: number; job_id?: number | null; worker_name?: string; worker_type?: string;
+          labor_class?: string; period_start?: string; period_end?: string; paid_date?: string | null;
+          regular_hours?: number; overtime_hours?: number; gross_wages?: number; employer_payroll_taxes?: number;
+          benefits?: number; source?: string; notes?: string | null; voided_at?: string | null;
+          voided_by?: string | null; void_reason?: string | null; created_by?: string | null;
+          created_at?: string; updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "labor_entries_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] },
+          { foreignKeyName: "labor_entries_business_id_job_id_fkey"; columns: ["business_id", "job_id"]; isOneToOne: false; referencedRelation: "jobs"; referencedColumns: ["business_id", "id"] }
+        ]
+      }
       ledger_accounts: {
         Row: { id: number; business_id: number; code: string; name: string; account_type: string; normal_balance: string; system_key: string | null; active: boolean; created_at: string; updated_at: string }
         Insert: { id?: never; business_id: number; code: string; name: string; account_type: string; normal_balance: string; system_key?: string | null; active?: boolean; created_at?: string; updated_at?: string }
@@ -773,6 +896,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      monthly_financial_snapshots: {
+        Row: {
+          id: number; business_id: number; period_month: string; cash_book_balance: number; cash_bank_balance: number;
+          accounts_receivable: number; accounts_payable: number; inventory: number; taxes_payable: number;
+          credit_card_balance: number; short_term_debt: number; long_term_debt: number; fixed_assets_net: number;
+          notes: string | null; reconciled_at: string | null; reconciled_by: string | null; created_by: string | null;
+          created_at: string; updated_at: string
+        }
+        Insert: {
+          id?: never; business_id: number; period_month: string; cash_book_balance?: number; cash_bank_balance?: number;
+          accounts_receivable?: number; accounts_payable?: number; inventory?: number; taxes_payable?: number;
+          credit_card_balance?: number; short_term_debt?: number; long_term_debt?: number; fixed_assets_net?: number;
+          notes?: string | null; reconciled_at?: string | null; reconciled_by?: string | null; created_by?: string | null;
+          created_at?: string; updated_at?: string
+        }
+        Update: {
+          id?: never; business_id?: number; period_month?: string; cash_book_balance?: number; cash_bank_balance?: number;
+          accounts_receivable?: number; accounts_payable?: number; inventory?: number; taxes_payable?: number;
+          credit_card_balance?: number; short_term_debt?: number; long_term_debt?: number; fixed_assets_net?: number;
+          notes?: string | null; reconciled_at?: string | null; reconciled_by?: string | null; created_by?: string | null;
+          created_at?: string; updated_at?: string
+        }
+        Relationships: [{ foreignKeyName: "monthly_financial_snapshots_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
+      }
+      owner_compensation_periods: {
+        Row: {
+          id: number; business_id: number; period_month: string; market_salary_amount: number; actual_wages: number;
+          distributions: number; contributions: number; notes: string | null; created_by: string | null;
+          created_at: string; updated_at: string
+        }
+        Insert: {
+          id?: never; business_id: number; period_month: string; market_salary_amount?: number; actual_wages?: number;
+          distributions?: number; contributions?: number; notes?: string | null; created_by?: string | null;
+          created_at?: string; updated_at?: string
+        }
+        Update: {
+          id?: never; business_id?: number; period_month?: string; market_salary_amount?: number; actual_wages?: number;
+          distributions?: number; contributions?: number; notes?: string | null; created_by?: string | null;
+          created_at?: string; updated_at?: string
+        }
+        Relationships: [{ foreignKeyName: "owner_compensation_periods_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
       }
       payments: {
         Row: { id: number; business_id: number; customer_id: number | null; invoice_id: number | null; job_id: number | null; bank_transaction_id: number | null; payment_date: string; amount: number; method: string | null; reference: string | null; source: string; notes: string | null; voided_at: string | null; voided_by: string | null; void_reason: string | null; created_at: string; updated_at: string }

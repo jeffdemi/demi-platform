@@ -38,7 +38,9 @@ export default async function NewExpensePage({ searchParams }: { searchParams: P
       vendor: source?.vendor ?? undefined,
       description,
       taxCategory: suggestTaxCategory({ vendor: source?.vendor, description }),
-      deductiblePercent: 100,
+      deductiblePercent: source?.deductible_percent ?? 100,
+      financialClassification: source?.financial_classification ?? "operating",
+      laborClass: source?.labor_class ?? undefined,
     }} equipment={equipment} jobs={jobs} refundOptions={refundOptions} />
   </div>;
 }

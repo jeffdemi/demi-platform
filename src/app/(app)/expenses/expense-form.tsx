@@ -5,7 +5,9 @@ import { Save } from "lucide-react";
 import { useActionState } from "react";
 import { Field, inputClass, textAreaClass } from "@/components/form-fields";
 import { FormFeedback } from "@/components/form-feedback";
+import { FinancialTermHelp } from "@/components/financial-term-help";
 import { expenseCategories, expenseTypeOptions } from "@/lib/domain/finance";
+import { financialClassificationOptions, laborClassOptions } from "@/lib/domain/management-accounting";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { saveExpense, type ExpenseState } from "./actions";
 
@@ -24,6 +26,8 @@ type Defaults = {
   bankTransactionId?: number;
   taxCategory?: string;
   deductiblePercent?: number;
+  financialClassification?: string;
+  laborClass?: string;
   hasReceipt?: boolean;
 };
 
@@ -33,6 +37,9 @@ type RefundOption = {
   vendor: string | null;
   description: string | null;
   amount: number;
+  financial_classification: string;
+  labor_class: string | null;
+  deductible_percent: number;
 };
 
 export function ExpenseForm({
@@ -55,8 +62,10 @@ export function ExpenseForm({
       <Field errors={state.errors?.expenseDate} label="Date" name="expenseDate"><input className={inputClass} defaultValue={defaults.expenseDate} id="expenseDate" name="expenseDate" required type="date" /></Field>
       <Field errors={state.errors?.category} label="Category" name="category"><select className={inputClass} defaultValue={defaults.category ?? ""} id="category" name="category" required><option value="">Select category</option>{expenseCategories.map((item) => <option key={item}>{item}</option>)}</select></Field>
       <Field errors={state.errors?.amount} label="Amount" name="amount"><input className={inputClass} defaultValue={defaults.amount ?? ""} id="amount" min="0" name="amount" required step="0.01" type="number" /></Field>
-      <Field errors={state.errors?.taxCategory} label="Tax category" name="taxCategory"><input className={inputClass} defaultValue={defaults.taxCategory ?? defaults.category ?? ""} id="taxCategory" name="taxCategory" /></Field>
-      <Field errors={state.errors?.deductiblePercent} label="Business deductible %" name="deductiblePercent"><input className={inputClass} defaultValue={defaults.deductiblePercent ?? 100} id="deductiblePercent" max="100" min="0" name="deductiblePercent" required step="0.01" type="number" /></Field>
+      <Field errors={state.errors?.taxCategory} help={<FinancialTermHelp termId="tax-category" />} label="Tax category" name="taxCategory"><input className={inputClass} defaultValue={defaults.taxCategory ?? defaults.category ?? ""} id="taxCategory" name="taxCategory" /></Field>
+      <Field errors={state.errors?.deductiblePercent} help={<FinancialTermHelp termId="deductible-percent" />} label="Business deductible %" name="deductiblePercent"><input className={inputClass} defaultValue={defaults.deductiblePercent ?? 100} id="deductiblePercent" max="100" min="0" name="deductiblePercent" required step="0.01" type="number" /></Field>
+      <Field errors={state.errors?.financialClassification} help={<FinancialTermHelp termId="management-classification" />} label="Management classification" name="financialClassification"><select className={inputClass} defaultValue={defaults.financialClassification ?? "operating"} id="financialClassification" name="financialClassification" required>{financialClassificationOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></Field>
+      <Field errors={state.errors?.laborClass} help={<FinancialTermHelp termId="labor-class" />} label="Labor class (labor only)" name="laborClass"><select className={inputClass} defaultValue={defaults.laborClass ?? ""} id="laborClass" name="laborClass"><option value="">Not labor</option>{laborClassOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></Field>
       <Field errors={state.errors?.vendor} label="Vendor" name="vendor"><input className={inputClass} defaultValue={defaults.vendor ?? ""} id="vendor" name="vendor" /></Field>
       <Field errors={state.errors?.description} label="Description" name="description"><input className={inputClass} defaultValue={defaults.description ?? ""} id="description" name="description" /></Field>
       <Field errors={state.errors?.paymentMethod} label="Payment method" name="paymentMethod"><input className={inputClass} defaultValue={defaults.paymentMethod ?? ""} id="paymentMethod" name="paymentMethod" /></Field>

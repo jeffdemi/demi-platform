@@ -17,6 +17,25 @@ export async function createEquipment(client: Client, values: Database["public"]
   return result.data;
 }
 
+export async function getEquipment(client: Client, businessId: number, equipmentId: number) {
+  const result = await client.from("equipment").select("*")
+    .eq("business_id", businessId).eq("id", equipmentId).maybeSingle();
+  if (result.error) throw new Error(`Unable to load equipment: ${result.error.message}`);
+  return result.data;
+}
+
+export async function updateEquipmentFinancials(
+  client: Client,
+  businessId: number,
+  equipmentId: number,
+  values: Database["public"]["Tables"]["equipment"]["Update"],
+) {
+  const result = await client.from("equipment").update(values)
+    .eq("business_id", businessId).eq("id", equipmentId).select("id").maybeSingle();
+  if (result.error) throw new Error(`Unable to save equipment financials: ${result.error.message}`);
+  return result.data;
+}
+
 export async function addMaintenance(client: Client, values: {
   businessId: number; equipmentId: number; serviceDate: string; serviceType: string; hourMeter?: number;
   cost?: number; nextDueDate?: string; nextDueHours?: number; notes?: string;

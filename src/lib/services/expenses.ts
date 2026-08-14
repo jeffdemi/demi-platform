@@ -44,7 +44,7 @@ async function removeReceipt(client: Client, path: string | null) {
 }
 
 async function validateRefundSource(client: Client, businessId: number, input: ExpenseInput, excludeExpenseId?: number) {
-  if (input.transaction_type !== "refund") return;
+  if (input.transaction_type !== "refund") return null;
   if (!input.refund_of_expense_id) throw new Error("Select the original expense for this refund.");
   const source = await getExpense(client, businessId, input.refund_of_expense_id);
   if (!source || source.voided_at || source.transaction_type === "refund") {
@@ -55,6 +55,18 @@ async function validateRefundSource(client: Client, businessId: number, input: E
     const remaining = Math.max(0, source.amount - alreadyRefunded).toFixed(2);
     throw new Error(`This refund exceeds the $${remaining} remaining refundable amount.`);
   }
+  return source;
+}
+
+function normalizedExpenseInput(input: ExpenseInput, refundSource: Awaited<ReturnType<typeof validateRefundSource>>) {
+  if (!refundSource) return input;
+  return {
+    ...input,
+    financial_classification: refundSource.financial_classification,
+    labor_class: refundSource.labor_class,
+    financial_classification_reviewed: refundSource.financial_classification_reviewed,
+    deductible_percent: refundSource.deductible_percent,
+  };
 }
 
 export async function createExpenseRecord(
@@ -63,10 +75,11 @@ export async function createExpenseRecord(
   input: ExpenseInput,
   receiptValue: FormDataEntryValue | null,
 ) {
-  await validateRefundSource(client, businessId, input);
+  const refundSource = await validateRefundSource(client, businessId, input);
+  const normalized = normalizedExpenseInput(input, refundSource);
   const receiptPath = await uploadReceipt(client, businessId, receiptValue);
   try {
-    return await createExpense(client, { ...input, business_id: businessId, receipt_path: receiptPath });
+    return await createExpense(client, { ...normalized, business_id: businessId, receipt_path: receiptPath });
   } catch (error) {
     await removeReceipt(client, receiptPath);
     throw error;
@@ -82,11 +95,12 @@ export async function updateExpenseRecord(
 ) {
   const existing = await getExpense(client, businessId, expenseId);
   if (!existing) return null;
-  await validateRefundSource(client, businessId, input, expenseId);
+  const refundSource = await validateRefundSource(client, businessId, input, expenseId);
+  const normalized = normalizedExpenseInput(input, refundSource);
   const replacementPath = await uploadReceipt(client, businessId, receiptValue);
   try {
     const updated = await updateExpense(client, businessId, expenseId, {
-      ...input,
+      ...normalized,
       ...(replacementPath ? { receipt_path: replacementPath } : {}),
     });
     if (updated && replacementPath) await removeReceipt(client, existing.receipt_path);

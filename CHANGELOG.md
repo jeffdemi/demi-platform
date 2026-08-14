@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased - Management Reporting Foundation
+
+### Added
+
+- Labor and payroll entry with direct, management, and sales classifications
+- Owner compensation setup with market-rate salary, actual wages, distributions, and contributions kept distinct
+- COGS, operating, labor, asset, and owner-distribution expense classifications
+- Monthly balance snapshots, cash reconciliation, and a missing-information checklist
+- Equipment purchase cost, straight-line management depreciation, and loan tracking
+- Configurable Total LER, profit-to-gross-margin, core-capital, and ROIC targets
+- A normalized management P&L and Simple Numbers-style scorecard alongside existing cash and tax reports
+- A searchable financial guide, context-aware global help link, and inline definitions for specialized terms
+
+### Database
+
+- Added owner/admin-scoped financial settings, owner compensation, labor entries, and monthly snapshot tables
+- Added management classification columns to expenses and financial schedule columns to equipment
+- Added targeted indexes, validation constraints, RLS policies, and classification-aware journal accounts
+- Preserved all existing source records; legacy expenses default to operating and are explicitly queued for review
+
+### Deferred
+
+- Payroll processing, payroll tax filing, and employee deductions
+- Automatic payroll-provider or live bank-feed synchronization
+- CPA-approved tax depreciation schedules and formal GAAP financial statements
+- Historical accounts-receivable aging snapshots and full accrual accounting automation
+- Automated loan amortization, principal/interest splitting, and lender statement imports
+- Benchmark calibration using a larger history of closed months
+
 ## Unreleased - Quote AI Workbench
 
 ### Added

@@ -10,9 +10,11 @@ import {
   LogOut,
   TreePine,
   Users,
+  UsersRound,
   Wrench,
 } from "lucide-react";
 import { logout } from "@/app/(app)/actions";
+import { FinancialHelpLink } from "@/components/financial-help-link";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
@@ -22,6 +24,7 @@ const navigation = [
   { href: "/invoices", label: "Invoices", icon: CircleDollarSign },
   { href: "/expenses", label: "Expenses", icon: FileSpreadsheet },
   { href: "/finance", label: "Finance", icon: Landmark },
+  { href: "/labor", label: "Labor", icon: UsersRound, adminOnly: true },
   { href: "/equipment", label: "Equipment", icon: Wrench },
   { href: "/reports", label: "Reports", icon: FileBarChart },
   { href: "/account/team", label: "Team", icon: Users },
@@ -30,10 +33,12 @@ const navigation = [
 export function AppShell({
   businessName,
   userEmail,
+  role,
   children,
 }: {
   businessName: string;
   userEmail: string;
+  role: "owner" | "admin" | "employee";
   children: React.ReactNode;
 }) {
   return (
@@ -49,15 +54,18 @@ export function AppShell({
               <span className="block truncate text-xs text-on-brand-subtle">{businessName}</span>
             </span>
           </Link>
-          <form action={logout} className="lg:hidden">
-            <button aria-label="Sign out" className="grid size-10 place-items-center rounded-md text-on-brand-muted hover:bg-white/10" title="Sign out">
-              <LogOut aria-hidden="true" size={19} />
-            </button>
-          </form>
+          <div className="flex items-center gap-1 lg:hidden">
+            <FinancialHelpLink compact />
+            <form action={logout}>
+              <button aria-label="Sign out" className="grid size-10 place-items-center rounded-md text-on-brand-muted hover:bg-white/10" title="Sign out">
+                <LogOut aria-hidden="true" size={19} />
+              </button>
+            </form>
+          </div>
         </div>
 
         <nav className="flex gap-1 overflow-x-auto border-t border-white/10 px-3 py-2 lg:block lg:space-y-1 lg:border-t-0 lg:px-3 lg:py-2" aria-label="Primary navigation">
-          {navigation.map(({ href, label, icon: Icon }) => (
+          {navigation.filter((item) => !item.adminOnly || role !== "employee").map(({ href, label, icon: Icon }) => (
             <Link className="flex h-11 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-on-brand-muted hover:bg-white/10 hover:text-on-brand" href={href} key={href}>
               <Icon aria-hidden="true" size={18} />
               {label}
@@ -66,7 +74,8 @@ export function AppShell({
         </nav>
 
         <div className="absolute bottom-0 hidden w-[236px] border-t border-white/10 p-4 lg:block">
-          <p className="truncate text-xs text-on-brand-subtle">{userEmail}</p>
+          <FinancialHelpLink />
+          <p className="mt-3 truncate text-xs text-on-brand-subtle">{userEmail}</p>
           <form action={logout} className="mt-2">
             <button className="flex h-10 w-full items-center gap-3 rounded-md px-2 text-sm font-medium text-on-brand-muted hover:bg-white/10 hover:text-on-brand">
               <LogOut aria-hidden="true" size={17} />

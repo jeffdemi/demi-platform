@@ -13,6 +13,8 @@ export type ExpenseWithRelations = ExpenseRow & {
 export type ExpenseFilters = {
   category?: string;
   transactionType?: string;
+  financialClassification?: string;
+  classificationReview?: string;
   includeVoided?: boolean;
 };
 
@@ -27,6 +29,8 @@ export async function listExpenses(client: Client, businessId: number, filters: 
   if (!filters.includeVoided) query = query.is("voided_at", null);
   if (filters.category) query = query.eq("category", filters.category);
   if (filters.transactionType) query = query.eq("transaction_type", filters.transactionType);
+  if (filters.financialClassification) query = query.eq("financial_classification", filters.financialClassification);
+  if (filters.classificationReview === "missing") query = query.eq("financial_classification_reviewed", false);
   const result = await query;
   if (result.error) throw new Error(`Unable to load expenses: ${result.error.message}`);
   return result.data as ExpenseWithRelations[];
@@ -41,7 +45,7 @@ export async function getExpense(client: Client, businessId: number, expenseId: 
 
 export async function listRefundableExpenseOptions(client: Client, businessId: number) {
   const result = await client.from("expenses")
-    .select("id, expense_date, vendor, description, amount, transaction_type")
+    .select("id, expense_date, vendor, description, amount, transaction_type, financial_classification, labor_class, deductible_percent")
     .eq("business_id", businessId).is("voided_at", null)
     .in("transaction_type", ["expense", "asset"])
     .order("expense_date", { ascending: false }).limit(500);
