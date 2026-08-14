@@ -13,6 +13,24 @@ describe("digital asset imports and FIFO basis", () => {
     expect(first.rows[0].fingerprint).toBe(second.rows[0].fingerprint);
   });
 
+  it("normalizes Coinbase exports with metadata rows and signed values", () => {
+    const input = [
+      ["Transactions"],
+      ["User", "Jeffery Demi", "account-id"],
+      ["ID", "Timestamp", "Transaction Type", "Asset", "Quantity Transacted", "Price Currency", "Price at Transaction", "Subtotal", "Total (inclusive of fees and/or spread)", "Fees and/or Spread", "Notes"],
+      ["sale-id", "2026-04-09 14:22:51 UTC", "Sell", "BTC", "-0.08121005", "USD", "$70635.975", "$5678.34", "$5571.87", "-$57.36", "Sold BTC"],
+      ["reward-id", "2026-04-09 15:20:39 UTC", "Reward Income", "USDC", "0.017104", "USD", "$1.00", "$0.01710", "$0.01710", "$0.00", "Coinbase reward"],
+      ["withdrawal-id", "2026-04-09 14:26:50 UTC", "Withdrawal", "USD", "-7068.99", "USD", "$1.00", "$7068.99", "$6945.28", "-$123.71", "Withdrawal to bank"],
+    ];
+    const result = normalizeDigitalAssetRows(input);
+    expect(result.errors).toEqual([]);
+    expect(result.rows).toHaveLength(3);
+    expect(result.rows[0]).toMatchObject({ transactionType: "sell", assetSymbol: "BTC", units: 0.08121005, grossAmountUsd: 5629.23, feeUsd: 57.36, externalId: "sale-id" });
+    expect(result.rows[0].grossAmountUsd - result.rows[0].feeUsd).toBeCloseTo(5571.87, 2);
+    expect(result.rows[1]).toMatchObject({ transactionType: "reward", assetSymbol: "USDC", units: 0.017104, grossAmountUsd: 0.0171, feeUsd: 0 });
+    expect(result.rows[2]).toMatchObject({ transactionType: "transfer_out", assetSymbol: "USD", units: 7068.99, grossAmountUsd: 6945.28, feeUsd: 123.71 });
+  });
+
   it("calculates FIFO cost basis and does not realize matched internal transfers", () => {
     const base = { rowNumber: 0, unitPriceUsd: null, externalId: null, memo: null, fingerprint: "a".repeat(64) };
     const portfolio = calculateFifoPortfolio([

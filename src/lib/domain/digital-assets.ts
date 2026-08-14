@@ -24,10 +24,11 @@ const aliases = {
   occurredAt: ["date", "time", "timestamp", "occurred at", "transaction date"],
   transactionType: ["type", "transaction type", "side"],
   assetSymbol: ["asset", "symbol", "currency", "coin"],
-  units: ["units", "quantity", "amount", "size"],
-  unitPriceUsd: ["unit price usd", "price usd", "price"],
-  grossAmountUsd: ["gross usd", "gross amount usd", "subtotal usd", "total usd", "value usd"],
-  feeUsd: ["fee usd", "fees usd", "fee"],
+  units: ["units", "quantity", "quantity transacted", "amount", "size"],
+  unitPriceUsd: ["unit price usd", "price usd", "price", "price at transaction"],
+  grossAmountUsd: ["gross usd", "gross amount usd", "subtotal usd", "subtotal", "total usd", "value usd"],
+  totalAmountUsd: ["total (inclusive of fees and/or spread)", "total inclusive of fees and/or spread"],
+  feeUsd: ["fee usd", "fees usd", "fee", "fees and/or spread"],
   externalId: ["transaction id", "external id", "id", "reference"],
   transferReference: ["transfer reference", "transfer id", "tx hash", "transaction hash"],
   memo: ["memo", "notes", "description"],
@@ -54,6 +55,7 @@ function normalizeType(value: string): DigitalAssetTransactionType | null {
   const type = value.toLowerCase().replaceAll("-", "_").replaceAll(" ", "_");
   if (type === "purchase") return "buy";
   if (type === "sale") return "sell";
+  if (type === "reward_income" || type === "rewards_income") return "reward";
   if (type === "deposit" || type === "receive") return "transfer_in";
   if (type === "withdrawal" || type === "send") return "transfer_out";
   return digitalAssetTransactionTypes.includes(type as DigitalAssetTransactionType) ? type as DigitalAssetTransactionType : null;
@@ -74,28 +76,39 @@ export function digitalAssetFingerprint(row: Omit<DigitalAssetImportRow, "rowNum
 
 export function normalizeDigitalAssetRows(rawRows: unknown[][]) {
   if (!rawRows.length) return { rows: [] as DigitalAssetImportRow[], errors: ["The exchange export is empty."] };
-  const headers = rawRows[0].map(clean);
+  const headerIndex = rawRows.findIndex((candidate) => {
+    const headers = candidate.map(clean);
+    return column(headers, aliases.occurredAt) !== null
+      && column(headers, aliases.transactionType) !== null
+      && column(headers, aliases.assetSymbol) !== null
+      && column(headers, aliases.units) !== null;
+  });
+  if (headerIndex < 0) return { rows: [] as DigitalAssetImportRow[], errors: ["The CSV needs Date, Type, Asset, and Units columns."] };
+  const headers = rawRows[headerIndex].map(clean);
   const indexes = Object.fromEntries(Object.entries(aliases).map(([key, names]) => [key, column(headers, names)])) as Record<keyof typeof aliases, number | null>;
-  if ([indexes.occurredAt, indexes.transactionType, indexes.assetSymbol, indexes.units].some((index) => index === null)) {
-    return { rows: [] as DigitalAssetImportRow[], errors: ["The CSV needs Date, Type, Asset, and Units columns."] };
-  }
   const rows: DigitalAssetImportRow[] = [];
   const errors: string[] = [];
-  rawRows.slice(1).forEach((raw, offset) => {
+  rawRows.slice(headerIndex + 1).forEach((raw, offset) => {
     if (!raw.some((value) => clean(value))) return;
-    const rowNumber = offset + 2;
+    const rowNumber = headerIndex + offset + 2;
     const occurred = new Date(clean(raw[indexes.occurredAt!]));
     const transactionType = normalizeType(clean(raw[indexes.transactionType!]));
     const assetSymbol = clean(raw[indexes.assetSymbol!]).toUpperCase();
-    const units = numeric(raw[indexes.units!]);
+    const parsedUnits = numeric(raw[indexes.units!]);
     const unitPriceUsd = indexes.unitPriceUsd === null ? null : numeric(raw[indexes.unitPriceUsd]);
     const suppliedGross = indexes.grossAmountUsd === null ? null : numeric(raw[indexes.grossAmountUsd]);
-    const feeUsd = indexes.feeUsd === null ? 0 : numeric(raw[indexes.feeUsd]);
-    if (Number.isNaN(occurred.valueOf()) || !transactionType || !/^[A-Z0-9]{2,12}$/.test(assetSymbol) || units === null || units <= 0 || Number.isNaN(units) || Number.isNaN(unitPriceUsd) || Number.isNaN(suppliedGross) || feeUsd === null || feeUsd < 0 || Number.isNaN(feeUsd)) {
+    const suppliedTotal = indexes.totalAmountUsd === null ? null : numeric(raw[indexes.totalAmountUsd]);
+    const parsedFee = indexes.feeUsd === null ? 0 : numeric(raw[indexes.feeUsd]);
+    if (Number.isNaN(occurred.valueOf()) || !transactionType || !/^[A-Z0-9]{2,12}$/.test(assetSymbol) || parsedUnits === null || parsedUnits === 0 || Number.isNaN(parsedUnits) || Number.isNaN(unitPriceUsd) || Number.isNaN(suppliedGross) || Number.isNaN(suppliedTotal) || parsedFee === null || Number.isNaN(parsedFee)) {
       errors.push(`Row ${rowNumber}: invalid date, type, asset, units, price, gross amount, or fee.`);
       return;
     }
-    const grossAmountUsd = suppliedGross ?? (unitPriceUsd === null ? 0 : Math.round(units * unitPriceUsd * 100) / 100);
+    const units = Math.abs(parsedUnits);
+    const feeUsd = Math.abs(parsedFee);
+    const inclusiveTotal = suppliedTotal === null ? null : Math.abs(suppliedTotal);
+    const grossAmountUsd = inclusiveTotal === null
+      ? Math.abs(suppliedGross ?? (unitPriceUsd === null ? 0 : Math.round(units * unitPriceUsd * 100) / 100))
+      : transactionType === "buy" ? Math.max(0, inclusiveTotal - feeUsd) : inclusiveTotal + (transactionType === "sell" ? feeUsd : 0);
     if (grossAmountUsd < 0) {
       errors.push(`Row ${rowNumber}: gross USD cannot be negative.`);
       return;
