@@ -166,7 +166,7 @@ export type CrabtreeReportInput = {
   from: string;
   to: string;
   settings: typeof defaultFinancialSettings;
-  payments: { amount: number; payment_date: string; voided_at?: string | null }[];
+  payments: { amount: number; payment_date: string | null; voided_at?: string | null }[];
   invoices: { amount: number; invoice_date: string; status: string }[];
   expenses: Expense[];
   laborEntries: LaborEntry[];
@@ -178,7 +178,7 @@ export type CrabtreeReportInput = {
 export function buildCrabtreeReport(input: CrabtreeReportInput) {
   const months = monthsInPeriod(input.from, input.to);
   const cashRevenue = input.payments
-    .filter((payment) => !payment.voided_at && inRange(payment.payment_date, input.from, input.to))
+    .filter((payment) => !payment.voided_at && payment.payment_date && inRange(payment.payment_date, input.from, input.to))
     .reduce((sum, payment) => sum + payment.amount, 0);
   const accrualRevenue = input.invoices
     .filter((invoice) => !["draft", "void"].includes(invoice.status) && inRange(invoice.invoice_date, input.from, input.to))

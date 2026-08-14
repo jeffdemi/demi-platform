@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { actualCashReceipts } from "@/lib/domain/revenue";
 
 type Client = SupabaseClient<Database>;
 
@@ -130,12 +131,11 @@ export async function getMonthEndInputs(client: Client, businessId: number, peri
 
 export async function getCrabtreeReportData(client: Client, businessId: number, from: string, to: string) {
   const monthEnd = `${to.slice(0, 7)}-01`;
-  const [settings, payments, invoices, expenses, laborEntries, ownerCompensation, equipment, snapshot] = await Promise.all([
+  const [settings, payments, jobs, invoices, expenses, laborEntries, ownerCompensation, equipment, snapshot] = await Promise.all([
     getFinancialSettings(client, businessId),
-    client.from("payments").select("amount, payment_date, voided_at").eq("business_id", businessId)
-      .gte("payment_date", from).lte("payment_date", to).limit(10000),
-    client.from("invoices").select("amount, invoice_date, status").eq("business_id", businessId)
-      .gte("invoice_date", from).lte("invoice_date", to).limit(10000),
+    client.from("payments").select("amount, payment_date, job_id, invoice_id, voided_at").eq("business_id", businessId).limit(10000),
+    client.from("jobs").select("id, amount_paid, paid_date, job_date").eq("business_id", businessId).limit(10000),
+    client.from("invoices").select("id, job_id, amount, invoice_date, status").eq("business_id", businessId).limit(10000),
     client.from("expenses").select("amount, expense_date, financial_classification, labor_class, transaction_type, voided_at")
       .eq("business_id", businessId).gte("expense_date", from).lte("expense_date", to).limit(10000),
     client.from("labor_entries").select("worker_type, labor_class, period_end, gross_wages, employer_payroll_taxes, benefits, voided_at")
@@ -146,12 +146,12 @@ export async function getCrabtreeReportData(client: Client, businessId: number, 
     client.from("monthly_financial_snapshots").select("*").eq("business_id", businessId)
       .lte("period_month", monthEnd).order("period_month", { ascending: false }).limit(1).maybeSingle(),
   ]);
-  for (const result of [payments, invoices, expenses, laborEntries, equipment, snapshot]) {
+  for (const result of [payments, jobs, invoices, expenses, laborEntries, equipment, snapshot]) {
     if (result.error) throw new Error(`Unable to build management report: ${result.error.message}`);
   }
   return {
     settings,
-    payments: payments.data ?? [],
+    payments: actualCashReceipts({ payments: payments.data ?? [], jobs: jobs.data ?? [], invoices: invoices.data ?? [] }),
     invoices: invoices.data ?? [],
     expenses: expenses.data ?? [],
     laborEntries: laborEntries.data ?? [],

@@ -113,6 +113,12 @@ equipment. Existing expenses default to operating and remain marked for review;
 known asset purchases and linked refunds are backfilled without deleting or
 replacing any source record.
 
+The paid-amount integrity migration backfills payment and journal rows for jobs
+that already have an actual paid amount but no payment-ledger record. Job lists,
+cash reports, and management reports display or calculate from actual receipts;
+quoted amounts remain separately labeled for estimating, quoting, job details,
+and invoice preparation.
+
 The browser uses Supabase's publishable key. Authorization is enforced by authenticated sessions and business-membership RLS policies.
 
 ## Legacy Data

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased - Paid Amount Integrity
+
+### Fixed
+
+- Job lists now show the actual amount paid instead of the quoted amount
+- Cash and management reports include recorded job paid totals when a historical payment row is missing, without double counting linked payments
+- Existing paid jobs without payment rows are backfilled into the payment ledger and balanced journal without changing source job records
+
 ## Unreleased - Management Reporting Foundation
 
 ### Added

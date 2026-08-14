@@ -5,7 +5,7 @@ export type ReportData = {
   invoices: { status: string; amount: number; invoice_date: string }[];
   expenses: { amount: number; expense_date: string; category: string; transaction_type?: string; voided_at?: string | null }[];
   quotes: { status: string; quoted_price: number; quote_date: string }[];
-  payments?: { amount: number; payment_date: string; voided_at?: string | null }[];
+  payments?: { amount: number; payment_date: string | null; voided_at?: string | null }[];
 };
 
 export function buildReportSummary(data: ReportData) {

@@ -22,7 +22,7 @@ export const financialGuideTerms: FinancialGuideTerm[] = [
     id: "reporting-basis",
     term: "Management reporting basis",
     category: "Setup & ownership",
-    definition: "Controls when revenue appears in the normalized management report. Cash basis uses collected payments; accrual basis uses eligible invoices.",
+    definition: "Controls when revenue appears in the normalized management report. Cash basis uses recorded receipts, with historical job paid totals as a fallback when no payment-ledger row exists; accrual basis uses eligible invoices.",
     source: "Targets & Owner Pay settings.",
     action: "Use one basis consistently when comparing periods.",
   },
@@ -338,7 +338,7 @@ export const financialGuideTerms: FinancialGuideTerm[] = [
     term: "Revenue",
     category: "Reports & metrics",
     definition: "Business income recognized during the reporting period according to the selected cash or accrual basis.",
-    source: "Collected payments on cash basis or eligible invoices on accrual basis.",
+    source: "Payment-ledger receipts, or a historical job's paid total when no payment row exists, on cash basis; eligible invoices on accrual basis.",
   },
   {
     id: "gross-margin",

@@ -14,7 +14,9 @@ the monthly workflow diagram and a searchable glossary.
 
 ## Core Terms
 
-- **Revenue** uses collected payments on the cash basis or non-draft invoices on
+- **Revenue** uses active payment-ledger receipts on the cash basis. Historical
+  jobs with a recorded paid amount and no payment-ledger row are included once
+  as a preservation fallback. Accrual basis uses non-draft invoices on
   the accrual basis, according to the reporting setting.
 - **COGS** is the non-labor cost directly required to deliver a job, such as
   disposal fees, subcontracted production, or job-specific materials.
