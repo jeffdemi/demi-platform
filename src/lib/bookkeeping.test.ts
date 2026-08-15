@@ -132,6 +132,23 @@ describe("bookkeeping validation and migration controls", () => {
     expect(migration).not.toMatch(/security\s+definer/i);
   });
 
+  it("posts allocations through admin-scoped RLS without rewriting ledger setup", async () => {
+    const migration = await readFile(new URL("../../supabase/migrations/20260815105000_bank_allocation_rls_writes.sql", import.meta.url), "utf8");
+    expect(migration).toContain("create policy journal_entries_admin_insert");
+    expect(migration).toContain("create policy journal_lines_admin_insert");
+    expect(migration).toContain("private.is_business_admin(business_id)");
+    expect(migration).not.toContain("perform private.ensure_default_ledger_accounts");
+    expect(migration).toContain("security invoker");
+  });
+
+  it("preserves allocation form values after server errors", async () => {
+    const form = await readFile(new URL("../app/(app)/finance/bookkeeping-forms.tsx", import.meta.url), "utf8");
+    expect(form).toContain("const [values, setValues] = useState");
+    expect(form).toContain("value={values.ledgerAccountId}");
+    expect(form).toContain("checked={values.rememberRule}");
+    expect(form).toContain("value={values.merchantPattern}");
+  });
+
   it("exposes the bookkeeping routes from Finance and Reports", async () => {
     const [finance, reports, monthEnd] = await Promise.all([
       readFile(new URL("../app/(app)/finance/page.tsx", import.meta.url), "utf8"),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { ArrowRightLeft, CheckCircle2, Save, Undo2 } from "lucide-react";
 import { FormFeedback } from "@/components/form-feedback";
 import { Field, inputClass, textAreaClass } from "@/components/form-fields";
@@ -36,14 +36,23 @@ export function StatementPeriodForm({ accounts, defaultAccountId }: { accounts: 
 
 export function AllocationForm({ transactionId, accounts, remaining, description }: { transactionId: number; accounts: AccountOption[]; remaining: number; description: string }) {
   const [state, action, pending] = useActionState(saveTransactionAllocation.bind(null, transactionId), {} as FinanceState);
+  const [values, setValues] = useState({
+    ledgerAccountId: "",
+    amount: remaining.toFixed(2),
+    memo: description,
+    taxCategory: "",
+    deductiblePercent: "100",
+    rememberRule: false,
+    merchantPattern: description,
+  });
   return <form action={action} className="grid gap-4 sm:grid-cols-2">
-    <Field errors={state.errors?.ledgerAccountId} label="Bookkeeping account" name="ledgerAccountId"><select className={inputClass} defaultValue="" id="ledgerAccountId" name="ledgerAccountId" required><option disabled value="">Select account</option>{accounts.filter((account) => account.system_key !== "cash").map((account) => <option key={account.id} value={account.id}>{account.code} · {account.name}</option>)}</select></Field>
-    <Field errors={state.errors?.amount} label={`Amount remaining: $${remaining.toFixed(2)}`} name="amount"><input className={inputClass} defaultValue={remaining.toFixed(2)} id="amount" max={remaining} min="0.01" name="amount" required step="0.01" type="number" /></Field>
-    <Field errors={state.errors?.memo} label="Memo" name="memo"><input className={inputClass} defaultValue={description} id="memo" name="memo" required /></Field>
-    <Field errors={state.errors?.taxCategory} label="Tax category" name="taxCategory"><input className={inputClass} id="taxCategory" name="taxCategory" placeholder="Optional" /></Field>
-    <Field errors={state.errors?.deductiblePercent} label="Business deductible %" name="deductiblePercent"><input className={inputClass} defaultValue="100" id="deductiblePercent" max="100" min="0" name="deductiblePercent" step="0.01" type="number" /></Field>
+    <Field errors={state.errors?.ledgerAccountId} label="Bookkeeping account" name="ledgerAccountId"><select className={inputClass} id="ledgerAccountId" name="ledgerAccountId" onChange={(event) => setValues((current) => ({ ...current, ledgerAccountId: event.target.value }))} required value={values.ledgerAccountId}><option disabled value="">Select account</option>{accounts.filter((account) => account.system_key !== "cash").map((account) => <option key={account.id} value={account.id}>{account.code} · {account.name}</option>)}</select></Field>
+    <Field errors={state.errors?.amount} label={`Amount remaining: $${remaining.toFixed(2)}`} name="amount"><input className={inputClass} id="amount" max={remaining} min="0.01" name="amount" onChange={(event) => setValues((current) => ({ ...current, amount: event.target.value }))} required step="0.01" type="number" value={values.amount} /></Field>
+    <Field errors={state.errors?.memo} label="Memo" name="memo"><input className={inputClass} id="memo" name="memo" onChange={(event) => setValues((current) => ({ ...current, memo: event.target.value }))} required value={values.memo} /></Field>
+    <Field errors={state.errors?.taxCategory} label="Tax category" name="taxCategory"><input className={inputClass} id="taxCategory" name="taxCategory" onChange={(event) => setValues((current) => ({ ...current, taxCategory: event.target.value }))} placeholder="Optional" value={values.taxCategory} /></Field>
+    <Field errors={state.errors?.deductiblePercent} label="Business deductible %" name="deductiblePercent"><input className={inputClass} id="deductiblePercent" max="100" min="0" name="deductiblePercent" onChange={(event) => setValues((current) => ({ ...current, deductiblePercent: event.target.value }))} step="0.01" type="number" value={values.deductiblePercent} /></Field>
     <div />
-    <div className="space-y-2 rounded-md border border-line bg-surface-muted p-3 sm:col-span-2"><label className="flex items-start gap-2 text-sm font-semibold"><input className="mt-1" name="rememberRule" type="checkbox" value="yes" /><span>After posting, find similar transactions and remember this classification for future imports.</span></label><label className="block text-sm font-semibold">Merchant text to recognize<input className={`${inputClass} mt-1`} defaultValue={description} name="merchantPattern" /></label><p className="text-xs text-muted">Shorten this to the stable merchant name—for example, HISCOX. Future matches will wait for your approval.</p></div>
+    <div className="space-y-2 rounded-md border border-line bg-surface-muted p-3 sm:col-span-2"><label className="flex items-start gap-2 text-sm font-semibold"><input checked={values.rememberRule} className="mt-1" name="rememberRule" onChange={(event) => setValues((current) => ({ ...current, rememberRule: event.target.checked }))} type="checkbox" value="yes" /><span>After posting, find similar transactions and remember this classification for future imports.</span></label><label className="block text-sm font-semibold">Merchant text to recognize<input className={`${inputClass} mt-1`} name="merchantPattern" onChange={(event) => setValues((current) => ({ ...current, merchantPattern: event.target.value }))} value={values.merchantPattern} /></label><p className="text-xs text-muted">Shorten this to the stable merchant name—for example, HISCOX. Future matches will wait for your approval.</p></div>
     <div className="sm:col-span-2"><FormFeedback message={state.message} tone={state.message === "Allocation posted." ? "success" : "danger"} /></div>
     <div className="sm:col-span-2"><button className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand disabled:opacity-60" disabled={pending || remaining <= 0}><Save size={17} />{pending ? "Posting..." : "Post allocation"}</button></div>
   </form>;
