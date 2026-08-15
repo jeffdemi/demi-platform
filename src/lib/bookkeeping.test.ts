@@ -116,6 +116,22 @@ describe("bookkeeping validation and migration controls", () => {
     expect(migration).not.toMatch(/drop\s+table|truncate|delete\s+from/i);
   });
 
+  it("restores signed-in access to the closed-period safety check", async () => {
+    const migration = await readFile(new URL("../../supabase/migrations/20260815103000_restore_accounting_period_check_execute.sql", import.meta.url), "utf8");
+    expect(migration).toContain("grant execute on function private.assert_accounting_period_open(bigint, date)");
+    expect(migration).toContain("to authenticated");
+    expect(migration).not.toMatch(/security\s+definer/i);
+  });
+
+  it("keeps private bookkeeping helpers on caller privileges", async () => {
+    const migration = await readFile(new URL("../../supabase/migrations/20260815104000_harden_bookkeeping_helper_permissions.sql", import.meta.url), "utf8");
+    expect(migration).toContain("alter function private.assert_accounting_period_open(bigint, date)");
+    expect(migration).toContain("alter function private.ensure_default_ledger_accounts(bigint)");
+    expect(migration.match(/security invoker/g)).toHaveLength(2);
+    expect(migration).toContain("to authenticated");
+    expect(migration).not.toMatch(/security\s+definer/i);
+  });
+
   it("exposes the bookkeeping routes from Finance and Reports", async () => {
     const [finance, reports, monthEnd] = await Promise.all([
       readFile(new URL("../app/(app)/finance/page.tsx", import.meta.url), "utf8"),
