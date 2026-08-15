@@ -91,6 +91,18 @@ describe("billing and operating records", () => {
     expect(maintenanceFormSchema.safeParse({ equipmentId: "", serviceDate: "bad", serviceType: "" }).success).toBe(false);
     expect(quoteFormSchema.safeParse({ customerId: "", status: "converted", quoteDate: "bad", quotedPrice: "x", proBono: false, pa811Required: false }).success).toBe(false);
   });
+
+  it("shows directly recorded expenses in Finance until they are matched", async () => {
+    const [financePage, expenseRepository] = await Promise.all([
+      readFile(new URL("../app/(app)/finance/page.tsx", import.meta.url), "utf8"),
+      readFile(new URL("./repositories/expense-repository.ts", import.meta.url), "utf8"),
+    ]);
+    expect(expenseRepository).toContain('is("bank_transaction_id", null)');
+    expect(expenseRepository).toContain('is("voided_at", null)');
+    expect(financePage).toContain("Recorded expenses awaiting bank match");
+    expect(financePage).toContain('<StatusBadge label="unreviewed" status="unreviewed" />');
+    expect(financePage).toContain("Review expense");
+  });
 });
 
 describe("spreadsheet import and reporting", () => {

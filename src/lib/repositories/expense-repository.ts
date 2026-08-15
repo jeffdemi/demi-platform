@@ -36,6 +36,25 @@ export async function listExpenses(client: Client, businessId: number, filters: 
   return result.data as ExpenseWithRelations[];
 }
 
+export async function listExpensesAwaitingBankMatch(
+  client: Client,
+  businessId: number,
+  sort: "date" | "description" = "date",
+  direction: "asc" | "desc" = "desc",
+) {
+  const sortColumn = sort === "description" ? "vendor" : "expense_date";
+  const result = await client.from("expenses")
+    .select("id, expense_date, vendor, description, amount, transaction_type, receipt_review_status")
+    .eq("business_id", businessId)
+    .is("bank_transaction_id", null)
+    .is("voided_at", null)
+    .order(sortColumn, { ascending: direction === "asc", nullsFirst: false })
+    .order("id", { ascending: direction === "asc" })
+    .limit(500);
+  if (result.error) throw new Error(`Unable to load expenses awaiting bank match: ${result.error.message}`);
+  return result.data ?? [];
+}
+
 export async function getExpense(client: Client, businessId: number, expenseId: number) {
   const result = await client.from("expenses").select(expenseSelect)
     .eq("business_id", businessId).eq("id", expenseId).maybeSingle();

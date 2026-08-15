@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { requireBusinessContext } from "@/lib/auth";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { listBankAccounts, listBankStatementPeriods, listBankTransactions } from "@/lib/repositories/accounting-repository";
+import { listExpensesAwaitingBankMatch } from "@/lib/repositories/expense-repository";
 import { createClient } from "@/lib/supabase/server";
 import { BankAccountForm } from "./finance-forms";
 
@@ -18,13 +19,16 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const context = await requireBusinessContext();
   const { business } = context;
   const client = await createClient();
-  const [accounts, transactions, statementPeriods] = await Promise.all([
+  const [accounts, transactions, statementPeriods, allUnmatchedExpenses] = await Promise.all([
     listBankAccounts(client, business.id),
     listBankTransactions(client, business.id, status, sort, direction),
     listBankStatementPeriods(client, business.id),
+    listExpensesAwaitingBankMatch(client, business.id, sort, direction),
   ]);
   const allTransactions = status ? await listBankTransactions(client, business.id) : transactions;
   const unreviewed = allTransactions.filter((transaction) => transaction.status === "unreviewed");
+  const unreviewedCount = unreviewed.length + allUnmatchedExpenses.length;
+  const unmatchedExpenses = !status || status === "unreviewed" ? allUnmatchedExpenses : [];
   const deposits = allTransactions.filter((transaction) => transaction.amount > 0).reduce((sum, transaction) => sum + transaction.amount, 0);
   const withdrawals = allTransactions.filter((transaction) => transaction.amount < 0).reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0);
   const sortHref = (column: "date" | "description") => {
@@ -43,8 +47,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
     <PageHeader actions={actions} description="Reconcile actual cash activity with expenses and customer payments." title="Finance" />
     {context.role !== "employee" ? <div className="flex flex-wrap gap-2 pt-6"><Link className="inline-flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand" href="/finance/matching"><Sparkles size={17} />Review automatic expense matches</Link><Link className="inline-flex h-11 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold" href="/finance/suggestions"><Sparkles size={17} />Approve learned classifications</Link></div> : null}
     <section className="grid grid-cols-2 gap-3 py-6 sm:grid-cols-4">
-      {[["Unreviewed", String(unreviewed.length)], ["Imported deposits", formatCurrency(deposits)], ["Imported withdrawals", formatCurrency(withdrawals)], ["Net imported cash", formatCurrency(deposits - withdrawals)]].map(([label, value]) => <div className="rounded-lg border border-line bg-surface p-4 shadow-sm" key={label}><p className="text-xl font-bold tabular-nums">{value}</p><p className="mt-1 text-xs text-muted">{label}</p></div>)}
+      {[["Unreviewed items", String(unreviewedCount)], ["Imported deposits", formatCurrency(deposits)], ["Imported withdrawals", formatCurrency(withdrawals)], ["Net imported cash", formatCurrency(deposits - withdrawals)]].map(([label, value]) => <div className="rounded-lg border border-line bg-surface p-4 shadow-sm" key={label}><p className="text-xl font-bold tabular-nums">{value}</p><p className="mt-1 text-xs text-muted">{label}</p></div>)}
     </section>
+    {unmatchedExpenses.length ? <section className="mb-5 overflow-hidden rounded-lg border border-line bg-surface shadow-sm"><div className="border-b border-line px-4 py-3"><h2 className="font-bold">Recorded expenses awaiting bank match</h2><p className="mt-1 text-sm text-muted">These expenses were entered directly and have not yet been linked to an imported bank or card transaction.</p></div><div className="overflow-x-auto"><table className="w-full min-w-[760px] table-fixed text-left text-sm"><colgroup><col className="w-[130px]" /><col /><col className="w-[145px]" /><col className="w-[120px]" /><col className="w-[160px]" /></colgroup><thead className="bg-surface-muted text-xs uppercase text-muted"><tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Expense</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Amount</th><th className="px-4 py-3">Action</th></tr></thead><tbody className="divide-y divide-line">{unmatchedExpenses.map((expense) => <tr key={expense.id}><td className="whitespace-nowrap px-4 py-3">{formatDate(expense.expense_date)}</td><td className="truncate px-4 py-3 font-semibold" title={expense.vendor || expense.description || `Expense #${expense.id}`}>{expense.vendor || expense.description || `Expense #${expense.id}`}</td><td className="px-4 py-3"><StatusBadge label="unreviewed" status="unreviewed" /></td><td className="whitespace-nowrap px-4 py-3 text-right font-bold tabular-nums">{expense.transaction_type === "refund" ? "+" : "-"}{formatCurrency(Math.abs(expense.amount))}</td><td className="px-4 py-3"><Link className="inline-flex h-9 items-center rounded-md bg-brand px-3 font-semibold text-on-brand" href={`/expenses/${expense.id}`}>Review expense</Link></td></tr>)}</tbody></table></div></section> : null}
     <div className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_320px]">
       <section className="min-w-0 overflow-hidden rounded-lg border border-line bg-surface shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3"><h2 className="font-bold">Bank transactions</h2><div className="flex flex-wrap gap-2 text-sm">{["", "unreviewed", "partially_matched", "matched", "excluded"].map((value) => <Link className={`rounded-md px-2 py-1 font-semibold ${status === value || (!status && !value) ? "bg-brand text-on-brand" : "border border-line-strong"}`} href={filterHref(value)} key={value}>{value ? value.replaceAll("_", " ") : "All"}</Link>)}</div></div>
