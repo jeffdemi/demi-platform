@@ -139,6 +139,10 @@ export const bankTransferSchema = z.object({
   memo: optionalText(500),
 });
 
+export const existingExpenseMatchSchema = z.object({
+  expenseId: positiveId("an existing expense"),
+});
+
 export const bookkeepingAdjustmentSchema = z.object({
   entryDate: date("Entry date", true),
   description: requiredText("Description", 500),

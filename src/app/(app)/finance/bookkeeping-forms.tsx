@@ -6,6 +6,7 @@ import { FormFeedback } from "@/components/form-feedback";
 import { Field, inputClass, textAreaClass } from "@/components/form-fields";
 import {
   createStatementPeriod,
+  matchExpense,
   postBookkeepingAdjustment,
   reconcileStatement,
   reverseTransactionAllocation,
@@ -16,6 +17,7 @@ import {
 
 type AccountOption = { id: number; code?: string; name: string; account_type?: string; system_key?: string | null };
 type TransactionOption = { id: number; transaction_date: string; description: string; amount: number; bank_accounts: { name: string } | null };
+type ExpenseMatchOption = { id: number; expense_date: string; vendor: string | null; description: string | null; category: string; amount: number; transaction_type: string };
 
 export function StatementPeriodForm({ accounts, defaultAccountId }: { accounts: AccountOption[]; defaultAccountId?: number }) {
   const [state, action, pending] = useActionState(createStatementPeriod, {} as FinanceState);
@@ -53,6 +55,15 @@ export function TransferForm({ transactionId, candidates }: { transactionId: num
     <Field errors={state.errors?.memo} label="Transfer memo" name="memo"><input className={inputClass} id="memo" name="memo" placeholder="Transfer between business accounts" /></Field>
     <FormFeedback message={state.message} />
     <button className="flex h-11 items-center justify-center gap-2 rounded-md border border-line-strong px-4 font-semibold disabled:opacity-60" disabled={pending || !candidates.length}><ArrowRightLeft size={17} />{pending ? "Matching..." : "Match transfer"}</button>
+  </form>;
+}
+
+export function ExistingExpenseMatchForm({ transactionId, candidates }: { transactionId: number; candidates: ExpenseMatchOption[] }) {
+  const [state, action, pending] = useActionState(matchExpense.bind(null, transactionId), {} as FinanceState);
+  return <form action={action} className="grid gap-3">
+    <Field errors={state.errors?.expenseId} label="Matching recorded expense" name="expenseId"><select className={inputClass} defaultValue="" id="expenseId" name="expenseId" required><option disabled value="">Select an expense</option>{candidates.map((expense) => <option key={expense.id} value={expense.id}>{expense.expense_date} · {expense.vendor || expense.description || expense.category} · ${Number(expense.amount).toFixed(2)}</option>)}</select></Field>
+    <FormFeedback message={state.message} tone={state.message === "Existing expense matched." ? "success" : "danger"} />
+    <button className="flex h-10 items-center justify-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand disabled:opacity-60" disabled={pending || !candidates.length}><CheckCircle2 size={16} />{pending ? "Matching..." : "Match existing expense"}</button>
   </form>;
 }
 

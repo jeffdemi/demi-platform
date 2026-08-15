@@ -14,6 +14,7 @@ import {
   excludeBankTransaction,
   getBankTransaction,
   importBankStatement,
+  matchExistingExpense,
   reconcileBankStatementPeriod,
   recordPayment,
   saveBankStatementPeriod,
@@ -27,6 +28,7 @@ import {
   bankTransferSchema,
   bookkeepingAdjustmentSchema,
   excludeBankTransactionSchema,
+  existingExpenseMatchSchema,
   formValues,
   paymentFormSchema,
 } from "@/lib/validation/business-records";
@@ -142,6 +144,30 @@ export async function excludeTransaction(transactionId: number, _: FinanceState,
   if (!excluded) return { message: "That transaction is no longer available for review." };
   refreshFinance();
   return { message: "Transaction excluded from reconciliation." };
+}
+
+export async function matchExpense(transactionId: number, _: FinanceState, formData: FormData): Promise<FinanceState> {
+  const parsed = existingExpenseMatchSchema.safeParse({ expenseId: formData.get("expenseId") });
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+  const context = await requireBusinessContext();
+  if (context.role === "employee") return { message: "Only an owner or administrator can match expenses." };
+  try {
+    const client = await createClient();
+    const transaction = await getBankTransaction(client, context.business.id, transactionId);
+    if (!transaction || transaction.status !== "unreviewed" || transaction.amount >= 0) {
+      return { message: "That charge is no longer available to match." };
+    }
+    await matchExistingExpense(client, {
+      businessId: context.business.id,
+      transactionId,
+      expenseId: parsed.data.expenseId!,
+    });
+    refreshFinance();
+    revalidatePath(`/finance/transactions/${transactionId}`);
+    return { message: "Existing expense matched." };
+  } catch (error) {
+    return { message: error instanceof Error ? error.message : "The expense could not be matched." };
+  }
 }
 
 export async function savePayment(_: FinanceState, formData: FormData): Promise<FinanceState> {

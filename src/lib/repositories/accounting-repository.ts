@@ -97,24 +97,47 @@ export async function getBankTransaction(client: Client, businessId: number, tra
 }
 
 export async function getBankTransactionReview(client: Client, businessId: number, transactionId: number) {
-  const [transaction, allocations, ledgerAccounts, transferCandidates] = await Promise.all([
-    getBankTransaction(client, businessId, transactionId),
+  const transaction = await getBankTransaction(client, businessId, transactionId);
+  const transactionDate = transaction ? new Date(`${transaction.transaction_date}T00:00:00Z`) : null;
+  const nearbyDate = (days: number) => {
+    if (!transactionDate) return "1900-01-01";
+    const value = new Date(transactionDate);
+    value.setUTCDate(value.getUTCDate() + days);
+    return value.toISOString().slice(0, 10);
+  };
+  const [allocations, ledgerAccounts, transferCandidates, suggestedExpenses] = await Promise.all([
     client.from("bank_transaction_allocations").select("*, ledger_accounts(code, name, account_type)")
       .eq("business_id", businessId).eq("bank_transaction_id", transactionId).is("voided_at", null).order("id"),
     listLedgerAccounts(client, businessId),
     client.from("bank_transactions").select("id, account_id, transaction_date, description, amount, bank_accounts(name)")
       .eq("business_id", businessId).eq("status", "unreviewed").neq("id", transactionId)
       .order("transaction_date", { ascending: false }).limit(250),
+    transaction && transaction.amount < 0
+      ? client.from("expenses").select("id, expense_date, vendor, description, category, amount, transaction_type")
+        .eq("business_id", businessId).is("voided_at", null).is("bank_transaction_id", null)
+        .in("transaction_type", ["expense", "asset"]).eq("amount", Math.abs(transaction.amount))
+        .gte("expense_date", nearbyDate(-10)).lte("expense_date", nearbyDate(10)).order("expense_date").limit(25)
+      : Promise.resolve({ data: [], error: null }),
   ]);
-  if (allocations.error || transferCandidates.error) {
-    throw new Error(`Unable to load transaction review: ${allocations.error?.message || transferCandidates.error?.message}`);
+  if (allocations.error || transferCandidates.error || suggestedExpenses.error) {
+    throw new Error(`Unable to load transaction review: ${allocations.error?.message || transferCandidates.error?.message || suggestedExpenses.error?.message}`);
   }
   return {
     transaction,
     allocations: allocations.data ?? [],
     ledgerAccounts,
     transferCandidates: transferCandidates.data ?? [],
+    suggestedExpenses: suggestedExpenses.data ?? [],
   };
+}
+
+export async function matchExistingExpense(client: Client, values: { businessId: number; transactionId: number; expenseId: number }) {
+  const result = await client.from("expenses").update({ bank_transaction_id: values.transactionId })
+    .eq("business_id", values.businessId).eq("id", values.expenseId)
+    .is("bank_transaction_id", null).is("voided_at", null).select("id").maybeSingle();
+  if (result.error) throw new Error(`Unable to match the expense: ${result.error.message}`);
+  if (!result.data) throw new Error("That expense is no longer available to match.");
+  return result.data;
 }
 
 export async function listLedgerAccounts(client: Client, businessId: number) {
