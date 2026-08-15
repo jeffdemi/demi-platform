@@ -79,7 +79,17 @@ export async function createExpenseRecord(
   const normalized = normalizedExpenseInput(input, refundSource);
   const receiptPath = await uploadReceipt(client, businessId, receiptValue);
   try {
-    return await createExpense(client, { ...normalized, business_id: businessId, receipt_path: receiptPath });
+    return await createExpense(client, {
+      ...normalized,
+      business_id: businessId,
+      receipt_path: receiptPath,
+      ...(receiptPath ? {
+        receipt_review_status: "needs_review",
+        receipt_extracted_data: null,
+        receipt_reviewed_at: null,
+        receipt_reviewed_by: null,
+      } : {}),
+    });
   } catch (error) {
     await removeReceipt(client, receiptPath);
     throw error;
@@ -101,7 +111,13 @@ export async function updateExpenseRecord(
   try {
     const updated = await updateExpense(client, businessId, expenseId, {
       ...normalized,
-      ...(replacementPath ? { receipt_path: replacementPath } : {}),
+      ...(replacementPath ? {
+        receipt_path: replacementPath,
+        receipt_review_status: "needs_review",
+        receipt_extracted_data: null,
+        receipt_reviewed_at: null,
+        receipt_reviewed_by: null,
+      } : {}),
     });
     if (updated && replacementPath) await removeReceipt(client, existing.receipt_path);
     return updated;

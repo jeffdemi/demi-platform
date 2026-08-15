@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Save } from "lucide-react";
+import { ExternalLink, FileCheck2, Save } from "lucide-react";
 import { useActionState } from "react";
 import { Field, inputClass, textAreaClass } from "@/components/form-fields";
 import { FormFeedback } from "@/components/form-feedback";
@@ -29,6 +29,7 @@ type Defaults = {
   financialClassification?: string;
   laborClass?: string;
   hasReceipt?: boolean;
+  receiptUrl?: string;
 };
 
 type RefundOption = {
@@ -72,7 +73,7 @@ export function ExpenseForm({
       <Field errors={state.errors?.refundOfExpenseId} label="Original expense (refunds only)" name="refundOfExpenseId"><select className={inputClass} defaultValue={defaults.refundOfExpenseId ?? ""} id="refundOfExpenseId" name="refundOfExpenseId"><option value="">Not a refund</option>{refundOptions.map((item) => <option key={item.id} value={item.id}>{formatDate(item.expense_date)} · {item.vendor || item.description || `Expense #${item.id}`} · {formatCurrency(item.amount)}</option>)}</select></Field>
       <Field errors={state.errors?.jobId} label="Job (optional)" name="jobId"><select className={inputClass} defaultValue={defaults.jobId ?? ""} id="jobId" name="jobId"><option value="">No job</option>{jobs.map((job) => <option key={job.id} value={job.id}>{job.label}</option>)}</select></Field>
       <Field errors={state.errors?.equipmentId} label="Equipment (optional)" name="equipmentId"><select className={inputClass} defaultValue={defaults.equipmentId ?? ""} id="equipmentId" name="equipmentId"><option value="">No equipment</option>{equipment.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
-      <Field label={defaults.hasReceipt ? "Replace receipt" : "Receipt"} name="receipt"><input accept="image/jpeg,image/png,image/webp,application/pdf" className={inputClass} id="receipt" name="receipt" type="file" /><p className="mt-1 text-xs text-muted">JPG, PNG, WebP, or PDF up to 4 MB.</p></Field>
+      <Field label={defaults.hasReceipt ? "Replace receipt" : "Receipt"} name="receipt">{defaults.hasReceipt ? <div className="mb-2 flex items-center justify-between gap-3 rounded-md border border-brand-border bg-brand-soft px-3 py-2 text-sm"><span className="inline-flex items-center gap-2 font-semibold"><FileCheck2 size={17} />Receipt attached</span>{defaults.receiptUrl ? <a className="inline-flex items-center gap-1 font-semibold text-brand" href={defaults.receiptUrl} rel="noreferrer" target="_blank">Open current receipt<ExternalLink size={14} /></a> : null}</div> : null}<input accept="image/jpeg,image/png,image/webp,application/pdf" className={inputClass} id="receipt" name="receipt" type="file" /><p className="mt-1 text-xs text-muted">{defaults.hasReceipt ? "The current receipt stays attached unless you choose a replacement. A replacement must be reviewed again." : "JPG, PNG, WebP, or PDF up to 4 MB."}</p></Field>
       {defaults.bankTransactionId ? <input name="bankTransactionId" type="hidden" value={defaults.bankTransactionId} /> : null}
       <div className="sm:col-span-2"><Field errors={state.errors?.notes} label="Notes" name="notes"><textarea className={textAreaClass} defaultValue={defaults.notes ?? ""} id="notes" name="notes" /></Field></div>
     </div>

@@ -101,9 +101,24 @@ describe("billing and operating records", () => {
     expect(expenseRepository).toContain('is("voided_at", null)');
     expect(financePage).toContain("Recorded expenses awaiting bank match");
     expect(financePage).toContain("Expenses with no statement match required");
-    expect(financePage).toContain('reviewed ? "reviewed" : "unreviewed"');
+    expect(financePage).toContain("receipt review needed");
+    expect(financePage).toContain("reviewed · receipt attached");
+    expect(financePage).toContain("A receipt documents the purchase but is not a bank match.");
     expect(financePage).toContain("Review expense");
     expect(financePage).toContain("View expense");
+  });
+
+  it("shows persisted receipts when editing and resets replacements for review", async () => {
+    const [form, editPage, service] = await Promise.all([
+      readFile(new URL("../app/(app)/expenses/expense-form.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/(app)/expenses/[expenseId]/edit/page.tsx", import.meta.url), "utf8"),
+      readFile(new URL("./services/expenses.ts", import.meta.url), "utf8"),
+    ]);
+    expect(form).toContain("Receipt attached");
+    expect(form).toContain("Open current receipt");
+    expect(editPage).toContain("createReceiptUrl");
+    expect(service).toContain('receipt_review_status: "needs_review"');
+    expect(service).toContain("receipt_reviewed_at: null");
   });
 });
 
