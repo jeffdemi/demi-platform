@@ -232,8 +232,12 @@ export async function saveTransactionAllocation(transactionId: number, _: Financ
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   const context = await requireBusinessContext();
   if (context.role === "employee") return { message: "Only an owner or administrator can allocate transactions." };
+  const rememberRule = formData.get("rememberRule") === "yes";
+  const matchText = String(formData.get("merchantPattern") || "").trim().toLowerCase();
+  if (rememberRule && matchText.length < 3) return { message: "Enter at least three characters for the merchant rule." };
   try {
-    await addBankTransactionAllocation(await createClient(), {
+    const client = await createClient();
+    await addBankTransactionAllocation(client, {
       businessId: context.business.id,
       transactionId,
       ledgerAccountId: parsed.data.ledgerAccountId!,
@@ -242,10 +246,25 @@ export async function saveTransactionAllocation(transactionId: number, _: Financ
       taxCategory: parsed.data.taxCategory,
       deductiblePercent: parsed.data.deductiblePercent ?? 100,
     });
+    if (rememberRule) {
+      const savedRule = await client.from("bank_classification_rules").upsert({
+        business_id: context.business.id,
+        match_text: matchText,
+        ledger_account_id: parsed.data.ledgerAccountId!,
+        tax_category: parsed.data.taxCategory ?? null,
+        deductible_percent: parsed.data.deductiblePercent ?? 100,
+        active: true,
+        created_by: context.user.id,
+      }, { onConflict: "business_id,match_text" }).select("id").single();
+      if (savedRule.error) return { message: `The allocation posted, but the automation rule could not be saved: ${savedRule.error.message}` };
+      refreshFinance();
+      redirect(`/finance/suggestions?rule=${savedRule.data.id}`);
+    }
     refreshFinance();
     revalidatePath(`/finance/transactions/${transactionId}`);
     return { message: "Allocation posted." };
   } catch (error) {
+    if (error && typeof error === "object" && "digest" in error) throw error;
     return { message: error instanceof Error ? error.message : "The allocation could not be saved." };
   }
 }

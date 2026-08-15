@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { findUniqueExpenseMatches, type BankImportRow } from "@/lib/domain/accounting";
+import { findClassificationSuggestions, findUniqueExpenseMatches, type BankImportRow } from "@/lib/domain/accounting";
 import type { Database, Json } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
@@ -165,6 +165,25 @@ export async function listLedgerAccounts(client: Client, businessId: number) {
     .eq("active", true).order("code");
   if (result.error) throw new Error(`Unable to load ledger accounts: ${result.error.message}`);
   return result.data ?? [];
+}
+
+export type ClassificationSuggestion = {
+  transaction: { id: number; transaction_date: string; description: string; amount: number };
+  rule: { id: number; match_text: string; ledger_account_id: number; tax_category: string | null; deductible_percent: number; ledger_accounts: { code: string; name: string } | null };
+};
+
+export async function listClassificationSuggestions(client: Client, businessId: number, ruleId?: number) {
+  let rulesQuery = client.from("bank_classification_rules").select("id, match_text, ledger_account_id, tax_category, deductible_percent, ledger_accounts(code, name)")
+    .eq("business_id", businessId).eq("active", true);
+  if (ruleId) rulesQuery = rulesQuery.eq("id", ruleId);
+  const [rules, transactions] = await Promise.all([
+    rulesQuery.order("match_text"),
+    client.from("bank_transactions").select("id, transaction_date, description, amount")
+      .eq("business_id", businessId).eq("status", "unreviewed").lt("amount", 0)
+      .order("transaction_date", { ascending: false }).limit(2000),
+  ]);
+  if (rules.error || transactions.error) throw new Error(`Unable to load classification suggestions: ${rules.error?.message || transactions.error?.message}`);
+  return findClassificationSuggestions(transactions.data ?? [], rules.data ?? []) as ClassificationSuggestion[];
 }
 
 export async function addBankTransactionAllocation(client: Client, values: {

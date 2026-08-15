@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildTaxExpenseSummary,
+  findClassificationSuggestions,
   findUniqueExpenseMatches,
   normalizeBankRows,
   remainingRefundAmount,
@@ -108,6 +109,14 @@ describe("bank statement normalization", () => {
 });
 
 describe("bulk expense matching", () => {
+  it("suggests learned merchant classifications and prefers the most specific rule", () => {
+    const suggestions = findClassificationSuggestions(
+      [{ id: 1, description: "HIS*HISCOX INC POLICY" }, { id: 2, description: "WAWA 8068" }],
+      [{ id: 10, match_text: "hiscox" }, { id: 11, match_text: "hiscox inc" }],
+    );
+    expect(suggestions).toHaveLength(1);
+    expect(suggestions[0].rule.id).toBe(11);
+  });
   it("returns only unique exact-amount matches within ten days", () => {
     const matches = findUniqueExpenseMatches(
       [

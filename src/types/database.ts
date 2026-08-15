@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_classification_rules: {
+        Row: { id: number; business_id: number; match_text: string; ledger_account_id: number; tax_category: string | null; deductible_percent: number; active: boolean; created_by: string | null; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; match_text: string; ledger_account_id: number; tax_category?: string | null; deductible_percent?: number; active?: boolean; created_by?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; match_text?: string; ledger_account_id?: number; tax_category?: string | null; deductible_percent?: number; active?: boolean; created_by?: string | null; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "bank_classification_rules_business_id_ledger_account_id_fkey"; columns: ["business_id", "ledger_account_id"]; isOneToOne: false; referencedRelation: "ledger_accounts"; referencedColumns: ["business_id", "id"] }]
+      }
       bank_accounts: {
         Row: { id: number; business_id: number; business_line_id: number | null; name: string; institution: string | null; account_type: string; last_four: string | null; currency: string; active: boolean; purpose: string | null; opened_on: string | null; minimum_balance_target: number | null; minimum_balance_days: number | null; target_through: string | null; promotion_amount: number | null; created_at: string; updated_at: string }
         Insert: { id?: never; business_id: number; business_line_id?: number | null; name: string; institution?: string | null; account_type?: string; last_four?: string | null; currency?: string; active?: boolean; purpose?: string | null; opened_on?: string | null; minimum_balance_target?: number | null; minimum_balance_days?: number | null; target_through?: string | null; promotion_amount?: number | null; created_at?: string; updated_at?: string }

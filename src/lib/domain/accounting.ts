@@ -185,6 +185,17 @@ export type BankExpenseMatch = {
   amount: number;
 };
 
+export function findClassificationSuggestions<
+  T extends { id: number; description: string },
+  R extends { id: number; match_text: string },
+>(transactions: T[], rules: R[]) {
+  return transactions.flatMap((transaction) => {
+    const rule = rules.filter((candidate) => transaction.description.toLowerCase().includes(candidate.match_text.toLowerCase()))
+      .sort((left, right) => right.match_text.length - left.match_text.length)[0];
+    return rule ? [{ transaction, rule }] : [];
+  });
+}
+
 export function findUniqueExpenseMatches(
   transactions: { id: number; transaction_date: string; description: string; amount: number }[],
   expenses: { id: number; expense_date: string; vendor: string | null; description: string | null; category: string; amount: number }[],
