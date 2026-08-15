@@ -126,6 +126,45 @@ export function normalizeBankRows(rawRows: unknown[][]) {
   return { rows, errors };
 }
 
+export type BankExpenseMatch = {
+  transactionId: number;
+  transactionDate: string;
+  transactionDescription: string;
+  expenseId: number;
+  expenseDate: string;
+  expenseLabel: string;
+  amount: number;
+};
+
+export function findUniqueExpenseMatches(
+  transactions: { id: number; transaction_date: string; description: string; amount: number }[],
+  expenses: { id: number; expense_date: string; vendor: string | null; description: string | null; category: string; amount: number }[],
+) {
+  const eligibleTransactions = transactions.filter((transaction) => Number(transaction.amount) < 0);
+  const candidatesForTransaction = new Map<number, typeof expenses>();
+  const candidatesForExpense = new Map<number, typeof eligibleTransactions>();
+  for (const transaction of eligibleTransactions) {
+    const candidates = expenses.filter((expense) => Math.abs(Number(expense.amount) - Math.abs(Number(transaction.amount))) <= 0.005
+      && Math.abs((Date.parse(`${expense.expense_date}T00:00:00Z`) - Date.parse(`${transaction.transaction_date}T00:00:00Z`)) / 86_400_000) <= 10);
+    candidatesForTransaction.set(transaction.id, candidates);
+    for (const expense of candidates) candidatesForExpense.set(expense.id, [...(candidatesForExpense.get(expense.id) ?? []), transaction]);
+  }
+  return eligibleTransactions.flatMap((transaction) => {
+    const candidates = candidatesForTransaction.get(transaction.id) ?? [];
+    if (candidates.length !== 1 || (candidatesForExpense.get(candidates[0].id) ?? []).length !== 1) return [];
+    const expense = candidates[0];
+    return [{
+      transactionId: transaction.id,
+      transactionDate: transaction.transaction_date,
+      transactionDescription: transaction.description,
+      expenseId: expense.id,
+      expenseDate: expense.expense_date,
+      expenseLabel: expense.vendor || expense.description || expense.category,
+      amount: Math.abs(Number(transaction.amount)),
+    } satisfies BankExpenseMatch];
+  });
+}
+
 export function remainingRefundAmount(sourceAmount: number, refunds: { amount: number; voided_at?: string | null }[], editingRefundAmount = 0) {
   const alreadyRefunded = refunds.filter((refund) => !refund.voided_at).reduce((sum, refund) => sum + refund.amount, 0) - editingRefundAmount;
   return Math.max(0, Math.round((sourceAmount - alreadyRefunded) * 100) / 100);

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { BankImportRow } from "@/lib/domain/accounting";
+import { findUniqueExpenseMatches, type BankImportRow } from "@/lib/domain/accounting";
 import type { Database, Json } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
@@ -138,6 +138,19 @@ export async function matchExistingExpense(client: Client, values: { businessId:
   if (result.error) throw new Error(`Unable to match the expense: ${result.error.message}`);
   if (!result.data) throw new Error("That expense is no longer available to match.");
   return result.data;
+}
+
+export async function listBulkExpenseMatches(client: Client, businessId: number) {
+  const [transactions, expenses] = await Promise.all([
+    client.from("bank_transactions").select("id, transaction_date, description, amount")
+      .eq("business_id", businessId).eq("status", "unreviewed").lt("amount", 0)
+      .order("transaction_date", { ascending: false }).limit(1000),
+    client.from("expenses").select("id, expense_date, vendor, description, category, amount")
+      .eq("business_id", businessId).is("voided_at", null).is("bank_transaction_id", null)
+      .in("transaction_type", ["expense", "asset"]).order("expense_date", { ascending: false }).limit(5000),
+  ]);
+  if (transactions.error || expenses.error) throw new Error(`Unable to find expense matches: ${transactions.error?.message || expenses.error?.message}`);
+  return findUniqueExpenseMatches(transactions.data ?? [], expenses.data ?? []);
 }
 
 export async function listLedgerAccounts(client: Client, businessId: number) {

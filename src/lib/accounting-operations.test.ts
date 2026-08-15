@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildTaxExpenseSummary,
+  findUniqueExpenseMatches,
   normalizeBankRows,
   remainingRefundAmount,
   suggestTaxCategory,
@@ -80,6 +81,38 @@ describe("bank statement normalization", () => {
     ]);
     expect(result.rows).toEqual([]);
     expect(result.errors).toHaveLength(2);
+  });
+});
+
+describe("bulk expense matching", () => {
+  it("returns only unique exact-amount matches within ten days", () => {
+    const matches = findUniqueExpenseMatches(
+      [
+        { id: 1, transaction_date: "2026-04-16", description: "WAWA", amount: -36.23 },
+        { id: 2, transaction_date: "2026-05-01", description: "AMBIGUOUS", amount: -20 },
+        { id: 3, transaction_date: "2026-06-01", description: "TOO LATE", amount: -50 },
+      ],
+      [
+        { id: 10, expense_date: "2026-04-16", vendor: "Gas station", description: "Fuel", category: "Fuel", amount: 36.23 },
+        { id: 11, expense_date: "2026-05-01", vendor: "One", description: null, category: "Other", amount: 20 },
+        { id: 12, expense_date: "2026-05-02", vendor: "Two", description: null, category: "Other", amount: 20 },
+        { id: 13, expense_date: "2026-06-20", vendor: "Late", description: null, category: "Other", amount: 50 },
+      ],
+    );
+    expect(matches).toEqual([{
+      transactionId: 1, transactionDate: "2026-04-16", transactionDescription: "WAWA",
+      expenseId: 10, expenseDate: "2026-04-16", expenseLabel: "Gas station", amount: 36.23,
+    }]);
+  });
+
+  it("rejects one expense that could match multiple transactions", () => {
+    expect(findUniqueExpenseMatches(
+      [
+        { id: 1, transaction_date: "2026-04-16", description: "FIRST", amount: -10 },
+        { id: 2, transaction_date: "2026-04-17", description: "SECOND", amount: -10 },
+      ],
+      [{ id: 10, expense_date: "2026-04-16", vendor: "Vendor", description: null, category: "Other", amount: 10 }],
+    )).toEqual([]);
   });
 });
 
