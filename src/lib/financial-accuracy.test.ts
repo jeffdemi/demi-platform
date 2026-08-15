@@ -54,6 +54,8 @@ describe("expense financial treatment", () => {
     expect(recordRemovalSchema.safeParse({ intent: "delete", reason: "Unused draft", confirm: "yes" }).success).toBe(true);
     expect(recordRemovalSchema.safeParse({ intent: "archive", reason: "", confirm: "yes" }).success).toBe(false);
     expect(recordRemovalSchema.safeParse({ intent: "restore" }).success).toBe(true);
+    expect(recordRemovalSchema.safeParse({ intent: "force_delete", reason: "Duplicate test data", confirm: "yes", overrideConfirmation: "DELETE" }).success).toBe(true);
+    expect(recordRemovalSchema.safeParse({ intent: "force_delete", reason: "Duplicate test data", confirm: "yes", overrideConfirmation: "delete" }).success).toBe(false);
   });
 
   it("adds consistent archive metadata without changing existing records", async () => {

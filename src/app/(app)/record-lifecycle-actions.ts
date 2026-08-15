@@ -30,7 +30,7 @@ export async function changeRecordLifecycle(
   _: RecordLifecycleState,
   formData: FormData,
 ): Promise<RecordLifecycleState> {
-  const parsed = recordRemovalSchema.safeParse({ intent: formData.get("intent"), reason: formData.get("reason") ?? undefined, confirm: formData.get("confirm") ?? undefined });
+  const parsed = recordRemovalSchema.safeParse({ intent: formData.get("intent"), reason: formData.get("reason") ?? undefined, confirm: formData.get("confirm") ?? undefined, overrideConfirmation: formData.get("overrideConfirmation") ?? undefined });
   if (!parsed.success) return { message: parsed.error.issues[0]?.message ?? "Review the removal request." };
   const context = await requireBusinessContext();
   if (context.role === "employee") return { message: "Only an owner or administrator can remove records." };
@@ -57,6 +57,43 @@ export async function changeRecordLifecycle(
       if (!result.data) return { message: "That record no longer exists." };
       refreshRecord(type, id);
       return { success: true, message: restoring ? "Record restored." : "Record archived and removed from normal lists." };
+    }
+
+    if (intent === "force_delete") {
+      const storageRemovals: Array<{ bucket: string; paths: string[] }> = [];
+      if (type === "quote") {
+        const photos = await client.from("quote_photos").select("storage_path").eq("business_id", context.business.id).eq("quote_id", id);
+        if (photos.error) throw new Error(photos.error.message);
+        storageRemovals.push({ bucket: "quote-photos", paths: (photos.data ?? []).map((photo) => photo.storage_path) });
+      } else if (type === "expense") {
+        const receipts = await client.from("expenses").select("receipt_path").eq("business_id", context.business.id).or(`id.eq.${id},refund_of_expense_id.eq.${id}`);
+        if (receipts.error) throw new Error(receipts.error.message);
+        storageRemovals.push({ bucket: "expense-receipts", paths: (receipts.data ?? []).flatMap((expense) => expense.receipt_path ? [expense.receipt_path] : []) });
+      } else if (type === "job") {
+        const jobExpenses = await client.from("expenses").select("id, receipt_path").eq("business_id", context.business.id).eq("job_id", id);
+        if (jobExpenses.error) throw new Error(jobExpenses.error.message);
+        const expenseIds = (jobExpenses.data ?? []).map((expense) => expense.id);
+        const refunds = expenseIds.length > 0
+          ? await client.from("expenses").select("receipt_path").eq("business_id", context.business.id).in("refund_of_expense_id", expenseIds)
+          : { data: [], error: null };
+        if (refunds.error) throw new Error(refunds.error.message);
+        const paths = [...(jobExpenses.data ?? []), ...(refunds.data ?? [])].flatMap((expense) => expense.receipt_path ? [expense.receipt_path] : []);
+        storageRemovals.push({ bucket: "expense-receipts", paths });
+      }
+      for (const removal of storageRemovals) {
+        if (removal.paths.length === 0) continue;
+        const storageResult = await client.storage.from(removal.bucket).remove(removal.paths);
+        if (storageResult.error) throw new Error(`Unable to remove attached files: ${storageResult.error.message}`);
+      }
+      const override = await client.rpc("force_delete_business_record", {
+        target_business_id: context.business.id,
+        target_record_type: type,
+        target_record_id: id,
+        deletion_reason: reason ?? "Override deletion",
+      });
+      if (override.error) throw new Error(override.error.message);
+      refreshRecord(type, id);
+      redirect(paths[type].list);
     }
 
     if (type === "quote") {

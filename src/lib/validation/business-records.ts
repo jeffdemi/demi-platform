@@ -244,15 +244,19 @@ export const voidExpenseSchema = z.object({
 });
 
 export const recordRemovalSchema = z.object({
-  intent: z.enum(["archive", "restore", "delete"]),
+  intent: z.enum(["archive", "restore", "delete", "force_delete"]),
   reason: optionalText(500),
   confirm: z.string().optional(),
+  overrideConfirmation: z.string().optional(),
 }).superRefine((value, context) => {
-  if (["archive", "delete"].includes(value.intent) && !value.reason) {
+  if (["archive", "delete", "force_delete"].includes(value.intent) && !value.reason) {
     context.addIssue({ code: "custom", path: ["reason"], message: "Enter a removal reason." });
   }
-  if (["archive", "delete"].includes(value.intent) && value.confirm !== "yes") {
+  if (["archive", "delete", "force_delete"].includes(value.intent) && value.confirm !== "yes") {
     context.addIssue({ code: "custom", path: ["confirm"], message: "Confirm the removal." });
+  }
+  if (value.intent === "force_delete" && value.overrideConfirmation !== "DELETE") {
+    context.addIssue({ code: "custom", path: ["overrideConfirmation"], message: "Type DELETE exactly to use the override." });
   }
 });
 
