@@ -91,14 +91,17 @@ function normalizeVenmoRows(rawRows: unknown[][], headerIndex: number) {
   const failedStatuses = new Set(["failed", "canceled", "cancelled", "declined", "reversed"]);
   rawRows.slice(headerIndex + 1).forEach((raw, index) => {
     const rawId = cleaned(raw[transactionIdIndex]).replace(/^"+|"+$/g, "");
-    if (!rawId) return;
+    if (!/^\d+$/.test(rawId)) return;
     const rowNumber = headerIndex + index + 2;
     const transactionDate = isoDate(raw[dateIndex]);
     const status = cleaned(raw[statusIndex]);
     if (failedStatuses.has(status.toLowerCase())) return;
     const signedAmount = money(raw[totalIndex]);
     const fee = money(raw[feeIndex]);
-    const parts = [cleaned(raw[typeIndex]), cleaned(raw[noteIndex]), cleaned(raw[fromIndex]) && cleaned(raw[toIndex]) ? `${cleaned(raw[fromIndex])} → ${cleaned(raw[toIndex])}` : "", cleaned(raw[fundingIndex]), cleaned(raw[destinationIndex])].filter((part) => part && part !== "(None)");
+    const present = (value: unknown) => cleaned(value) === "(None)" ? "" : cleaned(value);
+    const from = present(raw[fromIndex]);
+    const to = present(raw[toIndex]);
+    const parts = [present(raw[typeIndex]), present(raw[noteIndex]), from && to ? `${from} → ${to}` : from || to, present(raw[fundingIndex]), present(raw[destinationIndex])].filter(Boolean);
     const description = parts.join(" · ") || "Venmo transaction";
     if (!transactionDate) errors.push(`Row ${rowNumber}: Date is invalid.`);
     if (signedAmount === null || Number.isNaN(signedAmount) || signedAmount === 0) errors.push(`Row ${rowNumber}: Amount (total) must be a non-zero number.`);
