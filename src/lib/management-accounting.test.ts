@@ -8,6 +8,7 @@ import {
   normalizeFinancialSettings,
 } from "./domain/management-accounting";
 import {
+  bulkExpenseClassificationSchema,
   equipmentFinancialsSchema,
   expenseFormSchema,
   financialSettingsSchema,
@@ -176,6 +177,13 @@ describe("management accounting validation and schema", () => {
     expect(expenseFormSchema.safeParse({ ...base, financialClassification: "labor" }).success).toBe(false);
     expect(expenseFormSchema.safeParse({ ...base, financialClassification: "owner_distribution", deductiblePercent: "100" }).success).toBe(false);
     expect(expenseFormSchema.safeParse({ ...base, transactionType: "asset", financialClassification: "operating" }).success).toBe(false);
+  });
+
+  it("validates bulk expense classifications and selected row ids", () => {
+    expect(bulkExpenseClassificationSchema.safeParse({ expenseIds: ["1", "2"], financialClassification: "operating" }).success).toBe(true);
+    expect(bulkExpenseClassificationSchema.safeParse({ expenseIds: [], financialClassification: "operating" }).success).toBe(false);
+    expect(bulkExpenseClassificationSchema.safeParse({ expenseIds: ["1"], financialClassification: "labor" }).success).toBe(false);
+    expect(bulkExpenseClassificationSchema.safeParse({ expenseIds: ["1"], financialClassification: "labor", laborClass: "direct" }).success).toBe(true);
   });
 
   it("validates payroll, targets, balances, and equipment schedules", () => {

@@ -4,12 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireBusinessContext } from "@/lib/auth";
 import { suggestTaxCategory } from "@/lib/domain/accounting";
-import { archiveExpense, getExpense, restoreExpense, updateExpense } from "@/lib/repositories/expense-repository";
+import { archiveExpense, bulkClassifyExpenses, getExpense, restoreExpense, updateExpense } from "@/lib/repositories/expense-repository";
 import { createExpenseRecord, updateExpenseRecord } from "@/lib/services/expenses";
 import { createClient } from "@/lib/supabase/server";
-import { expenseFormSchema, formValues, voidExpenseSchema } from "@/lib/validation/business-records";
+import { bulkExpenseClassificationSchema, expenseFormSchema, formValues, voidExpenseSchema } from "@/lib/validation/business-records";
 
 export type ExpenseState = { message?: string; errors?: Record<string, string[]> };
+
+export type BulkClassificationState = { message?: string; success?: boolean };
 
 function refreshFinancialPages(expenseId?: number) {
   revalidatePath("/expenses");
@@ -57,6 +59,38 @@ export async function saveExpense(expenseId: number | null, _: ExpenseState, for
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
     return { message: error instanceof Error ? error.message : "The expense could not be saved." };
+  }
+}
+
+export async function bulkClassifySelectedExpenses(_: BulkClassificationState, formData: FormData): Promise<BulkClassificationState> {
+  const parsed = bulkExpenseClassificationSchema.safeParse({
+    expenseIds: formData.getAll("expenseId"),
+    financialClassification: formData.get("financialClassification"),
+    laborClass: formData.get("laborClass"),
+  });
+  if (!parsed.success) return { message: parsed.error.issues[0]?.message ?? "Review the classification selection." };
+  const context = await requireBusinessContext();
+  if (context.role === "employee") return { message: "Only an owner or administrator can classify expenses." };
+  const client = await createClient();
+  const selected = await client.from("expenses").select("id, transaction_type")
+    .eq("business_id", context.business.id).in("id", parsed.data.expenseIds).is("voided_at", null);
+  if (selected.error) return { message: `Unable to validate the selected expenses: ${selected.error.message}` };
+  if ((selected.data?.length ?? 0) !== parsed.data.expenseIds.length) return { message: "One or more selected expenses are no longer available." };
+  if (parsed.data.financialClassification === "asset" && selected.data?.some((expense) => expense.transaction_type !== "asset")) {
+    return { message: "Asset purchase can only be applied to asset-purchase records." };
+  }
+  const values = {
+    financial_classification: parsed.data.financialClassification,
+    financial_classification_reviewed: true,
+    labor_class: parsed.data.financialClassification === "labor" ? parsed.data.laborClass : null,
+    ...(parsed.data.financialClassification === "owner_distribution" ? { deductible_percent: 0 } : {}),
+  };
+  try {
+    const updated = await bulkClassifyExpenses(client, context.business.id, parsed.data.expenseIds, values);
+    refreshFinancialPages();
+    return { success: true, message: `Classified ${updated.length} expense${updated.length === 1 ? "" : "s"}.` };
+  } catch (error) {
+    return { message: error instanceof Error ? error.message : "The selected expenses could not be classified." };
   }
 }
 

@@ -98,6 +98,19 @@ export const expenseFormSchema = z.object({
   }
 });
 
+export const bulkExpenseClassificationSchema = z.object({
+  expenseIds: z.array(z.coerce.number().int().positive()).min(1, "Select at least one expense.").max(1000),
+  financialClassification: z.enum(["cogs", "operating", "labor", "asset", "owner_distribution"]),
+  laborClass: optionalLaborClass,
+}).superRefine((value, context) => {
+  if (value.financialClassification === "labor" && !value.laborClass) {
+    context.addIssue({ code: "custom", path: ["laborClass"], message: "Select a labor classification." });
+  }
+  if (value.financialClassification !== "labor" && value.laborClass) {
+    context.addIssue({ code: "custom", path: ["laborClass"], message: "Labor class is only used for labor records." });
+  }
+});
+
 export const bankAccountSchema = z.object({
   name: requiredText("Account name", 150),
   institution: optionalText(150),

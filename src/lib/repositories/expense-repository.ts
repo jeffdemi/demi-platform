@@ -75,6 +75,13 @@ export async function updateExpense(client: Client, businessId: number, expenseI
   return result.data;
 }
 
+export async function bulkClassifyExpenses(client: Client, businessId: number, expenseIds: number[], values: ExpenseUpdate) {
+  const result = await client.from("expenses").update(values)
+    .eq("business_id", businessId).in("id", expenseIds).is("voided_at", null).select("id, transaction_type");
+  if (result.error) throw new Error(`Unable to classify expenses: ${result.error.message}`);
+  return result.data ?? [];
+}
+
 export async function archiveExpense(client: Client, businessId: number, expenseId: number, userId: string, reason: string) {
   return updateExpense(client, businessId, expenseId, {
     voided_at: new Date().toISOString(),

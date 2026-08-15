@@ -17,9 +17,16 @@ export async function createBankAccount(client: Client, values: Database["public
   return result.data;
 }
 
-export async function listBankTransactions(client: Client, businessId: number, status?: string) {
+export async function listBankTransactions(
+  client: Client,
+  businessId: number,
+  status?: string,
+  sort: "date" | "description" = "date",
+  direction: "asc" | "desc" = "desc",
+) {
+  const sortColumn = sort === "description" ? "description" : "transaction_date";
   let query = client.from("bank_transactions").select("*, bank_accounts(name)")
-    .eq("business_id", businessId).order("transaction_date", { ascending: false }).order("id", { ascending: false }).limit(500);
+    .eq("business_id", businessId).order(sortColumn, { ascending: direction === "asc" }).order("id", { ascending: direction === "asc" }).limit(500);
   if (status) query = query.eq("status", status);
   const result = await query;
   if (result.error) throw new Error(`Unable to load bank transactions: ${result.error.message}`);
