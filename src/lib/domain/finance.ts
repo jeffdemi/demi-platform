@@ -16,6 +16,27 @@ export const expenseTypeOptions = [
   { value: "refund", label: "Refund / credit" },
 ] as const;
 
+export const expensePaymentMethodOptions = [
+  { value: "business_account", label: "Business bank, card, or Venmo — match statement" },
+  { value: "cash", label: "Business cash — no statement match" },
+  { value: "owner_paid_contribution", label: "Personal funds — owner contribution (no repayment)" },
+  { value: "owner_paid_reimbursable", label: "Personal funds — business owes me reimbursement" },
+] as const;
+
+export function isOwnerFundedPaymentMethod(method?: string | null) {
+  return method === "owner_paid_contribution" || method === "owner_paid_reimbursable";
+}
+
+export function expenseRequiresBankMatch(method?: string | null) {
+  return method !== "cash" && !isOwnerFundedPaymentMethod(method);
+}
+
+export function expensePaymentMethodLabel(method?: string | null) {
+  if (!method) return "Not recorded";
+  return expensePaymentMethodOptions.find((option) => option.value === method)?.label
+    ?? method.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase());
+}
+
 export type ExpenseType = typeof expenseTypeOptions[number]["value"];
 
 type FinancialExpense = {

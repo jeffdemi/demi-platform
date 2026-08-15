@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
-import { cashOutflowImpact, operatingExpenseImpact } from "./domain/finance";
+import { cashOutflowImpact, expensePaymentMethodLabel, expenseRequiresBankMatch, operatingExpenseImpact } from "./domain/finance";
 import { buildReportSummary } from "./domain/reports";
 import { expenseFormSchema, recordRemovalSchema, voidExpenseSchema } from "./validation/business-records";
 
@@ -12,6 +12,14 @@ describe("expense financial treatment", () => {
     expect(operatingExpenseImpact({ amount: 100, transaction_type: "expense", voided_at: "2026-08-05" })).toBe(0);
     expect(cashOutflowImpact({ amount: 100, transaction_type: "asset" })).toBe(100);
     expect(cashOutflowImpact({ amount: 25, transaction_type: "refund" })).toBe(-25);
+  });
+
+  it("keeps owner-funded and cash expenses out of the statement-match queue", () => {
+    expect(expenseRequiresBankMatch("business_account")).toBe(true);
+    expect(expenseRequiresBankMatch("owner_paid_contribution")).toBe(false);
+    expect(expenseRequiresBankMatch("owner_paid_reimbursable")).toBe(false);
+    expect(expenseRequiresBankMatch("cash")).toBe(false);
+    expect(expensePaymentMethodLabel("owner_paid_contribution")).toContain("owner contribution");
   });
 
   it("calculates operating profit and cash position independently", () => {
@@ -76,5 +84,13 @@ describe("expense financial treatment", () => {
     expect(migration).toContain("'expense-receipts'");
     expect(migration).toContain("private.is_business_member");
     expect(migration).not.toMatch(/delete\s+from\s+public\.expenses/i);
+  });
+
+  it("posts owner-paid expenses against equity or owner payable instead of cash", async () => {
+    const migration = await readFile(new URL("../../supabase/migrations/20260815191435_owner_funded_expenses.sql", import.meta.url), "utf8");
+    expect(migration).toContain("when 'owner_paid_contribution' then 'owner_contributions'");
+    expect(migration).toContain("when 'owner_paid_reimbursable' then 'loans_payable'");
+    expect(migration).toContain("payment_method, voided_at on public.expenses");
+    expect(migration).not.toMatch(/delete\s+from|drop\s+table|truncate/i);
   });
 });

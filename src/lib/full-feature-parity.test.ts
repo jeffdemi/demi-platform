@@ -100,6 +100,7 @@ describe("billing and operating records", () => {
     expect(expenseRepository).toContain('is("bank_transaction_id", null)');
     expect(expenseRepository).toContain('is("voided_at", null)');
     expect(financePage).toContain("Recorded expenses awaiting bank match");
+    expect(financePage).toContain("Expenses with no statement match required");
     expect(financePage).toContain('reviewed ? "reviewed" : "unreviewed"');
     expect(financePage).toContain("Review expense");
     expect(financePage).toContain("View expense");

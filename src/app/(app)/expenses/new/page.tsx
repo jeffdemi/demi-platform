@@ -33,6 +33,7 @@ export default async function NewExpensePage({ searchParams }: { searchParams: P
       transactionType: source ? "refund" : "expense",
       refundOfExpenseId: source?.id,
       bankTransactionId: bankRecord && bankRecord.amount < 0 ? bankRecord.id : undefined,
+      paymentMethod: bankRecord && bankRecord.amount < 0 ? "business_account" : undefined,
       amount: bankRecord && bankRecord.amount < 0 ? Math.abs(bankRecord.amount) : undefined,
       category: source?.transaction_type === "asset" ? "Other" : undefined,
       vendor: source?.vendor ?? undefined,

@@ -44,7 +44,7 @@ export async function listExpensesAwaitingBankMatch(
 ) {
   const sortColumn = sort === "description" ? "vendor" : "expense_date";
   const result = await client.from("expenses")
-    .select("id, expense_date, vendor, description, amount, transaction_type, financial_classification_reviewed, receipt_path, receipt_review_status")
+    .select("id, expense_date, vendor, description, amount, transaction_type, payment_method, financial_classification_reviewed, receipt_path, receipt_review_status")
     .eq("business_id", businessId)
     .is("bank_transaction_id", null)
     .is("voided_at", null)
