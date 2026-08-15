@@ -4,12 +4,14 @@ import type { Database } from "@/types/database";
 type Client = SupabaseClient<Database>;
 type Customer = Pick<Database["public"]["Tables"]["customers"]["Row"], "company_name" | "customer_type" | "first_name" | "last_name" | "phone" | "email">;
 type Job = Pick<Database["public"]["Tables"]["jobs"]["Row"], "id" | "work_description" | "service_address">;
-export type InvoiceWithRelations = Database["public"]["Tables"]["invoices"]["Row"] & { customers: Customer; jobs: Job | null };
+type InvoiceRow = Database["public"]["Tables"]["invoices"]["Row"];
+export type InvoiceWithRelations = Omit<InvoiceRow, "archive_reason" | "archived_at" | "archived_by"> & Partial<Pick<InvoiceRow, "archive_reason" | "archived_at" | "archived_by">> & { customers: Customer; jobs: Job | null };
 
-export async function listInvoices(client: Client, businessId: number, status?: string) {
+export async function listInvoices(client: Client, businessId: number, status?: string, includeArchived = false) {
   let query = client.from("invoices").select("*, customers!inner(company_name, customer_type, first_name, last_name, phone, email), jobs(id, work_description, service_address)")
     .eq("business_id", businessId).order("invoice_date", { ascending: false }).order("id", { ascending: false }).limit(500);
   if (status) query = query.eq("status", status);
+  if (!includeArchived) query = query.is("archived_at", null);
   const result = await query;
   if (result.error) throw new Error(`Unable to load invoices: ${result.error.message}`);
   return result.data as InvoiceWithRelations[];

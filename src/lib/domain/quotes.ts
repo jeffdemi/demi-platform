@@ -1,7 +1,8 @@
 import type { Database } from "@/types/database";
 import { customerDisplayName, type Customer } from "./customers";
 
-export type Quote = Database["public"]["Tables"]["quotes"]["Row"];
+type QuoteRow = Database["public"]["Tables"]["quotes"]["Row"];
+export type Quote = Omit<QuoteRow, "archive_reason" | "archived_at" | "archived_by"> & Partial<Pick<QuoteRow, "archive_reason" | "archived_at" | "archived_by">>;
 export type QuoteCustomer = Pick<Customer, "company_name" | "customer_type" | "email" | "first_name" | "last_name" | "phone">;
 export type QuoteWithCustomer = Quote & { customers: QuoteCustomer };
 

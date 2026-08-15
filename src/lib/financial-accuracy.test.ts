@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { cashOutflowImpact, operatingExpenseImpact } from "./domain/finance";
 import { buildReportSummary } from "./domain/reports";
-import { expenseFormSchema, voidExpenseSchema } from "./validation/business-records";
+import { expenseFormSchema, recordRemovalSchema, voidExpenseSchema } from "./validation/business-records";
 
 describe("expense financial treatment", () => {
   it("separates operating expense, assets, refunds, and archived records", () => {
@@ -47,6 +47,22 @@ describe("expense financial treatment", () => {
     expect(voidExpenseSchema.safeParse({ reason: "Duplicate entry", confirm: "yes" }).success).toBe(true);
     expect(voidExpenseSchema.safeParse({ reason: "", confirm: "yes" }).success).toBe(false);
     expect(voidExpenseSchema.safeParse({ reason: "Duplicate entry", confirm: null }).success).toBe(false);
+  });
+
+  it("validates shared archive, restore, and permanent-delete requests", () => {
+    expect(recordRemovalSchema.safeParse({ intent: "archive", reason: "Entered twice", confirm: "yes" }).success).toBe(true);
+    expect(recordRemovalSchema.safeParse({ intent: "delete", reason: "Unused draft", confirm: "yes" }).success).toBe(true);
+    expect(recordRemovalSchema.safeParse({ intent: "archive", reason: "", confirm: "yes" }).success).toBe(false);
+    expect(recordRemovalSchema.safeParse({ intent: "restore" }).success).toBe(true);
+  });
+
+  it("adds consistent archive metadata without changing existing records", async () => {
+    const migration = await readFile(new URL("../../supabase/migrations/20260815083422_consistent_record_archiving.sql", import.meta.url), "utf8");
+    expect(migration).toContain("alter table public.jobs");
+    expect(migration).toContain("alter table public.quotes");
+    expect(migration).toContain("alter table public.invoices");
+    expect(migration).toContain("archive_reason_check");
+    expect(migration).not.toMatch(/delete\s+from|drop\s+table|truncate/i);
   });
 
   it("uses an additive migration with targeted backfills and private receipt storage", async () => {

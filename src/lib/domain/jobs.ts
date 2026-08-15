@@ -1,7 +1,8 @@
 import type { Database } from "@/types/database";
 import { customerDisplayName, type Customer } from "./customers";
 
-export type Job = Database["public"]["Tables"]["jobs"]["Row"];
+type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
+export type Job = Omit<JobRow, "archive_reason" | "archived_at" | "archived_by"> & Partial<Pick<JobRow, "archive_reason" | "archived_at" | "archived_by">>;
 
 export const jobStatusOptions = [
   { value: "lead", label: "Lead" },

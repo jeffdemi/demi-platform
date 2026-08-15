@@ -4,6 +4,7 @@ import { Download, Pencil, UserRound } from "lucide-react";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
+import { RecordLifecycleControl } from "@/components/record-lifecycle-control";
 import { requireBusinessContext } from "@/lib/auth";
 import { customerDisplayName } from "@/lib/domain/customers";
 import { customerQuoteMessage, optionLabel, quoteHasFinalPrice, quotePriceLabel, quoteStatusLabel } from "@/lib/domain/quotes";
@@ -26,7 +27,8 @@ const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ quoteId: string }> }) {
   const id = Number((await params).quoteId);
   if (!Number.isInteger(id)) notFound();
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  const { business } = context;
   const client = await createClient();
   const quote = await getQuote(client, business.id, id);
   if (!quote) notFound();
@@ -37,9 +39,10 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ qu
   return <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
     <PageHeader actions={<>
       <a className="flex h-10 items-center gap-2 rounded-md border border-line-strong px-3 font-semibold" href={`/quotes/${quote.id}/pdf`}><Download size={16} />PDF</a>
-      {!converted && <Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand" href={`/quotes/${quote.id}/edit`}><Pencil size={16} />Edit quote</Link>}
+      {!converted && !quote.archived_at ? <Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand" href={`/quotes/${quote.id}/edit`}><Pencil size={16} />Edit quote</Link> : null}
     </>} description={`${formatDate(quote.quote_date)} - ${quoteStatusLabel(quote.status)}`} title={quote.quote_number} />
 
+    {context.role !== "employee" ? <section className="mt-5 rounded-lg border border-line bg-surface p-4 shadow-sm"><RecordLifecycleControl archived={Boolean(quote.archived_at)} id={quote.id} label="quote" type="quote" /></section> : null}
     <div className="grid gap-5 pt-6 lg:grid-cols-[0.8fr_1.2fr]">
       <QuotePhotoManager businessId={business.id} draft={draft} photos={workbench.photos} quoteId={quote.id} />
       <QuoteAiWorkbench configured={isQuoteAiConfigured()} draft={draft} messages={workbench.messages} photoCount={workbench.photos.length} quoteId={quote.id} recommendation={workbench.recommendation} />

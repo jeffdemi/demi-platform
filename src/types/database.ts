@@ -593,6 +593,9 @@ export type Database = {
       }
       invoices: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           amount: number
           business_id: number
           business_line_id: number | null
@@ -611,6 +614,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           amount?: number
           business_id: number
           business_line_id?: number | null
@@ -629,6 +635,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           amount?: number
           business_id?: number
           business_line_id?: number | null
@@ -688,6 +697,9 @@ export type Database = {
       }
       jobs: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           amount_paid: number | null
           amount_quoted: number | null
           business_id: number
@@ -724,6 +736,9 @@ export type Database = {
           work_description: string | null
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           amount_paid?: number | null
           amount_quoted?: number | null
           business_id: number
@@ -760,6 +775,9 @@ export type Database = {
           work_description?: string | null
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           amount_paid?: number | null
           amount_quoted?: number | null
           business_id?: number
@@ -1278,6 +1296,9 @@ export type Database = {
       }
       quotes: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           acceptance_notes: string | null
           accepted_method: string | null
           business_id: number
@@ -1309,6 +1330,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           acceptance_notes?: string | null
           accepted_method?: string | null
           business_id: number
@@ -1340,6 +1364,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           acceptance_notes?: string | null
           accepted_method?: string | null
           business_id?: number

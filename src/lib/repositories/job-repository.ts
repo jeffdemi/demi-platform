@@ -22,9 +22,9 @@ function requireData<T>(data: T | null, error: { message: string } | null, messa
 export async function listJobs(
   client: Client,
   businessId: number,
-  filters: { customerId?: number; search?: string; status?: string; view?: string; today: string },
+  filters: { customerId?: number; search?: string; status?: string; view?: string; today: string; includeArchived?: boolean },
 ) {
-  const result = await client
+  let query = client
     .from("jobs")
     .select("*, customers!inner(company_name, customer_type, email, first_name, last_name, phone)")
     .eq("business_id", businessId)
@@ -32,6 +32,8 @@ export async function listJobs(
     .order("scheduled_start_time", { ascending: true, nullsFirst: false })
     .order("id", { ascending: false })
     .limit(500);
+  if (!filters.includeArchived) query = query.is("archived_at", null);
+  const result = await query;
   const jobs = requireData(result.data as JobWithCustomer[] | null, result.error, "Unable to load jobs");
 
   return jobs.filter((job) => {

@@ -243,6 +243,19 @@ export const voidExpenseSchema = z.object({
   confirm: z.literal("yes", { message: "Confirm that you want to archive this record." }),
 });
 
+export const recordRemovalSchema = z.object({
+  intent: z.enum(["archive", "restore", "delete"]),
+  reason: optionalText(500),
+  confirm: z.string().optional(),
+}).superRefine((value, context) => {
+  if (["archive", "delete"].includes(value.intent) && !value.reason) {
+    context.addIssue({ code: "custom", path: ["reason"], message: "Enter a removal reason." });
+  }
+  if (["archive", "delete"].includes(value.intent) && value.confirm !== "yes") {
+    context.addIssue({ code: "custom", path: ["confirm"], message: "Confirm the removal." });
+  }
+});
+
 export const equipmentFormSchema = z.object({
   name: requiredText("Equipment name", 250), equipmentType: optionalText(100), makeModel: optionalText(250),
   serialNumber: optionalText(250), hourMeter: number("Hour meter"), active: z.boolean(), notes: optionalText(),

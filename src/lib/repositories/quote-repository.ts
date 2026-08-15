@@ -12,10 +12,12 @@ function dataOrThrow<T>(data: T | null, error: { message: string } | null, label
   return data;
 }
 
-export async function listQuotes(client: Client, businessId: number, filters: { search?: string; status?: string; view?: string }) {
-  const result = await client.from("quotes")
+export async function listQuotes(client: Client, businessId: number, filters: { search?: string; status?: string; view?: string; includeArchived?: boolean }) {
+  let query = client.from("quotes")
     .select("*, customers!inner(company_name, customer_type, email, first_name, last_name, phone)")
     .eq("business_id", businessId).order("quote_date", { ascending: false }).order("id", { ascending: false }).limit(500);
+  if (!filters.includeArchived) query = query.is("archived_at", null);
+  const result = await query;
   return dataOrThrow(result.data as QuoteWithCustomer[] | null, result.error, "Unable to load quotes").filter((quote) => {
     if (filters.status && quote.status !== filters.status) return false;
     if (filters.search && !quoteMatchesSearch(quote, filters.search)) return false;
