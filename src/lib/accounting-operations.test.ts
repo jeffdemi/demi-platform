@@ -73,6 +73,27 @@ describe("bank statement normalization", () => {
     expect(result.rows[2].amount).toBe(-7000);
   });
 
+  it("imports Venmo statements and separates processing fees", () => {
+    const result = normalizeBankRows([
+      ["Transaction ID", "Date", "Time (UTC)", "Type", "Status", "Note", "From", "To", "Amount (total)", "Amount (tip)", "Amount (tax)", "Amount (net)", "Amount (fee)", "Tax Rate", "Tax Exempt", "Funding Source", "Destination"],
+      ['"4592582617279448916"', "05/08/2026", "13:21:51", "Payment", "Complete", "💸 to Demi Solutions LLC", "Marsha Uchimoto", "Demi Stump Grinding", "+ $160.00", "0", "0", "$156.86", "$3.14", "0", "FALSE", "(None)", "Venmo balance"],
+      ['"4593420530100031073"', "05/09/2026", "17:06:38", "Standard Transfer", "Issued", "(None)", "(None)", "(None)", "- $150.00", "0", "", "", "0", "", "", "(None)", "BANK OF AMERICA N.A. *8010"],
+      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+    ]);
+
+    expect(result.errors).toEqual([]);
+    expect(result.rows).toHaveLength(3);
+    expect(result.rows.map((row) => row.amount)).toEqual([160, -3.14, -150]);
+    expect(result.rows.map((row) => row.externalId)).toEqual([
+      "4592582617279448916:total",
+      "4592582617279448916:fee",
+      "4593420530100031073:total",
+    ]);
+    expect(result.rows[0].description).toContain("Marsha Uchimoto → Demi Stump Grinding");
+    expect(result.rows[1].description).toContain("Venmo fee");
+    expect(result.rows.reduce((total, row) => total + row.amount, 0)).toBeCloseTo(6.86);
+  });
+
   it("reports malformed rows without importing them", () => {
     const result = normalizeBankRows([
       ["Date", "Description", "Amount"],

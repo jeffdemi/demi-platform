@@ -35,7 +35,7 @@ function cleaned(value: unknown) {
 }
 
 function money(value: unknown) {
-  const raw = cleaned(value).replaceAll("$", "").replaceAll(",", "").replace(/^\((.*)\)$/, "-$1");
+  const raw = cleaned(value).replaceAll("$", "").replaceAll(",", "").replace(/\s+/g, "").replace(/^\((.*)\)$/, "-$1");
   if (!raw) return null;
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : Number.NaN;
@@ -72,8 +72,54 @@ export function bankFingerprint(row: Omit<BankImportRow, "fingerprint" | "rowNum
   ].join("|")).digest("hex");
 }
 
+function normalizeVenmoRows(rawRows: unknown[][], headerIndex: number) {
+  const headers = rawRows[headerIndex].map((value) => cleaned(value).toLowerCase());
+  const column = (name: string) => headers.indexOf(name.toLowerCase());
+  const transactionIdIndex = column("Transaction ID");
+  const dateIndex = column("Date");
+  const typeIndex = column("Type");
+  const statusIndex = column("Status");
+  const noteIndex = column("Note");
+  const fromIndex = column("From");
+  const toIndex = column("To");
+  const totalIndex = column("Amount (total)");
+  const feeIndex = column("Amount (fee)");
+  const fundingIndex = column("Funding Source");
+  const destinationIndex = column("Destination");
+  const errors: string[] = [];
+  const rows: BankImportRow[] = [];
+  const failedStatuses = new Set(["failed", "canceled", "cancelled", "declined", "reversed"]);
+  rawRows.slice(headerIndex + 1).forEach((raw, index) => {
+    const rawId = cleaned(raw[transactionIdIndex]).replace(/^"+|"+$/g, "");
+    if (!rawId) return;
+    const rowNumber = headerIndex + index + 2;
+    const transactionDate = isoDate(raw[dateIndex]);
+    const status = cleaned(raw[statusIndex]);
+    if (failedStatuses.has(status.toLowerCase())) return;
+    const signedAmount = money(raw[totalIndex]);
+    const fee = money(raw[feeIndex]);
+    const parts = [cleaned(raw[typeIndex]), cleaned(raw[noteIndex]), cleaned(raw[fromIndex]) && cleaned(raw[toIndex]) ? `${cleaned(raw[fromIndex])} → ${cleaned(raw[toIndex])}` : "", cleaned(raw[fundingIndex]), cleaned(raw[destinationIndex])].filter((part) => part && part !== "(None)");
+    const description = parts.join(" · ") || "Venmo transaction";
+    if (!transactionDate) errors.push(`Row ${rowNumber}: Date is invalid.`);
+    if (signedAmount === null || Number.isNaN(signedAmount) || signedAmount === 0) errors.push(`Row ${rowNumber}: Amount (total) must be a non-zero number.`);
+    if (!transactionDate || signedAmount === null || Number.isNaN(signedAmount) || signedAmount === 0) return;
+    const base = { transactionDate, postedDate: null, description, amount: signedAmount, externalId: `${rawId}:total` };
+    rows.push({ rowNumber, ...base, fingerprint: bankFingerprint(base) });
+    if (fee !== null && !Number.isNaN(fee) && Math.abs(fee) > 0) {
+      const feeBase = { transactionDate, postedDate: null, description: `Venmo fee · ${description}`, amount: -Math.abs(fee), externalId: `${rawId}:fee` };
+      rows.push({ rowNumber, ...feeBase, fingerprint: bankFingerprint(feeBase) });
+    }
+  });
+  return { rows, errors };
+}
+
 export function normalizeBankRows(rawRows: unknown[][]) {
   if (!rawRows.length) return { rows: [] as BankImportRow[], errors: ["The statement is empty."] };
+  const venmoHeaderIndex = rawRows.findIndex((candidate) => {
+    const headers = candidate.map((value) => cleaned(value).toLowerCase());
+    return headers.includes("transaction id") && headers.includes("amount (total)") && headers.includes("amount (fee)") && headers.includes("status");
+  });
+  if (venmoHeaderIndex >= 0) return normalizeVenmoRows(rawRows, venmoHeaderIndex);
   const headerIndex = rawRows.findIndex((candidate) => {
     const candidateHeaders = candidate.map(cleaned);
     return position(candidateHeaders, headerAliases.date) !== null
