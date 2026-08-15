@@ -55,7 +55,7 @@ export async function saveExpense(expenseId: number | null, _: ExpenseState, for
       : await createExpenseRecord(client, business.id, input, formData.get("receipt"));
     if (!saved) return { message: "That expense no longer exists." };
     refreshFinancialPages(saved.id);
-    redirect(`/expenses/${saved.id}`);
+    redirect(`/expenses/${saved.id}?saved=${expenseId ? "updated" : "created"}`);
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
     return { message: error instanceof Error ? error.message : "The expense could not be saved." };
