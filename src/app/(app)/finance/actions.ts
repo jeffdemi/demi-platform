@@ -154,8 +154,8 @@ export async function matchExpense(transactionId: number, _: FinanceState, formD
   try {
     const client = await createClient();
     const transaction = await getBankTransaction(client, context.business.id, transactionId);
-    if (!transaction || transaction.status !== "unreviewed" || transaction.amount >= 0) {
-      return { message: "That charge is no longer available to match." };
+    if (!transaction || transaction.status !== "unreviewed") {
+      return { message: "That bank transaction is no longer available to match." };
     }
     await matchExistingExpense(client, {
       businessId: context.business.id,

@@ -120,6 +120,18 @@ describe("billing and operating records", () => {
     expect(service).toContain('receipt_review_status: "needs_review"');
     expect(service).toContain("receipt_reviewed_at: null");
   });
+
+  it("offers recorded refunds for matching to statement deposits", async () => {
+    const [repository, actions, migration] = await Promise.all([
+      readFile(new URL("./repositories/accounting-repository.ts", import.meta.url), "utf8"),
+      readFile(new URL("../app/(app)/finance/actions.ts", import.meta.url), "utf8"),
+      readFile(new URL("../../supabase/migrations/20260815234608_monthly_bookkeeping_integrity_cleanup.sql", import.meta.url), "utf8"),
+    ]);
+    expect(repository).toContain('transaction.amount < 0 ? ["expense", "asset"] : ["refund"]');
+    expect(actions).not.toContain('transaction.amount >= 0');
+    expect(migration).toContain("new.transaction_type = 'refund' and bank_amount <= 0");
+    expect(migration).toContain("z_expenses_tag_bank_account_journal");
+  });
 });
 
 describe("spreadsheet import and reporting", () => {

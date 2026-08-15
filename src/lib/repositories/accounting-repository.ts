@@ -119,10 +119,11 @@ export async function getBankTransactionReview(client: Client, businessId: numbe
     client.from("bank_transactions").select("id, account_id, transaction_date, description, amount, bank_accounts(name)")
       .eq("business_id", businessId).eq("status", "unreviewed").neq("id", transactionId)
       .order("transaction_date", { ascending: false }).limit(250),
-    transaction && transaction.amount < 0
+    transaction
       ? client.from("expenses").select("id, expense_date, vendor, description, category, amount, transaction_type")
         .eq("business_id", businessId).is("voided_at", null).is("bank_transaction_id", null)
-        .in("transaction_type", ["expense", "asset"]).eq("amount", Math.abs(transaction.amount))
+        .in("transaction_type", transaction.amount < 0 ? ["expense", "asset"] : ["refund"])
+        .eq("amount", Math.abs(transaction.amount))
         .gte("expense_date", nearbyDate(-10)).lte("expense_date", nearbyDate(10)).order("expense_date").limit(25)
       : Promise.resolve({ data: [], error: null }),
   ]);
