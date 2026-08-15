@@ -152,3 +152,19 @@ export async function approveReceiptReview(expenseId: number) {
   });
   refreshFinancialPages(expenseId);
 }
+
+export async function completeExpenseReview(expenseId: number) {
+  const { business, user } = await requireBusinessContext();
+  const client = await createClient();
+  const expense = await getExpense(client, business.id, expenseId);
+  if (!expense || expense.voided_at) return;
+  await updateExpense(client, business.id, expenseId, {
+    financial_classification_reviewed: true,
+    ...(expense.receipt_path ? {
+      receipt_review_status: "approved",
+      receipt_reviewed_at: new Date().toISOString(),
+      receipt_reviewed_by: user.id,
+    } : {}),
+  });
+  refreshFinancialPages(expenseId);
+}
