@@ -132,6 +132,18 @@ describe("bookkeeping validation and migration controls", () => {
     expect(migration).not.toMatch(/security\s+definer/i);
   });
 
+  it("reconciles confirmed May crypto funding as a cash-to-cash transfer", async () => {
+    const migration = await readFile(new URL("../../supabase/migrations/20260816011043_reconcile_may_venmo_bofa_crypto_funding.sql", import.meta.url), "utf8");
+    expect(migration).toContain("Historical Bank of America business funds (*8010)");
+    expect(migration).toContain("transaction.transaction_date = date '2026-05-09'");
+    expect(migration).toContain("transaction.amount = -150.00");
+    expect(migration).toContain("for May 22 BTC purchase");
+    expect(migration).toContain("transfer_description, 'transfer', null");
+    expect(migration).toContain("cash_account_id, 150.00, 0");
+    expect(migration).toContain("cash_account_id, 0, 150.00");
+    expect(migration).not.toMatch(/drop\s+table|truncate|delete\s+from/i);
+  });
+
   it("posts allocations through admin-scoped RLS without rewriting ledger setup", async () => {
     const migration = await readFile(new URL("../../supabase/migrations/20260815105000_bank_allocation_rls_writes.sql", import.meta.url), "utf8");
     expect(migration).toContain("create policy journal_entries_admin_insert");
