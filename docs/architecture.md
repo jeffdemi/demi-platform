@@ -4,8 +4,9 @@
 Browser
   -> Next.js App Router on Vercel
     -> Server Components and Server Actions
-      -> Supabase Auth and Data API
-        -> PostgreSQL with Row Level Security
+      -> repositories and services
+        -> request-scoped Supabase Auth and Data API
+          -> PostgreSQL with Row Level Security
 ```
 
 ## Boundaries
@@ -13,9 +14,13 @@ Browser
 - Routes and pages own navigation, rendering, and request concerns.
 - Server Actions validate untrusted form input and re-check authorization.
 - Repository modules own reusable Supabase queries and mutations for business records.
-- Domain modules own display names, status labels, search matching, and operational filters.
+- Service modules own multi-step workflows, external APIs, PDFs, and private file
+  upload/replacement cleanup.
+- Domain modules own pure accounting, parsing, reporting, display, and filtering
+  rules without network or database I/O.
 - Data access uses request-scoped Supabase server clients.
-- PostgreSQL constraints preserve relationships and business invariants.
+- PostgreSQL constraints, triggers, and transactional RPCs preserve relationships
+  and cross-record business invariants.
 - RLS enforces business isolation independently of application filters.
 - Dedicated PDF services build quote and invoice documents; route handlers only authorize and return responses.
 - The expense service validates refund sources and owns private receipt upload/replacement cleanup.
@@ -26,6 +31,35 @@ Browser
 Every operational row belongs to a business. Membership connects a Supabase Auth user to a business with an `owner`, `admin`, or `employee` role. RLS membership helpers live in the unexposed `private` schema.
 
 Account provisioning is invite-only after a one-time owner bootstrap. Team invitation acceptance is checked transactionally against the authenticated user's email. Server-only admin credentials are isolated in `src/lib/supabase/admin.ts` and are never used for normal application data access.
+
+## Data model map
+
+The public schema is organized by responsibility:
+
+- identity and tenancy: `profiles`, `businesses`, `business_members`,
+  `business_invitations`, `business_identity_settings`, and `business_lines`;
+- operations: `customers`, `quotes`, `jobs`, `invoices`, `expenses`,
+  `equipment`, and `maintenance`;
+- quote preparation: `quote_photos`, `quote_ai_threads`, `quote_ai_messages`,
+  and `quote_ai_recommendations`;
+- source imports: `legacy_imports`, `job_imports`, `bank_imports`, and
+  `digital_asset_imports`;
+- banking and bookkeeping: `bank_accounts`, `bank_transactions`,
+  `bank_statement_periods`, `bank_transaction_allocations`,
+  `bank_transfer_links`, `bank_classification_rules`, `payments`,
+  `ledger_accounts`, `journal_entries`, `journal_lines`, and
+  `bookkeeping_adjustments`;
+- management reporting: `financial_settings`, `owner_compensation_periods`,
+  `labor_entries`, and `monthly_financial_snapshots`;
+- digital assets: `digital_asset_accounts`, `digital_asset_transactions`,
+  `digital_asset_lots`, `digital_asset_disposals`, and
+  `digital_asset_reconciliations`;
+- owner, cleanup, and audit: `capital_transactions`,
+  `bookkeeping_cleanup_items`, and `record_deletion_audit`.
+
+Receipts and quote photos live in separate private Storage buckets. Database rows
+store their object paths; signed URLs are created only after membership and
+record access are authorized.
 
 ## Migration
 
@@ -64,8 +98,12 @@ Digital-asset imports are isolated from bank imports but use the same two-part
 idempotency model: a source-file SHA-256 prevents replay, and a normalized row
 fingerprint prevents duplicates across exports. Transactions retain units,
 gross USD value, price, fees, and transfer references. FIFO calculations are a
-pure domain operation; persisted lot and disposal tables provide the durable
-audit model for later tax-lot elections.
+pure domain operation. Lot and disposal tables exist as a future durable audit
+model, but the current importer does not populate a complete persisted tax-lot
+schedule and digital-asset activity does not post automatically to the general
+ledger. Missing acquisition rows can therefore make the current FIFO display
+incomplete. Treat it as a reconciliation aid until all-time basis is proven and
+the persistence/posting workflow is completed.
 
 `business_lines` is a tenant-owned dimension. Nullable composite foreign keys
 attach it to jobs, invoices, expenses, equipment, labor, payments, allocations,
@@ -92,3 +130,14 @@ reopen reason.
 Privileged owner setup and invitation implementations live in the unexposed
 `private` schema. Public RPC names are security-invoker wrappers, preserving the
 application contract without exposing elevated functions directly through the API.
+
+## Change discipline
+
+Database changes are additive. Applied migration files are immutable; a
+correction gets a new migration. Every newly exposed table needs explicit Data
+API grants as well as RLS, and privileged functions need narrow execute grants.
+Application schema types in `src/types/database.ts` change with the migration.
+
+Before modifying application code, read the relevant Next.js 16 documentation in
+`node_modules/next/dist/docs/`. See [Development](development.md) for the safe
+local/staging workflow and the current production migration-history caveat.

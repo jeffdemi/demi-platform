@@ -62,6 +62,12 @@ across multiple ledger accounts, linked to an existing expense or payment,
 paired with the other side of a bank transfer, or deliberately excluded with a
 reason. Partial allocations remain visibly incomplete.
 
+`/finance/matching` proposes exact recorded-expense matches in bulk.
+`/finance/suggestions` presents transactions recognized by learned merchant
+classification rules. Both are approval queues: an automation proposes the
+action, but the user confirms it before posting. A learned merchant rule should
+use stable identifying text rather than a whole changing statement description.
+
 Payments support partial invoice collections. A fully paid balance updates the
 invoice status and linked job totals. Existing paid invoices and paid jobs without
 invoices are backfilled once as legacy payments.
@@ -82,6 +88,13 @@ Receipt review suggests a tax category from the verified vendor, description, an
 category already on the record. The extracted-data and review fields are ready for
 a future OCR provider, but this release does not send private receipts to an
 external AI service.
+
+A receipt is purchase evidence, not a bank match. An expense paid from a business
+account remains awaiting its statement row until that row is imported and linked.
+An expense paid personally for the business should be marked as owner funded;
+after its details and evidence are reviewed, Finance shows that no business-bank
+match is required and the offset is an owner contribution. Do not import a mostly
+personal statement solely to clear such an expense.
 
 Use `/finance/adjustments/new` for balanced noncash or correcting entries such
 as depreciation, loan principal corrections, opening balances, and owner-equity
@@ -158,6 +171,11 @@ save an as-of reconciliation. CSV files require Date, Type, Asset, and Units;
 Price USD, Gross USD, Fee USD, IDs, transfer references, and memos are optional.
 Re-importing the same file or duplicate normalized rows is safe.
 
+The current FIFO holdings and gain/loss display is provisional. The application
+does not yet persist the full lot/disposal audit trail or automatically post
+exchange purchases, proceeds, basis, fees, and gains to the general ledger.
+Import all-time activity and resolve missing basis before using it for taxes.
+
 Use `/finance/classification` to assign Federal IT Contracting or Demi Stump
 Grinding to operating records and journals. `/reports/books` shows consolidated
 and per-line P&L results; pass `line={businessLineId}` to the bookkeeping API or
@@ -168,3 +186,7 @@ estimated taxes. Personal transfers are owner draws, never deductible expenses.
 Use `/finance/cleanup` to research Venmo history, related-party advances, and
 opening balances. Posting is explicit and requires a positive amount plus two
 different ledger accounts.
+
+See [Bookkeeping model](bookkeeping-model.md) for the source-of-truth and owner-
+funded workflows, and [Current project status](project-status.md) for known data
+work still open.

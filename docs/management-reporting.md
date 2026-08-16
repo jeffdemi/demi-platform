@@ -38,9 +38,13 @@ the monthly workflow diagram and a searchable glossary.
 1. Review each expense and assign COGS, operating, labor, asset, or owner
    distribution. Labor expenses also require direct, management, or sales.
 2. Record gross wages, employer payroll taxes, benefits, hours, and labor class
-   in `/labor`.
-3. Record owner market salary, actual wages, distributions, and contributions in
-   `/reports/settings`.
+   in `/labor` for actual employees or contractors. Do not duplicate the same
+   payroll cost as an expense.
+3. Record owner market salary in `/reports/settings` as a management
+   normalization. Record actual owner wages only when the entity is legally
+   paying payroll wages under its confirmed tax treatment. Record real owner
+   contributions, loans, repayments, draws, and estimated taxes in
+   `/finance/capital`.
 4. Import each bank and credit-card statement, clear unmatched items, and create
    a reconciliation period in `/finance/reconciliations/new`.
 5. Reconcile imported activity and journal activity to every statement closing
@@ -53,8 +57,12 @@ the monthly workflow diagram and a searchable glossary.
 
 ## Data Discipline
 
-Owner wages are normalized to a market rate for management reporting. Owner
-distributions are returns on ownership and do not reduce operating profit.
+Owner compensation is normalized to a market rate for management reporting.
+For Demi Solutions LLC's currently understood default single-member LLC tax
+treatment, the owner is not entered as a W-2 employee merely to create a labor
+cost; owner draws are equity activity, not wages or operating expenses. If a CPA
+confirms a different tax election, update the settings and this operating rule.
+Owner distributions are returns on ownership and do not reduce operating profit.
 When the same distribution is recorded in both the monthly owner record and a
 classified cash outflow, the report uses the larger period total instead of
 adding both totals and double-counting the same money.
@@ -77,6 +85,8 @@ schedule for tax depreciation and your lender's statement for official payoff.
 - Manual adjustments currently support one debit and one credit per entry.
 - The app records payroll totals but does not calculate checks, withholdings, or
   payroll tax filings.
+- The Labor form is intended for paid labor detail and currently does not support
+  a useful hours-only owner timesheet workflow.
 - Accounts receivable in the close checklist compares the entered month-end
   balance with invoices currently marked unpaid. Historical aging is deferred.
 - Equipment loans track balances and terms but do not generate amortization or

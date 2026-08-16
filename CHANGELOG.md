@@ -1,6 +1,22 @@
 # Changelog
 
-## Unreleased - Digital Assets And Business Lines
+## Unreleased - Documentation Handoff
+
+### Documentation
+
+- Reorganized the README around product purpose, architecture rules, onboarding,
+  safe database work, verification, and current boundaries
+- Added a development guide covering repository structure, Next.js 16 guidance,
+  RLS/migration discipline, financial regression checks, and the release process
+- Added a bookkeeping model for revenue, expenses, owner funding, labor,
+  transfers, business lines, digital assets, and month-end close
+- Added a dated project-status handoff with the production baseline, open
+  bookkeeping work, delivery risks, and recommended next development
+- Corrected outdated claims that the digital-assets/business-lines migration was
+  local-only and that the current crypto view was already a complete tax-lot
+  ledger
+
+## Digital Assets And Business Lines
 
 ### Added
 
@@ -21,12 +37,12 @@
 
 ### Operational Safety
 
-- This migration is additive and is not applied automatically
+- The migration was additive and preserved existing operational records
 - Exchange imports are idempotent by file hash and transaction fingerprint
 - Internal digital-asset transfers do not create realized gains
 - Owner draws and estimated taxes post to owner equity, not business expenses
 
-## Unreleased - Bookkeeping And Month-End Close
+## Bookkeeping And Month-End Close
 
 ### Added
 
@@ -52,7 +68,7 @@
 - Multi-line adjustment worksheets beyond the current balanced two-line entry
 - Tax filing, CPA review, and a full GAAP accrual/subledger implementation
 
-## Unreleased - Paid Amount Integrity
+## Paid Amount Integrity
 
 ### Fixed
 
@@ -60,7 +76,7 @@
 - Cash and management reports include recorded job paid totals when a historical payment row is missing, without double counting linked payments
 - Existing paid jobs without payment rows are backfilled into the payment ledger and balanced journal without changing source job records
 
-## Unreleased - Management Reporting Foundation
+## Management Reporting Foundation
 
 ### Added
 
@@ -89,7 +105,7 @@
 - Automated loan amortization, principal/interest splitting, and lender statement imports
 - Benchmark calibration using a larger history of closed months
 
-## Unreleased - Quote AI Workbench
+## Quote AI Workbench
 
 ### Added
 
@@ -153,7 +169,7 @@
 - Automated tax filing, depreciation decisions, and jurisdiction-specific tax advice
 - Direct QuickBooks/Xero synchronization; stable CSV exports are provided instead
 
-## Unreleased - Financial Accuracy
+## Financial Accuracy
 
 ### Added
 
@@ -176,7 +192,7 @@
 - Split transactions, sales-tax allocation, and accounting-platform synchronization
 - Invoice payment ledger, partial payments, and Stripe reconciliation
 
-## Unreleased - Full Feature Parity
+## Full Feature Parity
 
 ### Added
 
