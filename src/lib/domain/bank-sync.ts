@@ -177,7 +177,7 @@ export function simpleFinDateWindows(startDate: string, endDateExclusive: string
   const windows: { startDate: string; endDateExclusive: string }[] = [];
   let cursor = startDate;
   while (cursor < endDateExclusive) {
-    const proposedEnd = addDays(cursor, 85);
+    const proposedEnd = addDays(cursor, 40);
     const end = proposedEnd < endDateExclusive ? proposedEnd : endDateExclusive;
     windows.push({ startDate: cursor, endDateExclusive: end });
     if (end === endDateExclusive) break;

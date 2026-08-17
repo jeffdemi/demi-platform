@@ -1,5 +1,12 @@
 # Changelog
 
+## SimpleFIN Bank Sync Hotfix
+
+- Reduced transaction requests to 40-day windows with five-day overlap so they
+  remain below SimpleFIN Bridge's 45-day recommendation
+- Preserved conservative duplicate matching and the owner confirmation preview
+- Made the encrypted-credential tamper test deterministic
+
 ## Equipment Card Expense Reconciliation
 
 ### Database

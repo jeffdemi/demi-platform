@@ -65,9 +65,9 @@ Token, or an Access URL.
 
 ## Fetch and duplicate rules
 
-SimpleFIN permits a maximum 90-day request range and recommends roughly five
-days of overlap. The service uses 85-day windows with five-day overlap, merges
-overlapping results, and stays within the provider's intended daily call rate.
+SimpleFIN Bridge recommends request ranges no longer than 45 days and roughly
+five days of overlap. The service uses 40-day windows with five-day overlap,
+merges overlapping results, and stays below the provider warning threshold.
 
 Transaction IDs are unique only within a provider account. Database uniqueness
 therefore includes the local Finance account as well as provider and transaction

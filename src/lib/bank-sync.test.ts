@@ -96,14 +96,14 @@ describe("bank activity sync", () => {
     expect(bankSyncImportSha256("simplefin", "chase\u0000checking", rows)).not.toBe(bankSyncImportSha256("simplefin", "chase\u0000card", rows));
   });
 
-  it("chunks long history into overlapping windows under SimpleFIN's 90-day limit", () => {
+  it("chunks long history into overlapping windows under SimpleFIN Bridge's 45-day recommendation", () => {
     const windows = simpleFinDateWindows("2026-01-01", "2026-08-18");
     expect(windows.length).toBeGreaterThan(1);
-    expect(windows[0]).toEqual({ startDate: "2026-01-01", endDateExclusive: "2026-03-27" });
-    expect(windows[1].startDate).toBe("2026-03-22");
+    expect(windows[0]).toEqual({ startDate: "2026-01-01", endDateExclusive: "2026-02-10" });
+    expect(windows[1].startDate).toBe("2026-02-05");
     for (const window of windows) {
       const days = (Date.parse(`${window.endDateExclusive}T00:00:00Z`) - Date.parse(`${window.startDate}T00:00:00Z`)) / 86_400_000;
-      expect(days).toBeLessThanOrEqual(85);
+      expect(days).toBeLessThanOrEqual(40);
     }
   });
 });
@@ -124,6 +124,10 @@ describe("SimpleFIN credential security", () => {
     const encrypted = encryptBankAccessToken(accessUrl, key);
     expect(encrypted).not.toContain("secret");
     expect(decryptBankAccessToken(encrypted, key)).toBe(accessUrl);
-    expect(() => decryptBankAccessToken(`${encrypted.slice(0, -1)}A`, key)).toThrow();
+    const tamperedParts = encrypted.split(".");
+    const tamperedCiphertext = Buffer.from(tamperedParts[3], "base64url");
+    tamperedCiphertext[0] ^= 1;
+    tamperedParts[3] = tamperedCiphertext.toString("base64url");
+    expect(() => decryptBankAccessToken(tamperedParts.join("."), key)).toThrow();
   });
 });
