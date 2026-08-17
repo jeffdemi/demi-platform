@@ -1,5 +1,18 @@
 # Changelog
 
+## Equipment Card Expense Reconciliation
+
+### Database
+
+- Added linked expense records for the verified April and July Lukoil fuel
+  charges and the May State Farm business-insurance charge
+- Linked the existing June, July, and August Hiscox expense records to their
+  Bank of America equipment-card statement rows
+- Voided superseded allocation journals so the converted charges remain in the
+  books exactly once
+- Left the Amazon $38.15 and Home Depot $14.37 allocations unchanged pending
+  item descriptions and expense-category confirmation
+
 ## Unreleased - Documentation Handoff
 
 ### Documentation

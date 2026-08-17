@@ -11,7 +11,7 @@ state, unresolved financial facts, or release procedures materially change.
 - `main`, `origin/main`, and the working branch pointed to commit `d872c37` at
   the start of this documentation review.
 - Production PostgreSQL is healthy and runs major version 17.
-- All 34 migration names currently in `supabase/migrations` are represented in
+- All 35 migration names currently in `supabase/migrations` are represented in
   production.
 - Several remote migration version timestamps differ from local filenames due
   to earlier management-API application. See [Development](development.md)
@@ -60,6 +60,12 @@ The known stump-grinding job/payment history was compared with the original
 spreadsheet. The July 31 receipt is correctly $150. Recent additive cleanup
 migrations preserve that amount and reconcile known April and May transfers
 without inventing income or expense.
+
+The Bank of America equipment-card export contains 23 merchant purchases or
+refunds. Twenty-one now have linked operational expense records, with no active
+allocation duplicate. The remaining Amazon $38.15 and Home Depot $14.37 rows are
+still correctly represented once in the ledger as allocations, but need item
+details before they can be promoted to defensibly categorized expense records.
 
 The business sold its remaining crypto on 2026-08-15. Current working facts are:
 

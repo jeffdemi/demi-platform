@@ -122,7 +122,7 @@ applied to any shared environment.
 
 ### Existing production migration-history caveat
 
-As of 2026-08-16, the 34 local migration names all exist in production, but
+As of 2026-08-16, the 35 local migration names all exist in production, but
 several production history version timestamps differ from their local filenames.
 Earlier releases were applied through the Supabase management API, which recorded
 the migration name under the time it was applied. The Supabase CLI compares

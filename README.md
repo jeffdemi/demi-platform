@@ -176,7 +176,7 @@ them.
 
 ## Database and migrations
 
-Schema is versioned in `supabase/migrations`. As of 2026-08-16, all 34 migration
+Schema is versioned in `supabase/migrations`. As of 2026-08-16, all 35 migration
 names in this repository are present in production. Some production migration
 history timestamps differ from the local filenames because earlier changes were
 applied through the Supabase management API. Since the CLI compares migration
