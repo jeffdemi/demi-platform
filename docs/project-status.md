@@ -8,17 +8,17 @@ state, unresolved financial facts, or release procedures materially change.
 ## Production baseline
 
 - The application is in active use for Demi Solutions LLC.
-- `main`, `origin/main`, and the working branch pointed to commit `d872c37` at
-  the start of this documentation review.
+- The SimpleFIN bank-activity release is deployed from `main`; use Git history
+  and the production deployment record for the exact current commit.
 - Production PostgreSQL is healthy and runs major version 17.
-- All 36 migration names currently in `supabase/migrations` are represented in
+- All 38 migration names currently in `supabase/migrations` are represented in
   production.
 - Several remote migration version timestamps differ from local filenames due
   to earlier management-API application. See [Development](development.md)
   before using the linked Supabase CLI.
-- The repository has no checked-in CI workflow, Vercel project link, or
-  deployment configuration that proves what a Git push deploys. Verify external
-  GitHub/Vercel configuration before release.
+- The GitHub repository is connected to the Vercel `stump-grinding` project;
+  production deploys from `main`. The local `.vercel` link and production
+  secrets remain intentionally untracked.
 - Production migrations, Git pushes, and deployments require explicit owner
   approval.
 
@@ -81,17 +81,16 @@ and reconciliation.
 
 ## Highest-priority open work
 
-### Pending bank-sync release
+### SimpleFIN bank sync
 
-An additive SimpleFIN Bridge integration is implemented locally but is not yet
-migrated or deployed to production. It adds owner/admin connection and mapping
-controls, encrypted Access URL storage, a user-driven safe preview,
-account-scoped provider-ID/fingerprint duplicate protection, and confirmed
-import of posted activity. Before release, configure the server-only encryption
-key, apply the additive migration only to a disposable/staging database, verify
-that all four provider accounts appear (including the Chase credit card), and prove that existing production-like CSV rows are
-linked rather than duplicated. Production migration and deployment still
-require explicit owner approval.
+The additive SimpleFIN Bridge integration is deployed to production. It adds
+owner/admin connection and mapping controls, encrypted Access URL storage, a
+user-driven safe preview, account-scoped provider-ID/fingerprint duplicate
+protection, and confirmed import of posted activity. The production encryption
+key is stored as a sensitive Vercel variable. The first owner-driven connection
+still needs to prove that all four provider accounts appear (including the
+Chase credit card), map only business accounts, and confirm that previously
+imported CSV rows are linked rather than duplicated.
 
 ### 1. Finish digital-asset accounting before tax preparation
 
@@ -142,9 +141,9 @@ with guessed opening balances.
 
 ## Known product boundaries
 
-- The production baseline has no direct bank feed. A manual SimpleFIN transaction
-  sync is pending development/staging verification and release approval; CSV/XLSX
-  statements remain required for formal reconciliation.
+- Production has a user-driven SimpleFIN transaction feed. CSV/XLSX statements
+  remain the fallback and are still required for formal reconciliation because
+  the feed does not provide statement PDFs or opening/closing statement proof.
 - No payroll calculation, withholding, payment, or filing.
 - No tax filing or guarantee of tax treatment.
 - No full A/R, A/P, inventory, or loan-amortization subledger.

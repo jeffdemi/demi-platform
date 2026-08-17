@@ -93,21 +93,19 @@ statement's opening and closing balances.
 
 ## Verification and release
 
-Do not test the initial schema against production. In a disposable Supabase
-project, branch, or staging environment:
+The additive production schema and sensitive encryption variable were applied
+on 2026-08-17. The automated test, lint, typecheck, build, RLS/grant, migration,
+and advisor checks passed before application deployment. Complete the remaining
+owner-driven verification in production:
 
-1. Apply `20260817151043_bank_activity_sync.sql`.
-2. Configure `BANK_CONNECTION_ENCRYPTION_KEY`.
-3. Create a SimpleFIN Setup Token and confirm that all four authorized accounts
+1. Create a SimpleFIN Setup Token and confirm that all four authorized accounts
    appear, including the Chase credit card.
-4. Map only business accounts; verify that unrelated accounts remain unmapped.
-5. Preview activity already loaded by CSV and prove it is labeled **already
+2. Map only business accounts; verify that unrelated accounts remain unmapped.
+3. Preview activity already loaded by CSV and prove it is labeled **already
    present**.
-6. Confirm one genuinely new posted row and one pending row; only the posted row
+4. Confirm one genuinely new posted row and one pending row; only the posted row
    should be inserted.
-7. Run the same preview again and prove no duplicate row appears.
-8. Run tests, lint, typecheck, build, and Supabase security/performance advisors.
-9. Obtain explicit approval before production migration or deployment.
+5. Run the same preview again and prove no duplicate row appears.
 
 Protocol references: [SimpleFIN protocol](https://www.simplefin.org/protocol.html)
 and [SimpleFIN Bridge developer guide](https://beta-bridge.simplefin.org/info/developers).
