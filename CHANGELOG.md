@@ -4,6 +4,8 @@
 
 - Reduced transaction requests to 40-day windows with five-day overlap so they
   remain below SimpleFIN Bridge's 45-day recommendation
+- Clarified that an existing connection is reusable and moved the new-token
+  form under an explicit reconnect/add-another disclosure
 - Preserved conservative duplicate matching and the owner confirmation preview
 - Made the encrypted-credential tamper test deterministic
 
