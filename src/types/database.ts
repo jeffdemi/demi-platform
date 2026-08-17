@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_connection_accounts: {
+        Row: { id: string; business_id: number; connection_id: string; provider_institution_connection_id: string; provider_account_id: string; provider_account_name: string; provider_account_type: string; provider_account_subtype: string; institution_id: string | null; institution_name: string; last_four: string | null; currency: string; provider_status: string; bank_account_id: number | null; selected: boolean; last_synced_at: string | null; created_at: string; updated_at: string }
+        Insert: { id?: string; business_id: number; connection_id: string; provider_institution_connection_id: string; provider_account_id: string; provider_account_name: string; provider_account_type: string; provider_account_subtype: string; institution_id?: string | null; institution_name: string; last_four?: string | null; currency?: string; provider_status?: string; bank_account_id?: number | null; selected?: boolean; last_synced_at?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: string; business_id?: number; connection_id?: string; provider_institution_connection_id?: string; provider_account_id?: string; provider_account_name?: string; provider_account_type?: string; provider_account_subtype?: string; institution_id?: string | null; institution_name?: string; last_four?: string | null; currency?: string; provider_status?: string; bank_account_id?: number | null; selected?: boolean; last_synced_at?: string | null; created_at?: string; updated_at?: string }
+        Relationships: [
+          { foreignKeyName: "bank_connection_accounts_business_id_connection_id_fkey"; columns: ["business_id", "connection_id"]; isOneToOne: false; referencedRelation: "bank_connections"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "bank_connection_accounts_business_id_bank_account_id_fkey"; columns: ["business_id", "bank_account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["business_id", "id"] }
+        ]
+      }
+      bank_connection_secrets: {
+        Row: { connection_id: string; business_id: number; encrypted_access_token: string; created_at: string; updated_at: string }
+        Insert: { connection_id: string; business_id: number; encrypted_access_token: string; created_at?: string; updated_at?: string }
+        Update: { connection_id?: string; business_id?: number; encrypted_access_token?: string; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "bank_connection_secrets_business_id_connection_id_fkey"; columns: ["business_id", "connection_id"]; isOneToOne: true; referencedRelation: "bank_connections"; referencedColumns: ["business_id", "id"] }]
+      }
+      bank_connections: {
+        Row: { id: string; business_id: number; provider: string; provider_connection_id: string; institution_name: string; status: string; last_synced_at: string | null; last_error: string | null; created_by: string; created_at: string; updated_at: string }
+        Insert: { id?: string; business_id: number; provider?: string; provider_connection_id: string; institution_name: string; status?: string; last_synced_at?: string | null; last_error?: string | null; created_by: string; created_at?: string; updated_at?: string }
+        Update: { id?: string; business_id?: number; provider?: string; provider_connection_id?: string; institution_name?: string; status?: string; last_synced_at?: string | null; last_error?: string | null; created_by?: string; created_at?: string; updated_at?: string }
+        Relationships: [{ foreignKeyName: "bank_connections_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
+      }
       bank_classification_rules: {
         Row: { id: number; business_id: number; match_text: string; ledger_account_id: number; tax_category: string | null; deductible_percent: number; active: boolean; created_by: string | null; created_at: string; updated_at: string }
         Insert: { id?: never; business_id: number; match_text: string; ledger_account_id: number; tax_category?: string | null; deductible_percent?: number; active?: boolean; created_by?: string | null; created_at?: string; updated_at?: string }
@@ -39,9 +60,9 @@ export type Database = {
         Relationships: [{ foreignKeyName: "bank_imports_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["business_id", "id"] }]
       }
       bank_transactions: {
-        Row: { id: number; business_id: number; account_id: number; import_id: string; statement_period_id: number | null; transaction_date: string; posted_date: string | null; description: string; amount: number; currency: string; external_id: string | null; fingerprint: string; status: string; excluded_reason: string | null; reviewed_at: string | null; reviewed_by: string | null; created_at: string; updated_at: string }
-        Insert: { id?: never; business_id: number; account_id: number; import_id: string; statement_period_id?: number | null; transaction_date: string; posted_date?: string | null; description: string; amount: number; currency?: string; external_id?: string | null; fingerprint: string; status?: string; excluded_reason?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; created_at?: string; updated_at?: string }
-        Update: { id?: never; business_id?: number; account_id?: number; import_id?: string; statement_period_id?: number | null; transaction_date?: string; posted_date?: string | null; description?: string; amount?: number; currency?: string; external_id?: string | null; fingerprint?: string; status?: string; excluded_reason?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; created_at?: string; updated_at?: string }
+        Row: { id: number; business_id: number; account_id: number; import_id: string; statement_period_id: number | null; transaction_date: string; posted_date: string | null; description: string; amount: number; currency: string; external_id: string | null; fingerprint: string; provider: string | null; provider_transaction_id: string | null; provider_status: string | null; provider_metadata: Json; status: string; excluded_reason: string | null; reviewed_at: string | null; reviewed_by: string | null; created_at: string; updated_at: string }
+        Insert: { id?: never; business_id: number; account_id: number; import_id: string; statement_period_id?: number | null; transaction_date: string; posted_date?: string | null; description: string; amount: number; currency?: string; external_id?: string | null; fingerprint: string; provider?: string | null; provider_transaction_id?: string | null; provider_status?: string | null; provider_metadata?: Json; status?: string; excluded_reason?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; created_at?: string; updated_at?: string }
+        Update: { id?: never; business_id?: number; account_id?: number; import_id?: string; statement_period_id?: number | null; transaction_date?: string; posted_date?: string | null; description?: string; amount?: number; currency?: string; external_id?: string | null; fingerprint?: string; provider?: string | null; provider_transaction_id?: string | null; provider_status?: string | null; provider_metadata?: Json; status?: string; excluded_reason?: string | null; reviewed_at?: string | null; reviewed_by?: string | null; created_at?: string; updated_at?: string }
         Relationships: [
           { foreignKeyName: "bank_transactions_business_id_account_id_fkey"; columns: ["business_id", "account_id"]; isOneToOne: false; referencedRelation: "bank_accounts"; referencedColumns: ["business_id", "id"] },
           { foreignKeyName: "bank_transactions_statement_period_fkey"; columns: ["business_id", "statement_period_id"]; isOneToOne: false; referencedRelation: "bank_statement_periods"; referencedColumns: ["business_id", "id"] }
@@ -55,6 +76,12 @@ export type Database = {
           { foreignKeyName: "bank_transaction_allocations_business_id_bank_transaction_id_fkey"; columns: ["business_id", "bank_transaction_id"]; isOneToOne: false; referencedRelation: "bank_transactions"; referencedColumns: ["business_id", "id"] },
           { foreignKeyName: "bank_transaction_allocations_business_id_ledger_account_id_fkey"; columns: ["business_id", "ledger_account_id"]; isOneToOne: false; referencedRelation: "ledger_accounts"; referencedColumns: ["business_id", "id"] }
         ]
+      }
+      bank_sync_runs: {
+        Row: { id: string; business_id: number; provider: string; status: string; preview: Json; summary: Json; result: Json | null; error_message: string | null; created_by: string; created_at: string; confirmed_at: string | null; updated_at: string }
+        Insert: { id?: string; business_id: number; provider?: string; status?: string; preview: Json; summary?: Json; result?: Json | null; error_message?: string | null; created_by: string; created_at?: string; confirmed_at?: string | null; updated_at?: string }
+        Update: { id?: string; business_id?: number; provider?: string; status?: string; preview?: Json; summary?: Json; result?: Json | null; error_message?: string | null; created_by?: string; created_at?: string; confirmed_at?: string | null; updated_at?: string }
+        Relationships: [{ foreignKeyName: "bank_sync_runs_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
       }
       bank_transfer_links: {
         Row: { id: number; business_id: number; outgoing_transaction_id: number; incoming_transaction_id: number; transfer_date: string; amount: number; memo: string | null; status: string; created_by: string | null; created_at: string; voided_at: string | null; voided_by: string | null; void_reason: string | null }
@@ -1432,6 +1459,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_bank_sync_run: { Args: { target_business_id: number; target_run_id: string }; Returns: Json }
+      save_bank_connection_mappings: { Args: { target_business_id: number; target_connection_id: string; mappings: Json }; Returns: undefined }
       force_delete_business_record: { Args: { target_business_id: number; target_record_type: string; target_record_id: number; deletion_reason: string }; Returns: undefined }
       assign_business_line: { Args: { target_business_id: number; target_record_type: string; target_record_id: number; target_business_line_id: number }; Returns: undefined }
       assign_unclassified_business_line: { Args: { target_business_id: number; target_business_line_id: number }; Returns: Json }

@@ -45,6 +45,20 @@ enforces the same ceiling for direct or concurrent writes.
 Amount columns, or separate Debit and Credit columns. Deposits are positive and
 withdrawals are negative. Previewing never writes data; confirmation is idempotent.
 
+`/finance/bank-sync` is the on-demand SimpleFIN transaction feed. It discovers
+all accounts authorized in SimpleFIN; map each business account to its existing Finance account,
+and click **Import latest bank activity**. The preview separates four outcomes:
+
+- already present: an existing CSV/sync row that will receive the stable SimpleFIN ID;
+- new: a posted transaction that will be added once as unreviewed;
+- ambiguous: a possible duplicate held out for manual investigation;
+- pending: bank activity held out until it posts.
+
+Confirmation imports only already-present and new safe rows. It never moves
+money, downloads a PDF statement, creates a statement period, or reconciles a
+month. CSV import remains the fallback, and normal statement reconciliation is
+still required. Do not connect the personal checking account or Venmo.
+
 Unreviewed withdrawals can prefill an expense, while deposits can prefill a
 customer payment. The database requires the linked source amount to match exactly.
 Nonbusiness transfers and duplicates can be excluded with a retained reason.

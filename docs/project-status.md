@@ -1,6 +1,6 @@
 # Current Project Status
 
-Last reviewed: **2026-08-16**
+Last reviewed: **2026-08-17**
 
 This is the dated development and bookkeeping handoff. Update it when production
 state, unresolved financial facts, or release procedures materially change.
@@ -81,6 +81,18 @@ and reconciliation.
 
 ## Highest-priority open work
 
+### Pending bank-sync release
+
+An additive SimpleFIN Bridge integration is implemented locally but is not yet
+migrated or deployed to production. It adds owner/admin connection and mapping
+controls, encrypted Access URL storage, a user-driven safe preview,
+account-scoped provider-ID/fingerprint duplicate protection, and confirmed
+import of posted activity. Before release, configure the server-only encryption
+key, apply the additive migration only to a disposable/staging database, verify
+that all four provider accounts appear (including the Chase credit card), and prove that existing production-like CSV rows are
+linked rather than duplicated. Production migration and deployment still
+require explicit owner approval.
+
 ### 1. Finish digital-asset accounting before tax preparation
 
 - Import and reconcile the all-time exchange history, not only the latest 30
@@ -130,7 +142,9 @@ with guessed opening balances.
 
 ## Known product boundaries
 
-- No direct bank feeds; statements are CSV/XLSX imports.
+- The production baseline has no direct bank feed. A manual SimpleFIN transaction
+  sync is pending development/staging verification and release approval; CSV/XLSX
+  statements remain required for formal reconciliation.
 - No payroll calculation, withholding, payment, or filing.
 - No tax filing or guarantee of tax treatment.
 - No full A/R, A/P, inventory, or loan-amortization subledger.

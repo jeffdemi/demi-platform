@@ -24,6 +24,8 @@ The repository documentation is the handoff contract:
   limitations, open bookkeeping work, and recommended next development
 - [Operations reference](docs/operations.md) — user workflows for quotes,
   expenses, reconciliation, payments, close, imports, and exports
+- [Bank activity sync](docs/bank-activity-sync.md) — SimpleFIN setup, credential
+  boundaries, matching rules, and release verification
 - [Authentication](docs/authentication.md) — owner bootstrap, invitations, Auth,
   SMTP, and production configuration
 - [Management reporting](docs/management-reporting.md) — Crabtree-inspired
@@ -72,6 +74,11 @@ OPENAI_API_KEY=
 OPENAI_QUOTE_MODEL=gpt-5.6-terra
 ```
 
+The optional SimpleFIN integration needs the server-only
+`BANK_CONNECTION_ENCRYPTION_KEY` documented in
+[Bank activity sync](docs/bank-activity-sync.md). SimpleFIN Setup Tokens and
+Access URLs are credentials and must never be committed or exposed publicly.
+
 `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY`, and any equivalent secret must remain
 server-only. Never expose one through a `NEXT_PUBLIC_` variable. Normal
 application access uses the signed-in user's request-scoped Supabase client and
@@ -112,6 +119,7 @@ Important routes:
 /expenses
 /finance
 /finance/import
+/finance/bank-sync
 /finance/matching
 /finance/suggestions
 /finance/transactions/{transactionId}

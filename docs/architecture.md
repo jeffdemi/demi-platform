@@ -44,6 +44,8 @@ The public schema is organized by responsibility:
   and `quote_ai_recommendations`;
 - source imports: `legacy_imports`, `job_imports`, `bank_imports`, and
   `digital_asset_imports`;
+- connected banking: `bank_connections`, `bank_connection_accounts`,
+  `bank_connection_secrets`, and `bank_sync_runs`;
 - banking and bookkeeping: `bank_accounts`, `bank_transactions`,
   `bank_statement_periods`, `bank_transaction_allocations`,
   `bank_transfer_links`, `bank_classification_rules`, `payments`,
@@ -83,6 +85,21 @@ Bank imports are previewed in the application and committed through one
 caller-authorized PostgreSQL function. File hashes and transaction fingerprints
 make re-imports idempotent. Reconciliation links a bank row to at most one active
 expense or payment.
+
+The optional SimpleFIN integration is user initiated. A one-time Setup Token is
+pasted only into the bank-sync Server Action. The server restricts claim and
+Access URLs to official HTTPS SimpleFIN Bridge hosts, blocks redirects, claims
+the token once, encrypts the returned Access URL with AES-256-GCM, and stores
+ciphertext in an RLS-enabled table with no authenticated-client grants. Server
+actions use the service role only to read or replace that ciphertext after
+rechecking owner/admin membership.
+
+Sync previews are durable audit rows. Pure domain logic first recognizes stable
+SimpleFIN IDs within each mapped account, then exact fingerprints, then conservative amount/date/description
+matches against existing CSV rows. Pending and ambiguous rows are never posted.
+Confirmation is one security-invoker database transaction that links existing
+rows and inserts new rows under both the normal fingerprint constraint and a
+unique provider-transaction constraint.
 
 Payments are the cash-revenue source of truth. Existing invoice/job payment fields
 remain for backward compatibility and are synchronized when a new payment is
