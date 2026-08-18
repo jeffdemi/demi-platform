@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Bookkeeping Adjustments" };
 
 export default async function BookkeepingAdjustmentsPage() {
   const context = await requireBusinessContext();
-  if (context.role === "employee") redirect("/finance");
+  if ((context.role === "employee" || context.role === "intern")) redirect("/finance");
   const client = await createClient();
   const [accounts, adjustments] = await Promise.all([
     listLedgerAccounts(client, context.business.id),

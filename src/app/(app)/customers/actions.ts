@@ -22,7 +22,9 @@ export async function saveCustomer(
     return { errors: validated.error.flatten().fieldErrors };
   }
 
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  if (context.role === "intern") return { message: "Interns have read-only access." };
+  const { business } = context;
   const client = await createClient();
   const values = {
     business_id: business.id,

@@ -30,6 +30,7 @@ export function InviteForm() {
         <select className="h-11 w-full rounded-md border border-line-strong bg-surface px-3" defaultValue="employee" id="invite-role" name="role">
           <option value="employee">Employee</option>
           <option value="admin">Administrator</option>
+          <option value="intern">Intern (read-only)</option>
         </select>
       </div>
       <button

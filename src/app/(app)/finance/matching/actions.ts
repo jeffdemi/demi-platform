@@ -9,7 +9,7 @@ export type BulkMatchState = { message?: string; success?: boolean };
 
 export async function confirmBulkExpenseMatches(): Promise<BulkMatchState> {
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can match expenses." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can match expenses." };
   const client = await createClient();
   try {
     const matches = await listBulkExpenseMatches(client, context.business.id);

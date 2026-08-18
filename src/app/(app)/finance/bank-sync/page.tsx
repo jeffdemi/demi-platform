@@ -23,7 +23,7 @@ function objectValue(value: Json | null, key: string) {
 
 export default async function BankSyncPage() {
   const context = await requireBusinessContext();
-  if (context.role === "employee") redirect("/finance");
+  if ((context.role === "employee" || context.role === "intern")) redirect("/finance");
   const client = await createClient();
   const [connections, bankAccounts, recentRuns] = await Promise.all([
     listBankConnections(client, context.business.id),

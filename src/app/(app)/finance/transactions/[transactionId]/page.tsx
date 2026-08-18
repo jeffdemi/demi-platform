@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Review Bank Transaction" };
 
 export default async function TransactionReviewPage({ params }: { params: Promise<{ transactionId: string }> }) {
   const context = await requireBusinessContext();
-  if (context.role === "employee") redirect("/finance");
+  if ((context.role === "employee" || context.role === "intern")) redirect("/finance");
   const transactionId = Number((await params).transactionId);
   if (!Number.isInteger(transactionId)) notFound();
   const review = await getBankTransactionReview(await createClient(), context.business.id, transactionId);

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { requireBusinessContext } from "@/lib/auth";
 import { dateInTimeZone } from "@/lib/domain/jobs";
@@ -13,7 +13,8 @@ export const metadata: Metadata = { title: "Edit job" };
 export default async function EditJobPage({ params }: { params: Promise<{ jobId: string }> }) {
   const jobId = Number((await params).jobId);
   if (!Number.isInteger(jobId)) notFound();
-  const { business } = await requireBusinessContext();
+  const { business, role } = await requireBusinessContext();
+  if (role === "intern") redirect(`/jobs/${jobId}`);
   const client = await createClient();
   const job = await getJobForEdit(client, business.id, jobId);
   if (!job) notFound();

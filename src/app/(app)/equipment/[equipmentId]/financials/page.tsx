@@ -15,7 +15,7 @@ export default async function EquipmentFinancialsPage({ params }: { params: Prom
   const equipmentId = Number((await params).equipmentId);
   if (!Number.isInteger(equipmentId)) notFound();
   const context = await requireBusinessContext();
-  if (context.role === "employee") redirect("/equipment");
+  if ((context.role === "employee" || context.role === "intern")) redirect("/equipment");
   const equipment = await getEquipment(await createClient(), context.business.id, equipmentId);
   if (!equipment) notFound();
   const today = dateInTimeZone(context.business.timezone);

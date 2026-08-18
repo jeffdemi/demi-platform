@@ -9,7 +9,7 @@ export type SuggestionApprovalState = { message?: string; success?: boolean };
 
 export async function approveClassificationSuggestions(_: SuggestionApprovalState, formData: FormData): Promise<SuggestionApprovalState> {
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can approve classifications." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can approve classifications." };
   const selections = formData.getAll("suggestion").map(String).flatMap((value) => {
     const [transactionId, ruleId] = value.split(":").map(Number);
     return Number.isInteger(transactionId) && Number.isInteger(ruleId) ? [{ transactionId, ruleId }] : [];

@@ -22,7 +22,7 @@ const explanations = {
 
 export default async function BankSyncPreviewPage({ params }: { params: Promise<{ runId: string }> }) {
   const context = await requireBusinessContext();
-  if (context.role === "employee") redirect("/finance");
+  if ((context.role === "employee" || context.role === "intern")) redirect("/finance");
   const runId = (await params).runId;
   const run = await getBankSyncRun(await createClient(), context.business.id, runId);
   if (!run) notFound();

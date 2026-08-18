@@ -32,7 +32,7 @@ export async function updateFinancialSettings(_: ReportingSettingsState, formDat
   ];
   if (requiredTargets.some((value) => value === undefined)) return { message: "All reporting targets are required." };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can change financial settings." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can change financial settings." };
   try {
     await saveFinancialSettings(await createClient(), {
       business_id: context.business.id,
@@ -63,7 +63,7 @@ export async function updateOwnerCompensation(_: ReportingSettingsState, formDat
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   if (!parsed.data.periodMonth) return { message: "Select an owner compensation month." };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can record owner compensation." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can record owner compensation." };
   try {
     await saveOwnerCompensation(await createClient(), {
       business_id: context.business.id,

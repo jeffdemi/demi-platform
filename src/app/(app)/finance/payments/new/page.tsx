@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { requireBusinessContext } from "@/lib/auth";
 import { customerDisplayName } from "@/lib/domain/customers";
@@ -15,7 +15,8 @@ export const metadata: Metadata = { title: "Record payment" };
 
 export default async function NewPaymentPage({ searchParams }: { searchParams: Promise<{ bankTransaction?: string; invoice?: string }> }) {
   const query = await searchParams;
-  const { business } = await requireBusinessContext();
+  const { business, role } = await requireBusinessContext();
+  if (role === "intern") redirect("/finance");
   const client = await createClient();
   const bankTransactionId = Number(query.bankTransaction);
   const [bankTransaction, invoices, jobs] = await Promise.all([

@@ -15,13 +15,14 @@ export const metadata: Metadata = { title: "Customer details" };
 export default async function CustomerDetailPage({ params }: { params: Promise<{ customerId: string }> }) {
   const customerId = Number((await params).customerId);
   if (!Number.isInteger(customerId)) notFound();
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  const { business } = context;
   const customer = await getCustomerDetail(await createClient(), business.id, customerId);
   if (!customer) notFound();
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <PageHeader actions={<><Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong bg-surface px-3 font-semibold hover:bg-surface-muted" href={`/customers/${customer.id}/edit`}><Pencil aria-hidden="true" size={16} />Edit</Link><Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong bg-surface px-3 font-semibold hover:bg-surface-muted" href={`/quotes/new?customerId=${customer.id}`}><FileText aria-hidden="true" size={16} />Add quote</Link><Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand hover:bg-brand-strong" href={`/jobs/new?customerId=${customer.id}`}><Plus aria-hidden="true" size={17} />Add job</Link></>} description={customer.active ? customer.customer_type === "company" ? "Company" : "Individual" : "Inactive customer"} title={customer.displayName} />
+      <PageHeader actions={context.role !== "intern" ? <><Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong bg-surface px-3 font-semibold hover:bg-surface-muted" href={`/customers/${customer.id}/edit`}><Pencil aria-hidden="true" size={16} />Edit</Link><Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong bg-surface px-3 font-semibold hover:bg-surface-muted" href={`/quotes/new?customerId=${customer.id}`}><FileText aria-hidden="true" size={16} />Add quote</Link><Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand hover:bg-brand-strong" href={`/jobs/new?customerId=${customer.id}`}><Plus aria-hidden="true" size={17} />Add job</Link></> : null} description={customer.active ? customer.customer_type === "company" ? "Company" : "Individual" : "Inactive customer"} title={customer.displayName} />
 
       <section className="grid gap-5 py-6 lg:grid-cols-[0.72fr_1.28fr]">
         <div className="space-y-5">

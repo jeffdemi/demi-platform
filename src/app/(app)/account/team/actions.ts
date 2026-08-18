@@ -122,3 +122,41 @@ export async function inviteTeamMember(
   revalidatePath("/account/team");
   return { success: true, message: "Invitation sent." };
 }
+
+export type RemoveMemberState = {
+  message?: string;
+  success?: boolean;
+};
+
+export async function removeTeamMember(
+  memberId: number,
+  _: RemoveMemberState,
+  formData: FormData,
+): Promise<RemoveMemberState> {
+  void formData;
+  const context = await requireBusinessContext();
+
+  if (context.role !== "owner") {
+    return { message: "Only the business owner can remove team members." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("business_members")
+    .update({ active: false })
+    .eq("id", memberId)
+    .eq("business_id", context.business.id)
+    .neq("role", "owner")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { message: "The team member could not be removed." };
+  }
+  if (!data) {
+    return { message: "That team member could not be found." };
+  }
+
+  revalidatePath("/account/team");
+  return { success: true, message: "Team member removed." };
+}

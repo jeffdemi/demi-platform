@@ -28,7 +28,9 @@ export async function saveExpense(expenseId: number | null, _: ExpenseState, for
   ]));
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   if (!parsed.data.expenseDate || parsed.data.amount === undefined) return { message: "Expense date and amount are required." };
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  if (context.role === "intern") return { message: "Interns have read-only access." };
+  const { business } = context;
   const client = await createClient();
   const input = {
     expense_date: parsed.data.expenseDate,
@@ -70,7 +72,7 @@ export async function bulkClassifySelectedExpenses(_: BulkClassificationState, f
   });
   if (!parsed.success) return { message: parsed.error.issues[0]?.message ?? "Review the classification selection." };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can classify expenses." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can classify expenses." };
   const client = await createClient();
   const selected = await client.from("expenses").select("id, transaction_type")
     .eq("business_id", context.business.id).in("id", parsed.data.expenseIds).is("voided_at", null);
@@ -115,7 +117,8 @@ export async function unvoidExpense(expenseId: number, previousState: ExpenseSta
 }
 
 export async function prepareReceiptReview(expenseId: number) {
-  const { business } = await requireBusinessContext();
+  const { business, role } = await requireBusinessContext();
+  if (role === "intern") return;
   const client = await createClient();
   const expense = await getExpense(client, business.id, expenseId);
   if (!expense?.receipt_path) return;
@@ -136,7 +139,8 @@ export async function prepareReceiptReview(expenseId: number) {
 }
 
 export async function approveReceiptReview(expenseId: number) {
-  const { business, user } = await requireBusinessContext();
+  const { business, user, role } = await requireBusinessContext();
+  if (role === "intern") return;
   const client = await createClient();
   const expense = await getExpense(client, business.id, expenseId);
   if (!expense || expense.receipt_review_status !== "needs_review") return;
@@ -154,7 +158,8 @@ export async function approveReceiptReview(expenseId: number) {
 }
 
 export async function completeExpenseReview(expenseId: number) {
-  const { business, user } = await requireBusinessContext();
+  const { business, user, role } = await requireBusinessContext();
+  if (role === "intern") return;
   const client = await createClient();
   const expense = await getExpense(client, business.id, expenseId);
   if (!expense || expense.voided_at) return;

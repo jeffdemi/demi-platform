@@ -22,7 +22,7 @@ function monthEnd(month: string) {
 
 export default async function MonthEndPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const context = await requireBusinessContext();
-  if (context.role === "employee") redirect("/dashboard");
+  if ((context.role === "employee" || context.role === "intern")) redirect("/dashboard");
   const requested = (await searchParams).month;
   const currentMonth = dateInTimeZone(context.business.timezone).slice(0, 7);
   const month = requested && /^\d{4}-\d{2}$/.test(requested) ? requested : currentMonth;

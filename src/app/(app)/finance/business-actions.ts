@@ -15,7 +15,7 @@ export type BusinessFinanceState = { message?: string; success?: boolean; errors
 
 async function adminContext() {
   const context = await requireBusinessContext();
-  if (context.role === "employee") throw new Error("Only an owner or administrator can change bookkeeping controls.");
+  if ((context.role === "employee" || context.role === "intern")) throw new Error("Only an owner or administrator can change bookkeeping controls.");
   return context;
 }
 

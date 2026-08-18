@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Statement Reconciliation" };
 
 export default async function ReconciliationPage({ params }: { params: Promise<{ reconciliationId: string }> }) {
   const context = await requireBusinessContext();
-  if (context.role === "employee") redirect("/finance");
+  if ((context.role === "employee" || context.role === "intern")) redirect("/finance");
   const periodId = Number((await params).reconciliationId);
   if (!Number.isInteger(periodId)) notFound();
   const client = await createClient();

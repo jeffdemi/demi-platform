@@ -33,7 +33,7 @@ export async function changeRecordLifecycle(
   const parsed = recordRemovalSchema.safeParse({ intent: formData.get("intent"), reason: formData.get("reason") ?? undefined, confirm: formData.get("confirm") ?? undefined, overrideConfirmation: formData.get("overrideConfirmation") ?? undefined });
   if (!parsed.success) return { message: parsed.error.issues[0]?.message ?? "Review the removal request." };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can remove records." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can remove records." };
   const client = await createClient();
   const { intent, reason } = parsed.data;
 

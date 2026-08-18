@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "New Reconciliation" };
 
 export default async function NewReconciliationPage({ searchParams }: { searchParams: Promise<{ account?: string }> }) {
   const context = await requireBusinessContext();
-  if (context.role === "employee") redirect("/finance");
+  if ((context.role === "employee" || context.role === "intern")) redirect("/finance");
   const accounts = await listBankAccounts(await createClient(), context.business.id);
   const requested = Number((await searchParams).account);
   const defaultAccountId = accounts.some((account) => account.id === requested) ? requested : undefined;

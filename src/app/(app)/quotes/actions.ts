@@ -16,7 +16,9 @@ export async function saveQuote(quoteId: number | null, _: QuoteFormState, formD
   const parsed = quoteFormSchema.safeParse({ ...formValues(formData, names), proBono: formData.get("proBono") === "on", pa811Required: formData.get("pa811Required") === "on" });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   if (!parsed.data.customerId || !parsed.data.quoteDate) return { message: "Customer and quote date are required." };
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  if (context.role === "intern") return { message: "Interns have read-only access." };
+  const { business } = context;
   const client = await createClient();
   if (quoteId !== null && !(await getQuoteForEdit(client, business.id, quoteId))) return { message: "That quote no longer exists." };
   const data = parsed.data;
@@ -47,7 +49,9 @@ export async function markQuoteStatus(quoteId: number, _state: QuoteFormState, f
   void _state;
   const parsed = quoteStatusSchema.safeParse({ status: formData.get("status"), acceptedMethod: formData.get("acceptedMethod") });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  if (context.role === "intern") return { message: "Interns have read-only access." };
+  const { business } = context;
   const client = await createClient();
   const quote = await getQuoteForEdit(client, business.id, quoteId);
   if (!quote) return { message: "That quote no longer exists." };
@@ -66,7 +70,8 @@ export async function markQuoteStatus(quoteId: number, _state: QuoteFormState, f
 
 export async function convertQuoteToJob(quoteId: number, _state: QuoteFormState): Promise<QuoteFormState> {
   void _state;
-  await requireBusinessContext();
+  const context = await requireBusinessContext();
+  if (context.role === "intern") return { message: "Interns have read-only access." };
   try {
     const jobId = await convertQuote(await createClient(), quoteId);
     revalidatePath("/quotes"); revalidatePath(`/quotes/${quoteId}`); revalidatePath("/jobs"); revalidatePath("/dashboard");

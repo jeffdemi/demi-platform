@@ -35,17 +35,18 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ qu
   const workbench = await getQuoteAiWorkbench(client, business.id, id);
   const converted = quote.job_id !== null;
   const draft = quote.status === "draft";
+  const readOnly = context.role === "intern";
 
   return <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
     <PageHeader actions={<>
       <a className="flex h-10 items-center gap-2 rounded-md border border-line-strong px-3 font-semibold" href={`/quotes/${quote.id}/pdf`}><Download size={16} />PDF</a>
-      {!converted && !quote.archived_at ? <Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand" href={`/quotes/${quote.id}/edit`}><Pencil size={16} />Edit quote</Link> : null}
+      {!converted && !quote.archived_at && !readOnly ? <Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand" href={`/quotes/${quote.id}/edit`}><Pencil size={16} />Edit quote</Link> : null}
     </>} description={`${formatDate(quote.quote_date)} - ${quoteStatusLabel(quote.status)}`} title={quote.quote_number} />
 
-    {context.role !== "employee" ? <section className="mt-5 rounded-lg border border-line bg-surface p-4 shadow-sm"><RecordLifecycleControl archived={Boolean(quote.archived_at)} id={quote.id} label="quote" type="quote" /></section> : null}
+    {(context.role !== "employee" && context.role !== "intern") ? <section className="mt-5 rounded-lg border border-line bg-surface p-4 shadow-sm"><RecordLifecycleControl archived={Boolean(quote.archived_at)} id={quote.id} label="quote" type="quote" /></section> : null}
     <div className="grid gap-5 pt-6 lg:grid-cols-[0.8fr_1.2fr]">
-      <QuotePhotoManager businessId={business.id} draft={draft} photos={workbench.photos} quoteId={quote.id} />
-      <QuoteAiWorkbench configured={isQuoteAiConfigured()} draft={draft} messages={workbench.messages} photoCount={workbench.photos.length} quoteId={quote.id} recommendation={workbench.recommendation} />
+      <QuotePhotoManager businessId={business.id} draft={draft} photos={workbench.photos} quoteId={quote.id} readOnly={readOnly} />
+      <QuoteAiWorkbench configured={isQuoteAiConfigured()} draft={draft} messages={workbench.messages} photoCount={workbench.photos.length} quoteId={quote.id} readOnly={readOnly} recommendation={workbench.recommendation} />
     </div>
 
     <div className="grid gap-5 py-6 lg:grid-cols-[0.78fr_1.22fr]">
@@ -59,7 +60,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ qu
         {converted && <Link className="block rounded-lg border border-brand-border bg-brand-soft p-4 font-semibold text-brand" href={`/jobs/${quote.job_id}`}>View converted job</Link>}
       </div>
       <div className="space-y-5">
-        <section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="font-bold">Sales actions</h2><div className="mt-4"><QuoteStatusActions accepted={quote.status === "accepted"} converted={converted} priceReady={quoteHasFinalPrice(quote)} quoteId={quote.id} /></div></section>
+        <section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="font-bold">Sales actions</h2><div className="mt-4"><QuoteStatusActions accepted={quote.status === "accepted"} converted={converted} priceReady={quoteHasFinalPrice(quote)} quoteId={quote.id} readOnly={readOnly} /></div></section>
         <section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="font-bold">Customer message</h2><p className="mt-1 text-sm text-muted">Edit this text before copying it into a text or email.</p><div className="mt-4"><MessageEditor message={customerQuoteMessage(quote)} /></div></section>
         <section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="font-bold">Quote details</h2><dl className="mt-5 grid gap-5 sm:grid-cols-2"><div className="sm:col-span-2"><Detail label="Customer scope" value={quote.customer_scope} /></div><Detail label="Referral source" value={quote.referral_source} /><Detail label="Contact method" value={optionLabel(quote.contact_method)} /><Detail label="Sent date" value={formatDate(quote.sent_date)} /><Detail label="Response date" value={formatDate(quote.response_date)} /><Detail label="Accepted method" value={optionLabel(quote.accepted_method)} /><Detail label="PA 811 required" value={quote.pa811_required ? "Yes" : "No"} /><div className="sm:col-span-2"><Detail label="Hazard notes" value={quote.hazard_notes} /></div><div className="sm:col-span-2"><Detail label="Acceptance notes" value={quote.acceptance_notes} /></div></dl></section>
         {quote.internal_notes && <section className="rounded-lg border border-line bg-surface p-5 shadow-sm"><h2 className="font-bold">Internal notes</h2><p className="mt-3 whitespace-pre-wrap text-sm text-muted-strong">{quote.internal_notes}</p></section>}

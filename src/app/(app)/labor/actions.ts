@@ -22,7 +22,7 @@ export async function saveLaborEntry(_: LaborState, formData: FormData): Promise
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   if (!parsed.data.periodStart || !parsed.data.periodEnd) return { message: "The payroll period is required." };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can record payroll." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can record payroll." };
   try {
     await createLaborEntry(await createClient(), {
       business_id: context.business.id,
@@ -52,7 +52,7 @@ export async function voidLaborEntry(entryId: number, _: LaborState, formData: F
   const parsed = voidLaborEntrySchema.safeParse({ reason: formData.get("reason") });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can archive payroll." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can archive payroll." };
   const archived = await archiveLaborEntry(
     await createClient(), context.business.id, entryId, context.user.id, parsed.data.reason,
   );

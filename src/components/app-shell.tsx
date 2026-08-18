@@ -38,7 +38,7 @@ export function AppShell({
 }: {
   businessName: string;
   userEmail: string;
-  role: "owner" | "admin" | "employee";
+  role: "owner" | "admin" | "employee" | "intern";
   children: React.ReactNode;
 }) {
   return (
@@ -65,7 +65,7 @@ export function AppShell({
         </div>
 
         <nav className="flex gap-1 overflow-x-auto border-t border-white/10 px-3 py-2 lg:block lg:space-y-1 lg:border-t-0 lg:px-3 lg:py-2" aria-label="Primary navigation">
-          {navigation.filter((item) => !item.adminOnly || role !== "employee").map(({ href, label, icon: Icon }) => (
+          {navigation.filter((item) => !item.adminOnly || (role !== "employee" && role !== "intern")).map(({ href, label, icon: Icon }) => (
             <Link className="flex h-11 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-on-brand-muted hover:bg-white/10 hover:text-on-brand" href={href} key={href}>
               <Icon aria-hidden="true" size={18} />
               {label}

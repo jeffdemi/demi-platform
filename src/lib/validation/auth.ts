@@ -34,7 +34,7 @@ export const invitationSchema = z.object({
     .trim()
     .toLowerCase()
     .pipe(z.email("Enter a valid email address.")),
-  role: z.enum(["admin", "employee"]),
+  role: z.enum(["admin", "employee", "intern"]),
 });
 
 export const acceptInvitationSchema = updatePasswordSchema.and(

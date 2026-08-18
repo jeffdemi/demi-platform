@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { requireBusinessContext } from "@/lib/auth";
 import { dateInTimeZone } from "@/lib/domain/jobs";
@@ -12,7 +13,8 @@ import { ExpenseForm } from "../expense-form";
 export const metadata: Metadata = { title: "Add expense" };
 export default async function NewExpensePage({ searchParams }: { searchParams: Promise<{ refundOf?: string; bankTransaction?: string }> }) {
   const { refundOf, bankTransaction } = await searchParams;
-  const { business } = await requireBusinessContext();
+  const { business, role } = await requireBusinessContext();
+  if (role === "intern") redirect("/expenses");
   const client = await createClient();
   const bankTransactionId = Number(bankTransaction);
   const [jobs, equipment, refundOptions, bankRecord] = await Promise.all([

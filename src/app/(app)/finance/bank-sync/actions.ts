@@ -22,8 +22,8 @@ export type BankSyncActionState = {
   runId?: string;
 };
 
-function ensureAdministrator(role: "owner" | "admin" | "employee") {
-  if (role === "employee") throw new Error("Only an owner or administrator can manage bank connections.");
+function ensureAdministrator(role: "owner" | "admin" | "employee" | "intern") {
+  if (role === "employee" || role === "intern") throw new Error("Only an owner or administrator can manage bank connections.");
 }
 
 export async function connectSimpleFin(

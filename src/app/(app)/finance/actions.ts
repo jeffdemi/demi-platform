@@ -78,7 +78,9 @@ function refreshFinance() {
 export async function addBankAccount(_: FinanceState, formData: FormData): Promise<FinanceState> {
   const parsed = bankAccountSchema.safeParse(formValues(formData, ["name", "institution", "accountType", "lastFour"]));
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  if (context.role === "intern") return { message: "Interns have read-only access." };
+  const { business } = context;
   try {
     await createBankAccount(await createClient(), {
       business_id: business.id,
@@ -119,7 +121,9 @@ export async function previewBankImport(_: BankImportState, formData: FormData):
 }
 
 export async function confirmBankImport(_: BankImportState, formData: FormData): Promise<BankImportState> {
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  if (context.role === "intern") return { message: "Interns have read-only access." };
+  const { business } = context;
   try {
     const accountId = Number(formData.get("accountId"));
     const rows = JSON.parse(String(formData.get("rows") || "[]")) as BankImportRow[];
@@ -139,7 +143,9 @@ export async function confirmBankImport(_: BankImportState, formData: FormData):
 export async function excludeTransaction(transactionId: number, _: FinanceState, formData: FormData): Promise<FinanceState> {
   const parsed = excludeBankTransactionSchema.safeParse({ reason: formData.get("reason") });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
-  const { business, user } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  if (context.role === "intern") return { message: "Interns have read-only access." };
+  const { business, user } = context;
   const excluded = await excludeBankTransaction(await createClient(), business.id, transactionId, user.id, parsed.data.reason);
   if (!excluded) return { message: "That transaction is no longer available for review." };
   refreshFinance();
@@ -150,7 +156,7 @@ export async function matchExpense(transactionId: number, _: FinanceState, formD
   const parsed = existingExpenseMatchSchema.safeParse({ expenseId: formData.get("expenseId") });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can match expenses." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can match expenses." };
   try {
     const client = await createClient();
     const transaction = await getBankTransaction(client, context.business.id, transactionId);
@@ -175,7 +181,9 @@ export async function savePayment(_: FinanceState, formData: FormData): Promise<
     "invoiceId", "jobId", "bankTransactionId", "paymentDate", "amount", "method", "reference", "notes",
   ]));
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  if (context.role === "intern") return { message: "Interns have read-only access." };
+  const { business } = context;
   try {
     if (parsed.data.bankTransactionId) {
       const transaction = await getBankTransaction(await createClient(), business.id, parsed.data.bankTransactionId);
@@ -206,7 +214,7 @@ export async function createStatementPeriod(_: FinanceState, formData: FormData)
   ]));
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can reconcile statements." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can reconcile statements." };
   try {
     const id = await saveBankStatementPeriod(await createClient(), {
       businessId: context.business.id,
@@ -231,7 +239,7 @@ export async function saveTransactionAllocation(transactionId: number, _: Financ
   ]));
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can allocate transactions." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can allocate transactions." };
   const rememberRule = formData.get("rememberRule") === "yes";
   const matchText = String(formData.get("merchantPattern") || "").trim().toLowerCase();
   if (rememberRule && matchText.length < 3) return { message: "Enter at least three characters for the merchant rule." };
@@ -273,7 +281,7 @@ export async function reverseTransactionAllocation(transactionId: number, alloca
   const parsed = excludeBankTransactionSchema.safeParse({ reason: formData.get("reason") });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can reverse allocations." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can reverse allocations." };
   try {
     await voidBankTransactionAllocation(await createClient(), context.business.id, allocationId, parsed.data.reason);
     refreshFinance();
@@ -288,7 +296,7 @@ export async function saveBankTransfer(transactionId: number, _: FinanceState, f
   const parsed = bankTransferSchema.safeParse(formValues(formData, ["otherTransactionId", "memo"]));
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can record transfers." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can record transfers." };
   try {
     const client = await createClient();
     const [current, other] = await Promise.all([
@@ -318,7 +326,7 @@ export async function postBookkeepingAdjustment(_: FinanceState, formData: FormD
   ]));
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can post adjustments." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can post adjustments." };
   try {
     await createBookkeepingAdjustment(await createClient(), {
       businessId: context.business.id,
@@ -340,7 +348,7 @@ export async function postBookkeepingAdjustment(_: FinanceState, formData: FormD
 export async function reconcileStatement(periodId: number, previousState: FinanceState): Promise<FinanceState> {
   void previousState;
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can reconcile statements." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can reconcile statements." };
   try {
     await reconcileBankStatementPeriod(await createClient(), context.business.id, periodId);
     refreshFinance();

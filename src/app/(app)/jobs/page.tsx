@@ -14,7 +14,8 @@ export const metadata: Metadata = { title: "Jobs" };
 
 export default async function JobsPage({ searchParams }: { searchParams: Promise<{ customerId?: string; q?: string; status?: string; view?: string; archived?: string; sort?: string }> }) {
   const parameters = await searchParams;
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  const { business } = context;
   const customerId = Number(parameters.customerId);
   const sort = parameters.sort === "date_asc" ? "date_asc" : "date_desc";
   const jobs = await listJobs(await createClient(), business.id, {
@@ -29,7 +30,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
 
   return (
     <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <PageHeader actions={<Link className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand hover:bg-brand-strong" href={customerId ? `/jobs/new?customerId=${customerId}` : "/jobs/new"}><Plus aria-hidden="true" size={18} />Add job</Link>} description={`${jobs.length} matching job${jobs.length === 1 ? "" : "s"}`} title="Jobs" />
+      <PageHeader actions={context.role !== "intern" ? <Link className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand hover:bg-brand-strong" href={customerId ? `/jobs/new?customerId=${customerId}` : "/jobs/new"}><Plus aria-hidden="true" size={18} />Add job</Link> : null} description={`${jobs.length} matching job${jobs.length === 1 ? "" : "s"}`} title="Jobs" />
 
       <form className="my-5 grid gap-3 rounded-lg border border-line bg-surface p-4 shadow-sm lg:grid-cols-[minmax(240px,1fr)_180px_180px_180px_auto_auto]" method="get">
         {customerId > 0 && <input name="customerId" type="hidden" value={customerId} />}

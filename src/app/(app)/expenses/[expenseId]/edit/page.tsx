@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { requireBusinessContext } from "@/lib/auth";
 import { listActiveEquipmentOptions } from "@/lib/repositories/equipment-repository";
@@ -14,7 +14,8 @@ export const metadata: Metadata = { title: "Edit expense" };
 export default async function EditExpensePage({ params }: { params: Promise<{ expenseId: string }> }) {
   const expenseId = Number((await params).expenseId);
   if (!Number.isInteger(expenseId)) notFound();
-  const { business } = await requireBusinessContext();
+  const { business, role } = await requireBusinessContext();
+  if (role === "intern") redirect(`/expenses/${expenseId}`);
   const client = await createClient();
   const [expense, jobs, equipment, refundOptions] = await Promise.all([
     getExpense(client, business.id, expenseId),

@@ -16,7 +16,8 @@ function refreshQuote(quoteId: number) {
 }
 
 export async function registerUploadedQuotePhoto(quoteId: number, upload: QuotePhotoUpload): Promise<QuotePhotoActionResult> {
-  const { business, user } = await requireBusinessContext();
+  const { business, user, role } = await requireBusinessContext();
+  if (role === "intern") return { ok: false, tone: "danger", message: "Interns have read-only access." };
   try {
     await registerQuotePhoto(await createClient(), business.id, quoteId, user.id, upload);
     refreshQuote(quoteId);
@@ -27,7 +28,8 @@ export async function registerUploadedQuotePhoto(quoteId: number, upload: QuoteP
 }
 
 export async function removeUploadedQuotePhoto(quoteId: number, photoId: number): Promise<QuotePhotoActionResult> {
-  const { business } = await requireBusinessContext();
+  const { business, role } = await requireBusinessContext();
+  if (role === "intern") return { ok: false, tone: "danger", message: "Interns have read-only access." };
   try {
     const removed = await removeQuotePhoto(await createClient(), business.id, quoteId, photoId);
     if (!removed) return { ok: false, tone: "danger", message: "That photo no longer exists." };
@@ -43,7 +45,8 @@ export async function analyzeDraftQuote(quoteId: number, _state: QuoteWorkbenchS
   if (formData.get("aiConsent") !== "yes") {
     return { tone: "danger", message: "Confirm that the selected photos may be sent to OpenAI for analysis." };
   }
-  const { business, user } = await requireBusinessContext();
+  const { business, user, role } = await requireBusinessContext();
+  if (role === "intern") return { tone: "danger", message: "Interns have read-only access." };
   try {
     await runQuoteAssistant(await createClient(), business.id, quoteId, user.id);
     refreshQuote(quoteId);
@@ -57,7 +60,8 @@ export async function sendQuoteAiMessage(quoteId: number, _state: QuoteWorkbench
   void _state;
   const message = String(formData.get("message") || "").trim();
   if (!message) return { tone: "danger", message: "Enter a question or additional detail." };
-  const { business, user } = await requireBusinessContext();
+  const { business, user, role } = await requireBusinessContext();
+  if (role === "intern") return { tone: "danger", message: "Interns have read-only access." };
   try {
     await runQuoteAssistant(await createClient(), business.id, quoteId, user.id, message);
     refreshQuote(quoteId);
@@ -69,7 +73,8 @@ export async function sendQuoteAiMessage(quoteId: number, _state: QuoteWorkbench
 
 export async function applyDraftQuoteRecommendation(quoteId: number, recommendationId: number, _state: QuoteWorkbenchState): Promise<QuoteWorkbenchState> {
   void _state;
-  const { business, user } = await requireBusinessContext();
+  const { business, user, role } = await requireBusinessContext();
+  if (role === "intern") return { tone: "danger", message: "Interns have read-only access." };
   try {
     await applyQuoteAiRecommendation(await createClient(), business.id, quoteId, recommendationId, user.id);
     refreshQuote(quoteId);

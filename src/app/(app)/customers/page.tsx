@@ -11,13 +11,14 @@ export const metadata: Metadata = { title: "Customers" };
 
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = "" } = await searchParams;
-  const { business } = await requireBusinessContext();
+  const context = await requireBusinessContext();
+  const { business } = context;
   const customers = await listCustomerSummaries(await createClient(), business.id, q);
 
   return (
     <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader
-        actions={<Link className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand hover:bg-brand-strong" href="/customers/new"><Plus aria-hidden="true" size={18} />Add customer</Link>}
+        actions={context.role !== "intern" ? <Link className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand hover:bg-brand-strong" href="/customers/new"><Plus aria-hidden="true" size={18} />Add customer</Link> : null}
         description={`${customers.length} customer${customers.length === 1 ? "" : "s"}`}
         title="Customers"
       />
@@ -44,7 +45,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
                     <td className="px-4 py-4 text-sm"><p>{customer.phone || "No phone"}</p><p className="mt-1 text-muted">{customer.email || "No email"}</p></td>
                     <td className="px-4 py-4 text-right tabular-nums">{customer.jobCount}</td>
                     <td className="px-4 py-4 text-right font-semibold tabular-nums">{formatCurrency(customer.paidRevenue)}</td>
-                    <td className="px-4 py-4 text-right"><Link className="text-sm font-semibold text-brand hover:underline" href={`/customers/${customer.id}/edit`}>Edit</Link></td>
+                    <td className="px-4 py-4 text-right">{context.role !== "intern" ? <Link className="text-sm font-semibold text-brand hover:underline" href={`/customers/${customer.id}/edit`}>Edit</Link> : null}</td>
                   </tr>
                 ))}
               </tbody>

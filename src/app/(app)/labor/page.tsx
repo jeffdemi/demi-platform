@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: "Labor & Payroll" };
 export default async function LaborPage({ searchParams }: { searchParams: Promise<{ class?: string; archived?: string }> }) {
   const filters = await searchParams;
   const context = await requireBusinessContext();
-  if (context.role === "employee") redirect("/dashboard");
+  if ((context.role === "employee" || context.role === "intern")) redirect("/dashboard");
   const client = await createClient();
   const [entries, jobs] = await Promise.all([
     listLaborEntries(client, context.business.id, { laborClass: filters.class, includeVoided: filters.archived === "1" }),

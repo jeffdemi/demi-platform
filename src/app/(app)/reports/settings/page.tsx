@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Owner Compensation & Targets" };
 
 export default async function ReportingSettingsPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const context = await requireBusinessContext();
-  if (context.role === "employee") redirect("/dashboard");
+  if ((context.role === "employee" || context.role === "intern")) redirect("/dashboard");
   const client = await createClient();
   const [storedSettings, compensation] = await Promise.all([
     getFinancialSettings(client, context.business.id),

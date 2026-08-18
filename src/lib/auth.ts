@@ -65,6 +65,6 @@ export const requireBusinessContext = cache(async () => {
   return {
     user,
     business,
-    role: membership.role as "owner" | "admin" | "employee",
+    role: membership.role as "owner" | "admin" | "employee" | "intern",
   };
 });

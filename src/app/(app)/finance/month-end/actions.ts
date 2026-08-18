@@ -23,7 +23,7 @@ export async function updateMonthlySnapshot(_: MonthEndState, formData: FormData
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   if (!parsed.data.periodMonth) return { message: "Select a month to reconcile." };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can save month-end balances." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can save month-end balances." };
   try {
     const client = await createClient();
     const existing = await getMonthlySnapshot(client, context.business.id, parsed.data.periodMonth);
@@ -63,7 +63,7 @@ function lastDayOfMonth(periodMonth: string) {
 export async function closeAccountingPeriod(periodMonth: string, previousState: MonthEndState): Promise<MonthEndState> {
   void previousState;
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can close the books." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can close the books." };
   try {
     const client = await createClient();
     const inputs = await getMonthEndInputs(client, context.business.id, periodMonth, lastDayOfMonth(periodMonth));
@@ -96,7 +96,7 @@ export async function reopenAccountingPeriod(periodMonth: string, _: MonthEndSta
   const parsed = reopenAccountingMonthSchema.safeParse({ reason: formData.get("reason") });
   if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
   const context = await requireBusinessContext();
-  if (context.role === "employee") return { message: "Only an owner or administrator can reopen the books." };
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can reopen the books." };
   try {
     await reopenAccountingMonth(await createClient(), context.business.id, periodMonth, parsed.data.reason);
     revalidatePath("/finance/month-end");

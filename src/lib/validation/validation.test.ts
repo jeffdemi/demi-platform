@@ -49,6 +49,7 @@ describe("account validation", () => {
       email: "team@example.com",
       role: "employee",
     });
+    expect(invitationSchema.safeParse({ email: "team@example.com", role: "intern" }).success).toBe(true);
     expect(invitationSchema.safeParse({ email: "team@example.com", role: "owner" }).success).toBe(false);
   });
 

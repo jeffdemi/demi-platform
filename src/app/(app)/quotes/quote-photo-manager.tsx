@@ -94,7 +94,8 @@ async function normalizedJpeg(file: File) {
   }
 }
 
-export function QuotePhotoManager({ businessId, draft, photos, quoteId }: { businessId: number; draft: boolean; photos: Photo[]; quoteId: number }) {
+export function QuotePhotoManager({ businessId, draft, photos, quoteId, readOnly }: { businessId: number; draft: boolean; photos: Photo[]; quoteId: number; readOnly?: boolean }) {
+  const canEdit = draft && !readOnly;
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -156,10 +157,10 @@ export function QuotePhotoManager({ businessId, draft, photos, quoteId }: { busi
     {photos.length ? <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
       {photos.map((photo) => <div className="group relative aspect-square overflow-hidden rounded-md border border-line bg-surface-muted" key={photo.id}>
         <a href={photo.signedUrl} rel="noreferrer" target="_blank"><Image alt={photo.original_name} className="object-cover" fill sizes="(max-width: 640px) 45vw, 220px" src={photo.signedUrl} /></a>
-        {draft ? <button aria-label={`Remove ${photo.original_name}`} className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-md bg-surface text-danger shadow disabled:opacity-60" disabled={busy} onClick={() => remove(photo.id)} title="Remove photo" type="button"><Trash2 size={16} /></button> : null}
+        {canEdit ? <button aria-label={`Remove ${photo.original_name}`} className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-md bg-surface text-danger shadow disabled:opacity-60" disabled={busy} onClick={() => remove(photo.id)} title="Remove photo" type="button"><Trash2 size={16} /></button> : null}
       </div>)}
     </div> : <div className="mt-4 flex min-h-28 items-center justify-center rounded-md border border-dashed border-line-strong bg-page px-4 text-center text-sm text-muted">No site photos attached yet.</div>}
-    {draft ? <div className="mt-4">
+    {canEdit ? <div className="mt-4">
       <label className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-md border border-line-strong px-4 font-semibold">
         {busy ? <LoaderCircle className="animate-spin" size={17} /> : <ImagePlus size={17} />}{busy ? "Preparing photos..." : "Add photos"}
         <input ref={inputRef} accept="image/jpeg,image/png,image/webp,image/heic,image/heif" className="sr-only" disabled={busy || photos.length >= maximumCount} multiple onChange={(event) => upload(event.target.files)} type="file" />

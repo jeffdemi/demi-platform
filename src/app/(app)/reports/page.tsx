@@ -39,7 +39,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     getReportData(client, context.business.id),
     getTaxExpenses(client, context.business.id, year),
     getLedgerReport(client, context.business.id, from, to),
-    context.role === "employee" ? null : getCrabtreeReportData(client, context.business.id, from, to),
+    (context.role === "employee" || context.role === "intern") ? null : getCrabtreeReportData(client, context.business.id, from, to),
   ]);
   const report = buildReportSummary(reportData);
   const tax = buildTaxExpenseSummary(taxExpenses);
@@ -60,7 +60,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     ["Quoted pipeline", formatCurrency(report.quotedPipeline)],
     ["Quote acceptance", `${report.acceptanceRate}%`],
   ];
-  const actions = context.role === "employee" ? null : <div className="flex flex-wrap gap-2">
+  const actions = (context.role === "employee" || context.role === "intern") ? null : <div className="flex flex-wrap gap-2">
     <Link className="flex h-11 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold" href="/reports/books"><BookOpenCheck size={17} />Bookkeeping statements</Link>
     <Link className="flex h-11 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold" href="/reports/settings"><Settings size={17} />Targets & owner pay</Link>
     <Link className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand" href="/finance/month-end"><CalendarCheck size={17} />Month-end close</Link>
