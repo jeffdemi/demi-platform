@@ -12,10 +12,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Jobs" };
 
-export default async function JobsPage({ searchParams }: { searchParams: Promise<{ customerId?: string; q?: string; status?: string; view?: string; archived?: string }> }) {
+export default async function JobsPage({ searchParams }: { searchParams: Promise<{ customerId?: string; q?: string; status?: string; view?: string; archived?: string; sort?: string }> }) {
   const parameters = await searchParams;
   const { business } = await requireBusinessContext();
   const customerId = Number(parameters.customerId);
+  const sort = parameters.sort === "date_asc" ? "date_asc" : "date_desc";
   const jobs = await listJobs(await createClient(), business.id, {
     customerId: Number.isInteger(customerId) && customerId > 0 ? customerId : undefined,
     search: parameters.q,
@@ -23,17 +24,19 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
     view: parameters.view,
     today: dateInTimeZone(business.timezone),
     includeArchived: parameters.archived === "1",
+    sort,
   });
 
   return (
     <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <PageHeader actions={<Link className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand hover:bg-brand-strong" href={customerId ? `/jobs/new?customerId=${customerId}` : "/jobs/new"}><Plus aria-hidden="true" size={18} />Add job</Link>} description={`${jobs.length} matching job${jobs.length === 1 ? "" : "s"}`} title="Jobs" />
 
-      <form className="my-5 grid gap-3 rounded-lg border border-line bg-surface p-4 shadow-sm lg:grid-cols-[minmax(240px,1fr)_180px_180px_auto_auto]" method="get">
+      <form className="my-5 grid gap-3 rounded-lg border border-line bg-surface p-4 shadow-sm lg:grid-cols-[minmax(240px,1fr)_180px_180px_180px_auto_auto]" method="get">
         {customerId > 0 && <input name="customerId" type="hidden" value={customerId} />}
         <label className="relative min-w-0"><span className="sr-only">Search jobs</span><Search aria-hidden="true" className="absolute left-3 top-3 text-muted" size={18} /><input className="h-11 w-full rounded-md border border-line-strong bg-surface pl-10 pr-3 outline-none focus:border-brand focus:ring-2 focus:ring-brand/15" defaultValue={parameters.q ?? ""} name="q" placeholder="Customer, phone, address, municipality, or work" /></label>
         <label><span className="sr-only">Status</span><select className="h-11 w-full rounded-md border border-line-strong bg-surface px-3" defaultValue={parameters.status ?? ""} name="status"><option value="">All statuses</option>{jobStatusOptions.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}<option value="no_response">No response (imported)</option><option value="pending">Pending (imported)</option></select></label>
         <label><span className="sr-only">Operational view</span><select className="h-11 w-full rounded-md border border-line-strong bg-surface px-3" defaultValue={parameters.view ?? ""} name="view"><option value="">All operational views</option>{operationalViews.map((view) => <option key={view.value} value={view.value}>{view.label}</option>)}</select></label>
+        <label><span className="sr-only">Sort by date</span><select className="h-11 w-full rounded-md border border-line-strong bg-surface px-3" defaultValue={sort} name="sort"><option value="date_desc">Newest first</option><option value="date_asc">Oldest first</option></select></label>
         <label className="flex h-11 items-center gap-2 rounded-md border border-line-strong px-3 text-sm"><input defaultChecked={parameters.archived === "1"} name="archived" type="checkbox" value="1" />Include archived</label>
         <button className="h-11 rounded-md border border-line-strong bg-surface px-4 font-semibold hover:bg-surface-muted">Apply</button>
       </form>

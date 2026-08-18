@@ -22,7 +22,15 @@ function requireData<T>(data: T | null, error: { message: string } | null, messa
 export async function listJobs(
   client: Client,
   businessId: number,
-  filters: { customerId?: number; search?: string; status?: string; view?: string; today: string; includeArchived?: boolean },
+  filters: {
+    customerId?: number;
+    search?: string;
+    status?: string;
+    view?: string;
+    today: string;
+    includeArchived?: boolean;
+    sort?: "date_asc" | "date_desc";
+  },
 ) {
   let query = client
     .from("jobs")
@@ -36,12 +44,23 @@ export async function listJobs(
   const result = await query;
   const jobs = requireData(result.data as JobWithCustomer[] | null, result.error, "Unable to load jobs");
 
-  return jobs.filter((job) => {
+  const filtered = jobs.filter((job) => {
     if (filters.customerId && job.customer_id !== filters.customerId) return false;
     if (filters.status && job.status !== filters.status) return false;
     if (filters.search && !jobMatchesSearch(job, filters.search)) return false;
     if (filters.view && !jobMatchesOperationalView(job, filters.view, filters.today)) return false;
     return true;
+  });
+
+  const ascending = filters.sort === "date_asc";
+  return filtered.sort((left, right) => {
+    const leftDate = left.scheduled_date || left.job_date || "";
+    const rightDate = right.scheduled_date || right.job_date || "";
+    if (!leftDate && !rightDate) return right.id - left.id;
+    if (!leftDate) return 1;
+    if (!rightDate) return -1;
+    if (leftDate !== rightDate) return ascending ? leftDate.localeCompare(rightDate) : rightDate.localeCompare(leftDate);
+    return right.id - left.id;
   });
 }
 
