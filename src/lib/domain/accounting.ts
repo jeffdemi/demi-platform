@@ -225,6 +225,49 @@ export function findUniqueExpenseMatches(
   });
 }
 
+export type FuzzyExpenseCandidate = {
+  expenseId: number;
+  expenseDate: string;
+  expenseLabel: string;
+  expenseAmount: number;
+  transactionAmount: number;
+  amountDifference: number;
+  percentDifference: number;
+  daysApart: number;
+};
+
+const exactMatchTolerance = 0.005;
+
+// Deliberately separate from findUniqueExpenseMatches: fuzzy candidates are always
+// manual-approve, never auto-applied, and this function never returns anything the
+// exact-match path already covers (amount differences at or below exactMatchTolerance).
+export function findFuzzyExpenseCandidates(
+  transaction: { id: number; transaction_date: string; description: string; amount: number },
+  expenses: { id: number; expense_date: string; vendor: string | null; description: string | null; category: string; amount: number }[],
+  tolerancePercent: number,
+  dayWindow: number,
+): FuzzyExpenseCandidate[] {
+  const transactionAmount = Math.abs(Number(transaction.amount));
+  const maxDifference = (tolerancePercent / 100) * transactionAmount;
+  const candidates = expenses.flatMap((expense) => {
+    const amountDifference = Math.round(Math.abs(Number(expense.amount) - transactionAmount) * 100) / 100;
+    if (amountDifference <= exactMatchTolerance || amountDifference > maxDifference) return [];
+    const daysApart = Math.round(Math.abs((Date.parse(`${expense.expense_date}T00:00:00Z`) - Date.parse(`${transaction.transaction_date}T00:00:00Z`)) / 86_400_000));
+    if (daysApart > dayWindow) return [];
+    return [{
+      expenseId: expense.id,
+      expenseDate: expense.expense_date,
+      expenseLabel: expense.vendor || expense.description || expense.category,
+      expenseAmount: Math.round(Number(expense.amount) * 100) / 100,
+      transactionAmount: Math.round(transactionAmount * 100) / 100,
+      amountDifference,
+      percentDifference: transactionAmount > 0 ? Math.round((amountDifference / transactionAmount) * 10000) / 100 : 0,
+      daysApart,
+    } satisfies FuzzyExpenseCandidate];
+  });
+  return candidates.sort((left, right) => left.amountDifference - right.amountDifference || left.daysApart - right.daysApart);
+}
+
 export function remainingRefundAmount(sourceAmount: number, refunds: { amount: number; voided_at?: string | null }[], editingRefundAmount = 0) {
   const alreadyRefunded = refunds.filter((refund) => !refund.voided_at).reduce((sum, refund) => sum + refund.amount, 0) - editingRefundAmount;
   return Math.max(0, Math.round((sourceAmount - alreadyRefunded) * 100) / 100);

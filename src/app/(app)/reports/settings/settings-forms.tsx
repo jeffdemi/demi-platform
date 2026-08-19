@@ -19,6 +19,8 @@ type Settings = {
   stretch_profit_to_gross_margin: number;
   core_capital_months: number;
   minimum_roic: number;
+  expense_match_tolerance_percent: number;
+  expense_match_day_window: number;
 };
 
 const Submit = ({ pending, label }: { pending: boolean; label: string }) => <button className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand disabled:opacity-60" disabled={pending}><Save size={17} />{pending ? "Saving..." : label}</button>;
@@ -36,8 +38,11 @@ export function FinancialSettingsForm({ settings }: { settings: Settings }) {
       <Field errors={state.errors?.stretchProfitPercent} help={<FinancialTermHelp termId="profit-to-gross-margin" />} label="Stretch profit / gross margin %" name="stretchProfitPercent"><input className={inputClass} defaultValue={settings.stretch_profit_to_gross_margin * 100} id="stretchProfitPercent" min="0" max="100" name="stretchProfitPercent" required step="0.1" type="number" /></Field>
       <Field errors={state.errors?.coreCapitalMonths} help={<FinancialTermHelp termId="core-capital" />} label="Core capital months" name="coreCapitalMonths"><input className={inputClass} defaultValue={settings.core_capital_months} id="coreCapitalMonths" min="0.1" name="coreCapitalMonths" required step="0.1" type="number" /></Field>
       <Field errors={state.errors?.minimumRoicPercent} help={<FinancialTermHelp termId="roic" />} label="Minimum ROIC %" name="minimumRoicPercent"><input className={inputClass} defaultValue={settings.minimum_roic * 100} id="minimumRoicPercent" min="0" name="minimumRoicPercent" required step="1" type="number" /></Field>
+      <Field errors={state.errors?.expenseMatchTolerancePercent} label="Fuzzy expense match tolerance %" name="expenseMatchTolerancePercent"><input className={inputClass} defaultValue={settings.expense_match_tolerance_percent} id="expenseMatchTolerancePercent" max="20" min="0" name="expenseMatchTolerancePercent" required step="0.1" type="number" /></Field>
+      <Field errors={state.errors?.expenseMatchDayWindow} label="Fuzzy expense match day window" name="expenseMatchDayWindow"><input className={inputClass} defaultValue={settings.expense_match_day_window} id="expenseMatchDayWindow" max="60" min="0" name="expenseMatchDayWindow" required step="1" type="number" /></Field>
       <label className="flex items-center gap-3 self-end pb-3 font-semibold"><input className="size-5 accent-brand" defaultChecked={settings.has_non_owner_labor} name="hasNonOwnerLabor" type="checkbox" />Track employees or helpers in the monthly checklist</label>
     </div>
+    <p className="text-xs leading-5 text-muted">Bank transactions within this percent and day window of a recorded expense show as a possible match on the transaction review page. Approving one corrects the expense&apos;s recorded amount to match the bank withdrawal and logs the correction.</p>
     <FormFeedback message={state.message} tone={state.success ? "success" : "danger"} />
     <Submit label="Save financial settings" pending={pending} />
   </form>;

@@ -1,5 +1,30 @@
 # Changelog
 
+## Fuzzy Bank/Expense Matching
+
+### Database
+
+- Added owner/admin-configurable `expense_match_tolerance_percent` (default
+  2%, 0-20) and `expense_match_day_window` (default 10 days, 0-60) columns to
+  `financial_settings`
+- Added the `expense_bank_match_corrections` audit table and the
+  security-invoker `approve_fuzzy_expense_match` function, which atomically
+  rechecks owner/admin membership, confirms both records are unmatched,
+  enforces the closed-period lock, corrects the expense amount to the bank
+  transaction, and logs the correction in one transaction
+
+### Application
+
+- Added a pure `findFuzzyExpenseCandidates` domain function, kept separate
+  from the exact-only bulk auto-matcher so fuzzy matches always require
+  manual approval and never get auto-applied
+- Surfaced tolerance-based candidates as a new "Possible match (amounts
+  differ)" panel on the bank transaction review page, alongside the existing
+  exact-match panel, with an explicit per-row "Approve match — correct
+  amount to $X.XX" action
+- Exposed the two tolerance settings on the Owner Compensation & Targets page
+- Noted amount-correction history on the expense detail page
+
 ## SimpleFIN Bank Sync Hotfix
 
 - Reduced transaction requests to 40-day windows with five-day overlap so they

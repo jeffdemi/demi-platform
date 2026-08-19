@@ -1,6 +1,6 @@
 # Current Project Status
 
-Last reviewed: **2026-08-17**
+Last reviewed: **2026-08-19**
 
 This is the dated development and bookkeeping handoff. Update it when production
 state, unresolved financial facts, or release procedures materially change.
@@ -80,6 +80,28 @@ time acquisition basis and any earlier disposal basis still require completion
 and reconciliation.
 
 ## Highest-priority open work
+
+### Tolerance-based (fuzzy) expense matching — shipped, pending production migration
+
+Bank transactions that are close in amount (e.g. a rounded-cent expense entry)
+and date to a recorded expense, but not exact, now surface as a manual-approve
+"Possible match" suggestion on the transaction review page instead of sitting
+unmatched indefinitely. The exact-match bulk auto-matcher is unchanged and
+still only auto-links true exact matches. Approving a fuzzy match corrects the
+expense's recorded amount to the bank withdrawal and logs the correction in
+the new `expense_bank_match_corrections` audit table, inside a security-
+invoker function that also re-checks owner/admin membership and the
+closed-period lock. Tolerance percent (default 2%, 0-20) and day window
+(default 10, 0-60) are owner/admin-configurable on
+`/reports/settings`.
+
+Both new migrations (`20260818130000_expense_match_tolerance_settings.sql`
+and `20260818140000_fuzzy_expense_match_corrections.sql`) still need to be
+applied to production per the release checklist before this is usable there;
+this environment had no local Docker/Postgres available to rehearse the
+migration end to end, so re-verify the RPC's rejection paths (wrong business,
+already-matched, closed period, non-owner/admin) against a real database
+before or immediately after applying.
 
 ### SimpleFIN bank sync
 

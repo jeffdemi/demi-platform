@@ -573,6 +573,15 @@ export type Database = {
           },
         ]
       }
+      expense_bank_match_corrections: {
+        Row: { id: number; business_id: number; expense_id: number; bank_transaction_id: number; previous_amount: number; corrected_amount: number; corrected_by: string; corrected_at: string; note: string | null }
+        Insert: { id?: never; business_id: number; expense_id: number; bank_transaction_id: number; previous_amount: number; corrected_amount: number; corrected_by: string; corrected_at?: string; note?: string | null }
+        Update: { id?: never; business_id?: number; expense_id?: number; bank_transaction_id?: number; previous_amount?: number; corrected_amount?: number; corrected_by?: string; corrected_at?: string; note?: string | null }
+        Relationships: [
+          { foreignKeyName: "expense_bank_match_corrections_business_id_expense_id_fkey"; columns: ["business_id", "expense_id"]; isOneToOne: false; referencedRelation: "expenses"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "expense_bank_match_corrections_business_id_bank_transaction_id_fkey"; columns: ["business_id", "bank_transaction_id"]; isOneToOne: false; referencedRelation: "bank_transactions"; referencedColumns: ["business_id", "id"] }
+        ]
+      }
       financial_settings: {
         Row: {
           id: number
@@ -587,6 +596,8 @@ export type Database = {
           stretch_profit_to_gross_margin: number
           core_capital_months: number
           minimum_roic: number
+          expense_match_tolerance_percent: number
+          expense_match_day_window: number
           created_at: string
           updated_at: string
         }
@@ -603,6 +614,8 @@ export type Database = {
           stretch_profit_to_gross_margin?: number
           core_capital_months?: number
           minimum_roic?: number
+          expense_match_tolerance_percent?: number
+          expense_match_day_window?: number
           created_at?: string
           updated_at?: string
         }
@@ -619,6 +632,8 @@ export type Database = {
           stretch_profit_to_gross_margin?: number
           core_capital_months?: number
           minimum_roic?: number
+          expense_match_tolerance_percent?: number
+          expense_match_day_window?: number
           created_at?: string
           updated_at?: string
         }
@@ -1469,6 +1484,10 @@ export type Database = {
       post_bookkeeping_cleanup_item: { Args: { target_business_id: number; target_item_id: number }; Returns: number }
       add_bank_transaction_allocation: {
         Args: { target_business_id: number; target_bank_transaction_id: number; target_ledger_account_id: number; allocation_amount: number; allocation_memo: string; allocation_tax_category?: string | null; allocation_deductible_percent?: number }
+        Returns: number
+      }
+      approve_fuzzy_expense_match: {
+        Args: { target_business_id: number; target_expense_id: number; target_transaction_id: number }
         Returns: number
       }
       add_maintenance_record: {

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { findClassificationSuggestions, findUniqueExpenseMatches, type BankImportRow } from "@/lib/domain/accounting";
+import { findClassificationSuggestions, findFuzzyExpenseCandidates, findUniqueExpenseMatches, type BankImportRow } from "@/lib/domain/accounting";
+import { getFinancialSettings } from "@/lib/repositories/management-accounting-repository";
 import type { Database, Json } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
@@ -112,7 +113,14 @@ export async function getBankTransactionReview(client: Client, businessId: numbe
     value.setUTCDate(value.getUTCDate() + days);
     return value.toISOString().slice(0, 10);
   };
-  const [allocations, ledgerAccounts, transferCandidates, suggestedExpenses] = await Promise.all([
+  const financialSettings = transaction ? await getFinancialSettings(client, businessId) : null;
+  const tolerancePercent = financialSettings?.expense_match_tolerance_percent ?? 2;
+  const dayWindow = financialSettings?.expense_match_day_window ?? 10;
+  const transactionAmount = transaction ? Math.abs(transaction.amount) : 0;
+  const fuzzyAmountFloor = Math.max(0, transactionAmount * (1 - tolerancePercent / 100));
+  const fuzzyAmountCeiling = transactionAmount * (1 + tolerancePercent / 100);
+
+  const [allocations, ledgerAccounts, transferCandidates, suggestedExpenses, fuzzyExpensePool] = await Promise.all([
     client.from("bank_transaction_allocations").select("*, ledger_accounts(code, name, account_type)")
       .eq("business_id", businessId).eq("bank_transaction_id", transactionId).is("voided_at", null).order("id"),
     listLedgerAccounts(client, businessId),
@@ -126,16 +134,34 @@ export async function getBankTransactionReview(client: Client, businessId: numbe
         .eq("amount", Math.abs(transaction.amount))
         .gte("expense_date", nearbyDate(-10)).lte("expense_date", nearbyDate(10)).order("expense_date").limit(25)
       : Promise.resolve({ data: [], error: null }),
+    transaction && tolerancePercent > 0
+      ? client.from("expenses").select("id, expense_date, vendor, description, category, amount, transaction_type")
+        .eq("business_id", businessId).is("voided_at", null).is("bank_transaction_id", null)
+        .in("transaction_type", transaction.amount < 0 ? ["expense", "asset"] : ["refund"])
+        .gte("amount", fuzzyAmountFloor).lte("amount", fuzzyAmountCeiling)
+        .gte("expense_date", nearbyDate(-dayWindow)).lte("expense_date", nearbyDate(dayWindow))
+        .order("expense_date").limit(100)
+      : Promise.resolve({ data: [], error: null }),
   ]);
-  if (allocations.error || transferCandidates.error || suggestedExpenses.error) {
-    throw new Error(`Unable to load transaction review: ${allocations.error?.message || transferCandidates.error?.message || suggestedExpenses.error?.message}`);
+  if (allocations.error || transferCandidates.error || suggestedExpenses.error || fuzzyExpensePool.error) {
+    throw new Error(`Unable to load transaction review: ${allocations.error?.message || transferCandidates.error?.message || suggestedExpenses.error?.message || fuzzyExpensePool.error?.message}`);
   }
+  const exactMatchIds = new Set((suggestedExpenses.data ?? []).map((expense) => expense.id));
+  const fuzzyExpenseCandidates = transaction
+    ? findFuzzyExpenseCandidates(
+      transaction,
+      (fuzzyExpensePool.data ?? []).filter((expense) => !exactMatchIds.has(expense.id)),
+      tolerancePercent,
+      dayWindow,
+    )
+    : [];
   return {
     transaction,
     allocations: allocations.data ?? [],
     ledgerAccounts,
     transferCandidates: transferCandidates.data ?? [],
     suggestedExpenses: suggestedExpenses.data ?? [],
+    fuzzyExpenseCandidates,
   };
 }
 
@@ -146,6 +172,23 @@ export async function matchExistingExpense(client: Client, values: { businessId:
   if (result.error) throw new Error(`Unable to match the expense: ${result.error.message}`);
   if (!result.data) throw new Error("That expense is no longer available to match.");
   return result.data;
+}
+
+export async function approveFuzzyExpenseMatch(client: Client, values: { businessId: number; expenseId: number; transactionId: number }) {
+  const result = await client.rpc("approve_fuzzy_expense_match", {
+    target_business_id: values.businessId,
+    target_expense_id: values.expenseId,
+    target_transaction_id: values.transactionId,
+  });
+  if (result.error) throw new Error(`Unable to approve the match: ${result.error.message}`);
+  return result.data;
+}
+
+export async function listExpenseBankMatchCorrections(client: Client, businessId: number, expenseId: number) {
+  const result = await client.from("expense_bank_match_corrections").select("*")
+    .eq("business_id", businessId).eq("expense_id", expenseId).order("corrected_at", { ascending: false });
+  if (result.error) throw new Error(`Unable to load match corrections: ${result.error.message}`);
+  return result.data ?? [];
 }
 
 export async function listBulkExpenseMatches(client: Client, businessId: number) {

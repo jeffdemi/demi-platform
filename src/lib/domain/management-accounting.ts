@@ -43,6 +43,8 @@ export const defaultFinancialSettings = {
   stretch_profit_to_gross_margin: 0.25,
   core_capital_months: 2,
   minimum_roic: 0.5,
+  expense_match_tolerance_percent: 2,
+  expense_match_day_window: 10,
 };
 
 export function normalizeFinancialSettings(settings: {
@@ -56,6 +58,8 @@ export function normalizeFinancialSettings(settings: {
   stretch_profit_to_gross_margin?: number;
   core_capital_months?: number;
   minimum_roic?: number;
+  expense_match_tolerance_percent?: number;
+  expense_match_day_window?: number;
 } | null | undefined): typeof defaultFinancialSettings {
   const ownerLaborClass = laborClassOptions.some((option) => option.value === settings?.owner_labor_class)
     ? settings?.owner_labor_class as LaborClass
@@ -72,6 +76,8 @@ export function normalizeFinancialSettings(settings: {
     stretch_profit_to_gross_margin: settings?.stretch_profit_to_gross_margin ?? defaultFinancialSettings.stretch_profit_to_gross_margin,
     core_capital_months: settings?.core_capital_months ?? defaultFinancialSettings.core_capital_months,
     minimum_roic: settings?.minimum_roic ?? defaultFinancialSettings.minimum_roic,
+    expense_match_tolerance_percent: settings?.expense_match_tolerance_percent ?? defaultFinancialSettings.expense_match_tolerance_percent,
+    expense_match_day_window: settings?.expense_match_day_window ?? defaultFinancialSettings.expense_match_day_window,
   };
 }
 

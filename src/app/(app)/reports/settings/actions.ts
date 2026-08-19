@@ -20,6 +20,7 @@ export async function updateFinancialSettings(_: ReportingSettingsState, formDat
     ...formValues(formData, [
       "ownerMarketSalaryAnnual", "ownerLaborClass", "reportingBasis", "targetTotalLer",
       "minimumProfitPercent", "targetProfitPercent", "stretchProfitPercent", "coreCapitalMonths", "minimumRoicPercent",
+      "expenseMatchTolerancePercent", "expenseMatchDayWindow",
     ]),
     hasNonOwnerLabor: formData.get("hasNonOwnerLabor") === "on",
   });
@@ -29,6 +30,8 @@ export async function updateFinancialSettings(_: ReportingSettingsState, formDat
     parsed.data.targetProfitPercent,
     parsed.data.stretchProfitPercent,
     parsed.data.minimumRoicPercent,
+    parsed.data.expenseMatchTolerancePercent,
+    parsed.data.expenseMatchDayWindow,
   ];
   if (requiredTargets.some((value) => value === undefined)) return { message: "All reporting targets are required." };
   const context = await requireBusinessContext();
@@ -46,6 +49,8 @@ export async function updateFinancialSettings(_: ReportingSettingsState, formDat
       stretch_profit_to_gross_margin: parsed.data.stretchProfitPercent! / 100,
       core_capital_months: parsed.data.coreCapitalMonths,
       minimum_roic: parsed.data.minimumRoicPercent! / 100,
+      expense_match_tolerance_percent: parsed.data.expenseMatchTolerancePercent!,
+      expense_match_day_window: parsed.data.expenseMatchDayWindow!,
     });
     refreshReporting();
     return { success: true, message: "Owner compensation and reporting targets saved." };

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildTaxExpenseSummary,
   findClassificationSuggestions,
+  findFuzzyExpenseCandidates,
   findUniqueExpenseMatches,
   normalizeBankRows,
   remainingRefundAmount,
@@ -145,6 +146,80 @@ describe("bulk expense matching", () => {
       ],
       [{ id: 10, expense_date: "2026-04-16", vendor: "Vendor", description: null, category: "Other", amount: 10 }],
     )).toEqual([]);
+  });
+});
+
+describe("fuzzy expense matching", () => {
+  const transaction = { id: 1, transaction_date: "2026-06-10", description: "Vendor withdrawal", amount: -100 };
+
+  it("includes a candidate within the tolerance percent", () => {
+    const result = findFuzzyExpenseCandidates(
+      transaction,
+      [{ id: 10, expense_date: "2026-06-10", vendor: "Vendor", description: null, category: "Other", amount: 101.5 }],
+      2, 10,
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ expenseId: 10, amountDifference: 1.5, daysApart: 0 });
+  });
+
+  it("includes a candidate exactly at the tolerance percent boundary", () => {
+    const result = findFuzzyExpenseCandidates(
+      transaction,
+      [{ id: 10, expense_date: "2026-06-10", vendor: "Vendor", description: null, category: "Other", amount: 102 }],
+      2, 10,
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0].amountDifference).toBe(2);
+  });
+
+  it("excludes a candidate over the tolerance percent", () => {
+    const result = findFuzzyExpenseCandidates(
+      transaction,
+      [{ id: 10, expense_date: "2026-06-10", vendor: "Vendor", description: null, category: "Other", amount: 103 }],
+      2, 10,
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("includes a candidate exactly at the day window boundary", () => {
+    const result = findFuzzyExpenseCandidates(
+      transaction,
+      [{ id: 10, expense_date: "2026-06-20", vendor: "Vendor", description: null, category: "Other", amount: 101 }],
+      2, 10,
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0].daysApart).toBe(10);
+  });
+
+  it("excludes a candidate over the day window", () => {
+    const result = findFuzzyExpenseCandidates(
+      transaction,
+      [{ id: 10, expense_date: "2026-06-21", vendor: "Vendor", description: null, category: "Other", amount: 101 }],
+      2, 10,
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("never returns a true exact match already covered by the exact-match path", () => {
+    const result = findFuzzyExpenseCandidates(
+      transaction,
+      [{ id: 10, expense_date: "2026-06-10", vendor: "Exact", description: null, category: "Other", amount: 100 }],
+      2, 10,
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("sorts by closeness: amount delta ascending, then date delta ascending", () => {
+    const result = findFuzzyExpenseCandidates(
+      transaction,
+      [
+        { id: 20, expense_date: "2026-06-15", vendor: "Far amount", description: null, category: "Other", amount: 101.9 },
+        { id: 21, expense_date: "2026-06-12", vendor: "Close amount, far date", description: null, category: "Other", amount: 100.5 },
+        { id: 22, expense_date: "2026-06-11", vendor: "Close amount, close date", description: null, category: "Other", amount: 100.5 },
+      ],
+      2, 10,
+    );
+    expect(result.map((candidate) => candidate.expenseId)).toEqual([22, 21, 20]);
   });
 });
 

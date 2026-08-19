@@ -329,6 +329,8 @@ export const financialSettingsSchema = z.object({
   stretchProfitPercent: number("Stretch profit target", true),
   coreCapitalMonths: number("Core capital months", true),
   minimumRoicPercent: number("Minimum ROIC", true),
+  expenseMatchTolerancePercent: number("Expense match tolerance", true),
+  expenseMatchDayWindow: number("Expense match day window", true),
 }).superRefine((value, context) => {
   if ((value.targetTotalLer ?? 0) <= 0) context.addIssue({ code: "custom", path: ["targetTotalLer"], message: "Target LER must be greater than zero." });
   if ((value.coreCapitalMonths ?? 0) <= 0) context.addIssue({ code: "custom", path: ["coreCapitalMonths"], message: "Core capital months must be greater than zero." });
@@ -338,6 +340,8 @@ export const financialSettingsSchema = z.object({
   if ((value.minimumProfitPercent ?? 0) > (value.targetProfitPercent ?? 0) || (value.targetProfitPercent ?? 0) > (value.stretchProfitPercent ?? 0)) {
     context.addIssue({ code: "custom", path: ["targetProfitPercent"], message: "Profit targets must increase from minimum to target to stretch." });
   }
+  if ((value.expenseMatchTolerancePercent ?? 0) > 20) context.addIssue({ code: "custom", path: ["expenseMatchTolerancePercent"], message: "Expense match tolerance cannot exceed 20%." });
+  if ((value.expenseMatchDayWindow ?? 0) > 60) context.addIssue({ code: "custom", path: ["expenseMatchDayWindow"], message: "Expense match day window cannot exceed 60 days." });
 });
 
 export const ownerCompensationSchema = z.object({

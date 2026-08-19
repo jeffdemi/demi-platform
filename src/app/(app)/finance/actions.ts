@@ -8,6 +8,7 @@ import { requireBusinessContext } from "@/lib/auth";
 import { normalizeBankRows, type BankImportRow } from "@/lib/domain/accounting";
 import {
   addBankTransactionAllocation,
+  approveFuzzyExpenseMatch,
   createBankTransfer,
   createBankAccount,
   createBookkeepingAdjustment,
@@ -173,6 +174,28 @@ export async function matchExpense(transactionId: number, _: FinanceState, formD
     return { message: "Existing expense matched." };
   } catch (error) {
     return { message: error instanceof Error ? error.message : "The expense could not be matched." };
+  }
+}
+
+export async function approveFuzzyMatch(transactionId: number, expenseId: number, previousState: FinanceState): Promise<FinanceState> {
+  void previousState;
+  const context = await requireBusinessContext();
+  if ((context.role === "employee" || context.role === "intern")) return { message: "Only an owner or administrator can approve a fuzzy match." };
+  if (!Number.isInteger(transactionId) || transactionId <= 0 || !Number.isInteger(expenseId) || expenseId <= 0) {
+    return { message: "That match request is invalid." };
+  }
+  try {
+    await approveFuzzyExpenseMatch(await createClient(), {
+      businessId: context.business.id,
+      expenseId,
+      transactionId,
+    });
+    refreshFinance();
+    revalidatePath(`/finance/transactions/${transactionId}`);
+    revalidatePath(`/expenses/${expenseId}`);
+    return { message: "Match approved. The expense amount was corrected to the bank transaction." };
+  } catch (error) {
+    return { message: error instanceof Error ? error.message : "The match could not be approved." };
   }
 }
 

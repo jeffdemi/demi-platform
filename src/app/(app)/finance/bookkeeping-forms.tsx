@@ -4,7 +4,9 @@ import { useActionState, useState } from "react";
 import { ArrowRightLeft, CheckCircle2, Save, Undo2 } from "lucide-react";
 import { FormFeedback } from "@/components/form-feedback";
 import { Field, inputClass, textAreaClass } from "@/components/form-fields";
+import type { FuzzyExpenseCandidate } from "@/lib/domain/accounting";
 import {
+  approveFuzzyMatch,
   createStatementPeriod,
   matchExpense,
   postBookkeepingAdjustment,
@@ -75,6 +77,22 @@ export function ExistingExpenseMatchForm({ transactionId, candidates }: { transa
     <FormFeedback message={state.message} tone={state.message === "Existing expense matched." ? "success" : "danger"} />
     <button className="flex h-10 items-center justify-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand disabled:opacity-60" disabled={pending || !candidates.length}><CheckCircle2 size={16} />{pending ? "Matching..." : "Match existing expense"}</button>
   </form>;
+}
+
+function FuzzyExpenseMatchRow({ transactionId, candidate }: { transactionId: number; candidate: FuzzyExpenseCandidate }) {
+  const [state, action, pending] = useActionState(approveFuzzyMatch.bind(null, transactionId, candidate.expenseId), {} as FinanceState);
+  return <div className="rounded-md border border-line-strong p-3 text-sm">
+    <p className="font-semibold">{candidate.expenseDate} · {candidate.expenseLabel}</p>
+    <p className="mt-1 text-muted">Recorded ${candidate.expenseAmount.toFixed(2)} · Bank ${candidate.transactionAmount.toFixed(2)} · Off by ${candidate.amountDifference.toFixed(2)} ({candidate.percentDifference.toFixed(1)}%) · {candidate.daysApart} day{candidate.daysApart === 1 ? "" : "s"} apart</p>
+    <form action={action} className="mt-3">
+      <button className="flex h-9 items-center gap-2 rounded-md border border-line-strong px-3 font-semibold disabled:opacity-60" disabled={pending}><CheckCircle2 size={15} />{pending ? "Approving..." : `Approve match — correct amount to $${candidate.transactionAmount.toFixed(2)}`}</button>
+    </form>
+    <FormFeedback message={state.message} tone={state.message?.startsWith("Match approved") ? "success" : "danger"} />
+  </div>;
+}
+
+export function FuzzyExpenseMatchList({ transactionId, candidates }: { transactionId: number; candidates: FuzzyExpenseCandidate[] }) {
+  return <div className="space-y-3">{candidates.map((candidate) => <FuzzyExpenseMatchRow candidate={candidate} key={candidate.expenseId} transactionId={transactionId} />)}</div>;
 }
 
 export function ReverseAllocationForm({ transactionId, allocationId }: { transactionId: number; allocationId: number }) {
