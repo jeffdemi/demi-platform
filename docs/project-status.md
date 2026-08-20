@@ -1,6 +1,6 @@
 # Current Project Status
 
-Last reviewed: **2026-08-19**
+Last reviewed: **2026-08-20**
 
 This is the dated development and bookkeeping handoff. Update it when production
 state, unresolved financial facts, or release procedures materially change.
@@ -11,8 +11,11 @@ state, unresolved financial facts, or release procedures materially change.
 - The SimpleFIN bank-activity release is deployed from `main`; use Git history
   and the production deployment record for the exact current commit.
 - Production PostgreSQL is healthy and runs major version 17.
-- All 38 migration names currently in `supabase/migrations` are represented in
-  production.
+- 41 migration names now exist in `supabase/migrations`. The most recent three
+  (`20260818120000_intern_role.sql`, `20260818130000_expense_match_tolerance_settings.sql`,
+  `20260818140000_fuzzy_expense_match_corrections.sql`) still need explicit
+  confirmation that they were applied to production; all others are
+  represented there.
 - Several remote migration version timestamps differ from local filenames due
   to earlier management-API application. See [Development](development.md)
   before using the linked Supabase CLI.
@@ -24,7 +27,9 @@ state, unresolved financial facts, or release procedures materially change.
 
 ## Implemented and in use
 
-- Invite-only, role-based tenant access with RLS and private file storage
+- Invite-only, role-based tenant access with RLS and private file storage,
+  including a read-only intern role gated by an `is_business_writer()` RLS
+  helper and matching UI write-path checks
 - Customers, jobs, quotes, invoices, expenses, receipts, equipment, maintenance,
   and operational reports
 - Quote PDFs and a private-photo OpenAI quote-preparation workbench
@@ -153,6 +158,8 @@ with guessed opening balances.
 
 ### 5. Establish repeatable delivery infrastructure
 
+- A `.devcontainer/devcontainer.json` now exists for Claude Code on the web;
+  it does not replace the release checklist or a CI pipeline.
 - Reconcile the Supabase migration-history timestamp mismatch in a tested,
   reviewed release.
 - Add CI for test, lint, typecheck, build, and migration validation.
