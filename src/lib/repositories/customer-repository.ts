@@ -14,6 +14,9 @@ export type CustomerSummary = Customer & {
   paidRevenue: number;
 };
 
+export type CustomerSortField = "name" | "contact" | "jobs" | "revenue" | "date";
+export type CustomerSortDirection = "asc" | "desc";
+
 export type CustomerDetail = Customer & {
   displayName: string;
   jobs: CustomerJob[];
@@ -30,6 +33,7 @@ export async function listCustomerSummaries(
   client: Client,
   businessId: number,
   search = "",
+  sort: { field: CustomerSortField; direction: CustomerSortDirection } = { field: "name", direction: "asc" },
 ) {
   const result = await client
     .from("customers")
@@ -40,15 +44,31 @@ export async function listCustomerSummaries(
     .limit(500);
   const rows = requireData(result.data as CustomerListRow[] | null, result.error, "Unable to load customers");
 
-  return rows
+  const summaries = rows
     .filter((customer) => customerMatchesSearch(customer, search))
     .map((customer): CustomerSummary => ({
       ...customer,
       displayName: customerDisplayName(customer),
       jobCount: customer.jobs.length,
       paidRevenue: customer.jobs.reduce((total, job) => total + (job.amount_paid ?? 0), 0),
-    }))
-    .sort((left, right) => left.displayName.localeCompare(right.displayName));
+    }));
+
+  const direction = sort.direction === "desc" ? -1 : 1;
+  return summaries.sort((left, right) => {
+    switch (sort.field) {
+      case "contact":
+        return direction * (left.email || left.phone || "").localeCompare(right.email || right.phone || "");
+      case "jobs":
+        return direction * (left.jobCount - right.jobCount);
+      case "revenue":
+        return direction * (left.paidRevenue - right.paidRevenue);
+      case "date":
+        return direction * left.created_at.localeCompare(right.created_at);
+      case "name":
+      default:
+        return direction * left.displayName.localeCompare(right.displayName);
+    }
+  });
 }
 
 export async function getCustomerDetail(client: Client, businessId: number, customerId: number) {

@@ -1,19 +1,51 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ArrowDown, ArrowUp } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { requireBusinessContext } from "@/lib/auth";
+import { dateInTimeZone } from "@/lib/domain/jobs";
 import { formatCurrency } from "@/lib/format";
-import { listCustomerSummaries } from "@/lib/repositories/customer-repository";
+import {
+  listCustomerSummaries,
+  type CustomerSortDirection,
+  type CustomerSortField,
+} from "@/lib/repositories/customer-repository";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Customers" };
 
-export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q = "" } = await searchParams;
+const sortFields: CustomerSortField[] = ["name", "contact", "jobs", "revenue", "date"];
+
+const columns: { field: CustomerSortField; label: string; align?: "right" }[] = [
+  { field: "name", label: "Customer" },
+  { field: "contact", label: "Contact" },
+  { field: "jobs", label: "Jobs", align: "right" },
+  { field: "revenue", label: "Paid revenue", align: "right" },
+  { field: "date", label: "Date", align: "right" },
+];
+
+export default async function CustomersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; sort?: string; dir?: string }>;
+}) {
+  const { q = "", sort: sortParameter, dir: dirParameter } = await searchParams;
+  const field: CustomerSortField = sortFields.includes(sortParameter as CustomerSortField)
+    ? (sortParameter as CustomerSortField)
+    : "name";
+  const direction: CustomerSortDirection = dirParameter === "desc" ? "desc" : "asc";
   const context = await requireBusinessContext();
   const { business } = context;
-  const customers = await listCustomerSummaries(await createClient(), business.id, q);
+  const customers = await listCustomerSummaries(await createClient(), business.id, q, { field, direction });
+
+  const sortHref = (column: CustomerSortField) => {
+    const nextDirection: CustomerSortDirection = field === column && direction === "asc" ? "desc" : "asc";
+    const parameters = new URLSearchParams();
+    if (q) parameters.set("q", q);
+    parameters.set("sort", column);
+    parameters.set("dir", nextDirection);
+    return `?${parameters.toString()}`;
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -34,9 +66,24 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
       <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-sm">
         {customers.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-left">
+            <table className="w-full min-w-[860px] border-collapse text-left">
               <thead className="bg-surface-muted text-xs uppercase text-muted">
-                <tr><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Contact</th><th className="px-4 py-3 text-right">Jobs</th><th className="px-4 py-3 text-right">Paid revenue</th><th className="w-20 px-4 py-3"><span className="sr-only">Actions</span></th></tr>
+                <tr>
+                  {columns.map((column) => (
+                    <th className={`px-4 py-3 ${column.align === "right" ? "text-right" : ""}`} key={column.field}>
+                      <Link
+                        className={`inline-flex items-center gap-1 hover:text-body ${column.align === "right" ? "flex-row-reverse" : ""}`}
+                        href={sortHref(column.field)}
+                      >
+                        {column.label}
+                        {field === column.field ? (
+                          direction === "asc" ? <ArrowUp aria-hidden="true" size={12} /> : <ArrowDown aria-hidden="true" size={12} />
+                        ) : null}
+                      </Link>
+                    </th>
+                  ))}
+                  <th className="w-20 px-4 py-3"><span className="sr-only">Actions</span></th>
+                </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {customers.map((customer) => (
@@ -45,6 +92,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
                     <td className="px-4 py-4 text-sm"><p>{customer.phone || "No phone"}</p><p className="mt-1 text-muted">{customer.email || "No email"}</p></td>
                     <td className="px-4 py-4 text-right tabular-nums">{customer.jobCount}</td>
                     <td className="px-4 py-4 text-right font-semibold tabular-nums">{formatCurrency(customer.paidRevenue)}</td>
+                    <td className="px-4 py-4 text-right tabular-nums">{dateInTimeZone(business.timezone, new Date(customer.created_at))}</td>
                     <td className="px-4 py-4 text-right">{context.role !== "intern" ? <Link className="text-sm font-semibold text-brand hover:underline" href={`/customers/${customer.id}/edit`}>Edit</Link> : null}</td>
                   </tr>
                 ))}
