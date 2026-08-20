@@ -19,8 +19,8 @@ export async function inviteTeamMember(
 ): Promise<InvitationState> {
   const context = await requireBusinessContext();
 
-  if (context.role !== "owner") {
-    return { message: "Only the business owner can invite team members." };
+  if (context.role !== "owner" && context.role !== "admin") {
+    return { message: "Only an owner or administrator can invite team members." };
   }
 
   const validated = invitationSchema.safeParse({
@@ -58,7 +58,7 @@ export async function inviteTeamMember(
   const supabase = await createClient();
 
   if (existingUser) {
-    const { data: existingMembership } = await supabase
+    const { data: existingMembership } = await admin
       .from("business_members")
       .select("id, active")
       .eq("business_id", context.business.id)
@@ -76,8 +76,8 @@ export async function inviteTeamMember(
       active: true,
     };
     const membershipResult = existingMembership
-      ? await supabase.from("business_members").update(membership).eq("id", existingMembership.id)
-      : await supabase.from("business_members").insert(membership);
+      ? await admin.from("business_members").update(membership).eq("id", existingMembership.id)
+      : await admin.from("business_members").insert(membership);
 
     if (membershipResult.error) {
       return { message: "The existing account could not be added to this workspace." };

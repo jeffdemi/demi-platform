@@ -48,6 +48,7 @@ async function loadMembers(businessId: number): Promise<MemberRow[]> {
 
 export default async function TeamPage() {
   const context = await requireBusinessContext();
+  const canInviteTeamMembers = context.role === "owner" || context.role === "admin";
   const supabase = await createClient();
   const [{ data: invitations }, members] = await Promise.all([
     supabase
@@ -65,7 +66,7 @@ export default async function TeamPage() {
         <h1 className="mt-1 text-2xl font-bold">Team</h1>
       </header>
 
-      {context.role === "owner" && (
+      {canInviteTeamMembers && (
         <section className="border-b border-line py-7">
           <h2 className="text-lg font-bold">Invite a team member</h2>
           <p className="mt-1 text-sm text-muted">Invitations expire after seven days. Only invite people who should access business records.</p>
