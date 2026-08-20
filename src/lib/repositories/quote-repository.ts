@@ -74,16 +74,18 @@ export async function convertQuote(client: Client, quoteId: number) {
   return result.data;
 }
 
-export async function quoteDashboardSummary(client: Client, businessId: number, monthStart: string, monthEnd: string) {
+export async function quoteDashboardSummary(client: Client, businessId: number, start: string | null, end: string | null) {
   const result = await client.from("quotes").select("status, quoted_price, job_id, quote_date").eq("business_id", businessId);
   const quotes = dataOrThrow(result.data, result.error, "Unable to load quote summary");
-  const decided = quotes.filter((q) => q.quote_date >= monthStart && q.quote_date < monthEnd && ["accepted", "converted", "declined", "no_response", "expired"].includes(q.status));
+  const inRange = (date: string) => (!start || date >= start) && (!end || date <= end);
+  const rangeQuotes = quotes.filter((q) => inRange(q.quote_date));
+  const decided = rangeQuotes.filter((q) => ["accepted", "converted", "declined", "no_response", "expired"].includes(q.status));
   const accepted = decided.filter((q) => ["accepted", "converted"].includes(q.status));
   return {
-    draftCount: quotes.filter((q) => q.status === "draft").length,
-    awaitingResponseCount: quotes.filter((q) => ["sent", "no_response"].includes(q.status)).length,
-    acceptedUnconvertedCount: quotes.filter((q) => q.status === "accepted" && !q.job_id).length,
-    outstandingValue: quotes.filter((q) => ["draft", "sent", "accepted"].includes(q.status)).reduce((sum, q) => sum + q.quoted_price, 0),
+    draftCount: rangeQuotes.filter((q) => q.status === "draft").length,
+    awaitingResponseCount: rangeQuotes.filter((q) => ["sent", "no_response"].includes(q.status)).length,
+    acceptedUnconvertedCount: rangeQuotes.filter((q) => q.status === "accepted" && !q.job_id).length,
+    outstandingValue: rangeQuotes.filter((q) => ["draft", "sent", "accepted"].includes(q.status)).reduce((sum, q) => sum + q.quoted_price, 0),
     acceptanceRate: decided.length ? Math.round((accepted.length / decided.length) * 1000) / 10 : 0,
   };
 }
