@@ -5,7 +5,13 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   const context = await requireBusinessContext();
 
   return (
-    <AppShell businessName={context.business.name} role={context.role} userEmail={context.user.email}>
+    <AppShell
+      activeBusinessId={context.business.id}
+      businessName={context.business.name}
+      memberships={context.memberships}
+      role={context.role}
+      userEmail={context.user.email}
+    >
       {children}
     </AppShell>
   );
