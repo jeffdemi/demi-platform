@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  Briefcase,
   BriefcaseBusiness,
   CircleDollarSign,
   FileBarChart,
@@ -13,8 +14,10 @@ import {
   UsersRound,
   Wrench,
 } from "lucide-react";
-import { logout } from "@/app/(app)/actions";
+import { logout, switchBusiness } from "@/app/(app)/actions";
+import { BusinessSwitcher } from "@/components/business-switcher";
 import { FinancialHelpLink } from "@/components/financial-help-link";
+import type { BusinessMembership } from "@/lib/domain/business-membership";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
@@ -28,19 +31,25 @@ const navigation = [
   { href: "/equipment", label: "Equipment", icon: Wrench },
   { href: "/reports", label: "Reports", icon: FileBarChart },
   { href: "/account/team", label: "Team", icon: Users },
+  { href: "/account/businesses", label: "Businesses", icon: Briefcase, businessManagerOnly: true },
 ];
 
 export function AppShell({
+  activeBusinessId,
   businessName,
+  memberships,
   userEmail,
   role,
   children,
 }: {
+  activeBusinessId: number;
   businessName: string;
+  memberships: BusinessMembership[];
   userEmail: string;
   role: "owner" | "admin" | "employee" | "intern";
   children: React.ReactNode;
 }) {
+  const canManageBusinesses = role === "owner" || memberships.length > 1;
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[236px_minmax(0,1fr)]">
       <aside className="border-b border-brand-border bg-brand text-on-brand lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
@@ -64,13 +73,20 @@ export function AppShell({
           </div>
         </div>
 
+        {memberships.length > 1 && (
+          <BusinessSwitcher action={switchBusiness} activeBusinessId={activeBusinessId} memberships={memberships} />
+        )}
+
         <nav className="flex gap-1 overflow-x-auto border-t border-white/10 px-3 py-2 lg:block lg:space-y-1 lg:border-t-0 lg:px-3 lg:py-2" aria-label="Primary navigation">
-          {navigation.filter((item) => !item.adminOnly || (role !== "employee" && role !== "intern")).map(({ href, label, icon: Icon }) => (
-            <Link className="flex h-11 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-on-brand-muted hover:bg-white/10 hover:text-on-brand" href={href} key={href}>
-              <Icon aria-hidden="true" size={18} />
-              {label}
-            </Link>
-          ))}
+          {navigation
+            .filter((item) => !item.adminOnly || (role !== "employee" && role !== "intern"))
+            .filter((item) => !item.businessManagerOnly || canManageBusinesses)
+            .map(({ href, label, icon: Icon }) => (
+              <Link className="flex h-11 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-on-brand-muted hover:bg-white/10 hover:text-on-brand" href={href} key={href}>
+                <Icon aria-hidden="true" size={18} />
+                {label}
+              </Link>
+            ))}
         </nav>
 
         <div className="absolute bottom-0 hidden w-[236px] border-t border-white/10 p-4 lg:block">

@@ -12,7 +12,7 @@ export async function apiBusinessContext(request?: Request) {
   const claims = await client.auth.getClaims(token);
   const userId = claims.data?.claims?.sub;
   if (!userId) return null;
-  const membership = await client.from("business_members").select("business_id").eq("user_id", userId).eq("active", true).limit(1).maybeSingle();
+  const membership = await client.from("business_members").select("business_id").eq("user_id", userId).eq("active", true).order("created_at", { ascending: true }).limit(1).maybeSingle();
   if (!membership.data) return null;
   return { client, businessId: membership.data.business_id };
 }
