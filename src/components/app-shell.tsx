@@ -22,9 +22,9 @@ import type { BusinessMembership } from "@/lib/domain/business-membership";
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
   { href: "/customers", label: "Customers", icon: Users },
-  { href: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
   { href: "/quotes", label: "Quotes", icon: FileText },
   { href: "/invoices", label: "Invoices", icon: CircleDollarSign },
+  { href: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
   { href: "/expenses", label: "Expenses", icon: FileSpreadsheet },
   { href: "/finance", label: "Finance", icon: Landmark },
   { href: "/labor", label: "Labor", icon: UsersRound, adminOnly: true },
