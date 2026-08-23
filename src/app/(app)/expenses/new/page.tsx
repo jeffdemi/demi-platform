@@ -6,7 +6,7 @@ import { dateInTimeZone } from "@/lib/domain/jobs";
 import { suggestTaxCategory } from "@/lib/domain/accounting";
 import { getBankTransaction } from "@/lib/repositories/accounting-repository";
 import { listActiveEquipmentOptions } from "@/lib/repositories/equipment-repository";
-import { listRefundableExpenseOptions } from "@/lib/repositories/expense-repository";
+import { listExpenseCategories, listRefundableExpenseOptions } from "@/lib/repositories/expense-repository";
 import { listJobOptions } from "@/lib/repositories/job-repository";
 import { createClient } from "@/lib/supabase/server";
 import { ExpenseForm } from "../expense-form";
@@ -17,10 +17,11 @@ export default async function NewExpensePage({ searchParams }: { searchParams: P
   if (role === "intern") redirect("/expenses");
   const client = await createClient();
   const bankTransactionId = Number(bankTransaction);
-  const [jobs, equipment, refundOptions, bankRecord] = await Promise.all([
+  const [jobs, equipment, refundOptions, categories, bankRecord] = await Promise.all([
     listJobOptions(client, business.id),
     listActiveEquipmentOptions(client, business.id),
     listRefundableExpenseOptions(client, business.id),
+    listExpenseCategories(client, business.id),
     Number.isInteger(bankTransactionId) ? getBankTransaction(client, business.id, bankTransactionId) : null,
   ]);
   const refundId = Number(refundOf);
@@ -44,6 +45,6 @@ export default async function NewExpensePage({ searchParams }: { searchParams: P
       deductiblePercent: source?.deductible_percent ?? 100,
       financialClassification: source?.financial_classification ?? "operating",
       laborClass: source?.labor_class ?? undefined,
-    }} equipment={equipment} jobs={jobs} refundOptions={refundOptions} />
+    }} categories={categories} equipment={equipment} jobs={jobs} refundOptions={refundOptions} />
   </div>;
 }

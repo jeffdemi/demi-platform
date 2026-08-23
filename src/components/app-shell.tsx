@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  ArrowLeftRight,
   Briefcase,
   BriefcaseBusiness,
   CircleDollarSign,
@@ -26,6 +27,7 @@ const navigation = [
   { href: "/invoices", label: "Invoices", icon: CircleDollarSign },
   { href: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
   { href: "/expenses", label: "Expenses", icon: FileSpreadsheet },
+  { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/finance", label: "Finance", icon: Landmark },
   { href: "/labor", label: "Labor", icon: UsersRound, adminOnly: true },
   { href: "/equipment", label: "Equipment", icon: Wrench },

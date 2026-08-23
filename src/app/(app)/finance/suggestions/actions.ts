@@ -38,6 +38,7 @@ export async function approveClassificationSuggestions(_: SuggestionApprovalStat
     }
   }
   revalidatePath("/finance");
+  revalidatePath("/transactions");
   revalidatePath("/finance/suggestions");
   return { success: true, message: `Approved ${approved} classification${approved === 1 ? "" : "s"}.` };
 }

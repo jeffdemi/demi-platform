@@ -60,7 +60,7 @@ export function BankSyncControls({
           <button className="inline-flex h-10 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand disabled:opacity-50" disabled={!configured || !hasMappedAccounts || previewPending}><RefreshCw size={16} />{previewPending ? "Checking..." : "Import latest bank activity"}</button>
         </form>
         {!hasMappedAccounts ? <p className="mt-3 text-sm text-muted">{hasSavedConnection ? "Refresh the saved connection if it needs attention, then map at least one business account below." : "Connect SimpleFIN and map at least one business account first."}</p> : null}
-        <div className="mt-3 space-y-3"><FormFeedback message={previewState.message} tone={previewState.success ? "success" : "danger"} />{previewState.runId ? <Link className="inline-flex h-10 items-center rounded-md border border-line-strong bg-surface px-4 font-semibold" href={`/finance/bank-sync/${previewState.runId}`}>Review safe preview</Link> : null}</div>
+        <div className="mt-3 space-y-3"><FormFeedback message={previewState.message} tone={previewState.success ? "success" : "danger"} />{previewState.runId ? <Link className="inline-flex h-10 items-center rounded-md border border-line-strong bg-surface px-4 font-semibold" href={`/transactions/bank-sync/${previewState.runId}`}>Review safe preview</Link> : null}</div>
       </div>
     </div>
     {!configured ? <div className="mt-4 rounded-md border border-warning-line bg-warning-soft p-3 text-sm">Bank sync is not configured on this deployment. Add the server-only encryption key documented in the operations guide.</div> : null}

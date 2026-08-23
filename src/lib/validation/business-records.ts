@@ -156,6 +156,12 @@ export const existingExpenseMatchSchema = z.object({
   expenseId: positiveId("an existing expense"),
 });
 
+export const quickCategorizeExpenseSchema = z.object({
+  category: requiredText("Category", 100),
+  vendor: optionalText(250),
+  description: optionalText(1000),
+});
+
 export const bookkeepingAdjustmentSchema = z.object({
   entryDate: date("Entry date", true),
   description: requiredText("Description", 500),

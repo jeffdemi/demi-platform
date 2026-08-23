@@ -154,21 +154,23 @@ describe("bookkeeping validation and migration controls", () => {
   });
 
   it("preserves allocation form values after server errors", async () => {
-    const form = await readFile(new URL("../app/(app)/finance/bookkeeping-forms.tsx", import.meta.url), "utf8");
+    const form = await readFile(new URL("../app/(app)/transactions/transaction-review-forms.tsx", import.meta.url), "utf8");
     expect(form).toContain("const [values, setValues] = useState");
     expect(form).toContain("value={values.ledgerAccountId}");
     expect(form).toContain("checked={values.rememberRule}");
     expect(form).toContain("value={values.merchantPattern}");
   });
 
-  it("exposes the bookkeeping routes from Finance and Reports", async () => {
-    const [finance, reports, monthEnd] = await Promise.all([
+  it("exposes the bookkeeping routes from Finance, Transactions, and Reports", async () => {
+    const [finance, transactions, reports, monthEnd] = await Promise.all([
       readFile(new URL("../app/(app)/finance/page.tsx", import.meta.url), "utf8"),
+      readFile(new URL("../app/(app)/transactions/page.tsx", import.meta.url), "utf8"),
       readFile(new URL("../app/(app)/reports/page.tsx", import.meta.url), "utf8"),
       readFile(new URL("../app/(app)/finance/month-end/page.tsx", import.meta.url), "utf8"),
     ]);
     expect(finance).toContain("/finance/reconciliations/new");
-    expect(finance).toContain("/finance/transactions/${transaction.id}");
+    expect(finance).not.toContain("Bank transactions");
+    expect(transactions).toContain("/transactions/${transaction.id}");
     expect(reports).toContain("/reports/books");
     expect(monthEnd).toContain("CloseMonthForm");
     expect(monthEnd).toContain("ReopenMonthForm");

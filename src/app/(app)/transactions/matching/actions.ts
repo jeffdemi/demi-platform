@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireBusinessContext } from "@/lib/auth";
 import { listBulkExpenseMatches, matchExistingExpense } from "@/lib/repositories/accounting-repository";
+import { refreshFinance } from "@/lib/revalidate-finance";
 import { createClient } from "@/lib/supabase/server";
 
 export type BulkMatchState = { message?: string; success?: boolean };
@@ -23,8 +24,8 @@ export async function confirmBulkExpenseMatches(): Promise<BulkMatchState> {
         // A row may have changed after preview; leave it untouched for individual review.
       }
     }
-    revalidatePath("/finance");
-    revalidatePath("/finance/matching");
+    refreshFinance();
+    revalidatePath("/transactions/matching");
     return { success: true, message: `Matched ${matched} existing expense${matched === 1 ? "" : "s"}.` };
   } catch (error) {
     return { message: error instanceof Error ? error.message : "The matches could not be confirmed." };
