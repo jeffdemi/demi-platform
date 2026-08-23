@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { ExternalLink, FileCheck2, Save } from "lucide-react";
 import { useActionState } from "react";
+import { CategoryCombobox } from "@/components/category-combobox";
 import { Field, inputClass, textAreaClass } from "@/components/form-fields";
 import { FormFeedback } from "@/components/form-feedback";
 import { FinancialTermHelp } from "@/components/financial-term-help";
-import { expenseCategories, expensePaymentMethodOptions, expenseTypeOptions } from "@/lib/domain/finance";
+import { expensePaymentMethodOptions, expenseTypeOptions } from "@/lib/domain/finance";
 import { financialClassificationOptions, laborClassOptions } from "@/lib/domain/management-accounting";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { saveExpense, type ExpenseState } from "./actions";
@@ -48,12 +49,14 @@ export function ExpenseForm({
   jobs,
   equipment,
   refundOptions,
+  categories,
   defaults,
 }: {
   expenseId?: number;
   jobs: { id: number; label: string }[];
   equipment: { id: number; name: string }[];
   refundOptions: RefundOption[];
+  categories: string[];
   defaults: Defaults;
 }) {
   const [state, action, pending] = useActionState(saveExpense.bind(null, expenseId ?? null), {} as ExpenseState);
@@ -61,7 +64,7 @@ export function ExpenseForm({
     <div className="grid gap-5 sm:grid-cols-2">
       <Field errors={state.errors?.transactionType} label="Record type" name="transactionType"><select className={inputClass} defaultValue={defaults.transactionType ?? "expense"} id="transactionType" name="transactionType" required>{expenseTypeOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></Field>
       <Field errors={state.errors?.expenseDate} label="Date" name="expenseDate"><input className={inputClass} defaultValue={defaults.expenseDate} id="expenseDate" name="expenseDate" required type="date" /></Field>
-      <Field errors={state.errors?.category} label="Category" name="category"><select className={inputClass} defaultValue={defaults.category ?? ""} id="category" name="category" required><option value="">Select category</option>{expenseCategories.map((item) => <option key={item}>{item}</option>)}</select></Field>
+      <Field errors={state.errors?.category} label="Category" name="category"><CategoryCombobox categories={categories} defaultValue={defaults.category} id="category" name="category" required /></Field>
       <Field errors={state.errors?.amount} label="Amount" name="amount"><input className={inputClass} defaultValue={defaults.amount ?? ""} id="amount" min="0" name="amount" required step="0.01" type="number" /></Field>
       <Field errors={state.errors?.taxCategory} help={<FinancialTermHelp termId="tax-category" />} label="Tax category" name="taxCategory"><input className={inputClass} defaultValue={defaults.taxCategory ?? defaults.category ?? ""} id="taxCategory" name="taxCategory" /></Field>
       <Field errors={state.errors?.deductiblePercent} help={<FinancialTermHelp termId="deductible-percent" />} label="Business deductible %" name="deductiblePercent"><input className={inputClass} defaultValue={defaults.deductiblePercent ?? 100} id="deductiblePercent" max="100" min="0" name="deductiblePercent" required step="0.01" type="number" /></Field>

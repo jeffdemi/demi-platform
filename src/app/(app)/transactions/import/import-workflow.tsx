@@ -5,7 +5,7 @@ import { Upload } from "lucide-react";
 import { FormFeedback } from "@/components/form-feedback";
 import { inputClass } from "@/components/form-fields";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { confirmBankImport, previewBankImport, type BankImportState } from "../actions";
+import { confirmBankImport, previewBankImport, type BankImportState } from "./actions";
 
 function ConfirmImport({ state }: { state: BankImportState }) {
   const [result, action, pending] = useActionState(confirmBankImport, {} as BankImportState);

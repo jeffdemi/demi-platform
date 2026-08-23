@@ -10,6 +10,7 @@ import {
   disconnectSimpleFinConnection,
   refreshSimpleFinAccounts,
 } from "@/lib/services/bank-sync-service";
+import { refreshFinance } from "@/lib/revalidate-finance";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -43,13 +44,13 @@ export async function connectSimpleFin(
       userId: context.user.id,
       setupToken: parsed.data,
     });
-    revalidatePath("/finance/bank-sync");
+    revalidatePath("/transactions/bank-sync");
     return {
       success: true,
       message: `SimpleFIN connected securely. ${result.accountCount} accounts were found; map each business account below.`,
     };
   } catch (error) {
-    revalidatePath("/finance/bank-sync");
+    revalidatePath("/transactions/bank-sync");
     return { message: error instanceof Error ? error.message : "SimpleFIN could not be connected." };
   }
 }
@@ -72,13 +73,13 @@ export async function refreshConnectionAccounts(
       businessId: context.business.id,
       connectionId: parsedConnectionId.data,
     });
-    revalidatePath("/finance/bank-sync");
+    revalidatePath("/transactions/bank-sync");
     return {
       success: true,
       message: `${result.accountCount} SimpleFIN accounts refreshed${result.warnings.length ? " with provider warnings" : ""}.`,
     };
   } catch (error) {
-    revalidatePath("/finance/bank-sync");
+    revalidatePath("/transactions/bank-sync");
     return { message: error instanceof Error ? error.message : "The SimpleFIN account list could not be refreshed." };
   }
 }
@@ -109,7 +110,7 @@ export async function saveConnectionMappings(
     const selectedIds = mappings.flatMap((mapping) => mapping.bankAccountId === null ? [] : [mapping.bankAccountId]);
     if (new Set(selectedIds).size !== selectedIds.length) return { message: "Each business account can be mapped only once." };
     await saveBankAccountMappings(client, context.business.id, parsedConnectionId.data, mappings);
-    revalidatePath("/finance/bank-sync");
+    revalidatePath("/transactions/bank-sync");
     return { success: true, message: "Account mappings saved." };
   } catch (error) {
     return { message: error instanceof Error ? error.message : "The account mappings could not be saved." };
@@ -131,10 +132,10 @@ export async function previewLatestBankActivity(
       businessId: context.business.id,
       userId: context.user.id,
     });
-    revalidatePath("/finance/bank-sync");
+    revalidatePath("/transactions/bank-sync");
     return { success: true, runId, message: "Preview ready. Review it before importing anything." };
   } catch (error) {
-    revalidatePath("/finance/bank-sync");
+    revalidatePath("/transactions/bank-sync");
     return { message: error instanceof Error ? error.message : "The latest bank activity could not be loaded." };
   }
 }
@@ -152,9 +153,9 @@ export async function confirmLatestBankActivity(
   if (!parsedRunId.success) return { message: "The bank preview is invalid." };
   try {
     await confirmBankSyncRun(await createClient(), context.business.id, parsedRunId.data);
-    revalidatePath("/finance");
-    revalidatePath("/finance/bank-sync");
-    revalidatePath(`/finance/bank-sync/${parsedRunId.data}`);
+    refreshFinance();
+    revalidatePath("/transactions/bank-sync");
+    revalidatePath(`/transactions/bank-sync/${parsedRunId.data}`);
     return { success: true, message: "Bank activity imported. Existing CSV rows were linked and new posted rows were added once." };
   } catch (error) {
     return { message: error instanceof Error ? error.message : "The bank activity could not be imported." };
@@ -180,7 +181,7 @@ export async function disconnectConnection(
       businessId: context.business.id,
       connectionId: parsedConnectionId.data,
     });
-    revalidatePath("/finance/bank-sync");
+    revalidatePath("/transactions/bank-sync");
     return { success: true, message: "The saved SimpleFIN credential was removed. Imported transactions remain; revoke the app under SimpleFIN My Account too." };
   } catch (error) {
     return { message: error instanceof Error ? error.message : "SimpleFIN could not be disconnected." };

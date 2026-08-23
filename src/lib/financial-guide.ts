@@ -561,7 +561,7 @@ export function contextualFinancialGuideAnchor(pathname: string) {
   if (pathname.startsWith("/reports")) return "reporting-metrics";
   if (pathname.startsWith("/labor")) return "labor-payroll";
   if (pathname.startsWith("/finance/month-end")) return "month-end";
-  if (pathname.startsWith("/finance/reconciliations") || pathname.startsWith("/finance/transactions") || pathname.startsWith("/finance/adjustments")) return "bookkeeping";
+  if (pathname.startsWith("/finance/reconciliations") || pathname.startsWith("/transactions") || pathname.startsWith("/finance/adjustments")) return "bookkeeping";
   if (pathname.startsWith("/finance")) return "monthly-workflow";
   if (pathname.startsWith("/expenses")) return "expense-classifications";
   if (pathname.startsWith("/equipment")) return "equipment-finance";

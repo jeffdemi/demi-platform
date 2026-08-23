@@ -35,6 +35,12 @@ export type Database = {
         Update: { id?: string; business_id?: number; provider?: string; provider_connection_id?: string; institution_name?: string; status?: string; last_synced_at?: string | null; last_error?: string | null; created_by?: string; created_at?: string; updated_at?: string }
         Relationships: [{ foreignKeyName: "bank_connections_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
       }
+      expense_categories: {
+        Row: { id: number; business_id: number; name: string; created_at: string }
+        Insert: { id?: never; business_id: number; name: string; created_at?: string }
+        Update: { id?: never; business_id?: number; name?: string; created_at?: string }
+        Relationships: [{ foreignKeyName: "expense_categories_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] }]
+      }
       bank_classification_rules: {
         Row: { id: number; business_id: number; match_text: string; ledger_account_id: number; tax_category: string | null; deductible_percent: number; active: boolean; created_by: string | null; created_at: string; updated_at: string }
         Insert: { id?: never; business_id: number; match_text: string; ledger_account_id: number; tax_category?: string | null; deductible_percent?: number; active?: boolean; created_by?: string | null; created_at?: string; updated_at?: string }

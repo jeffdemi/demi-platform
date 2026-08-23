@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { expenseCategories } from "@/lib/domain/finance";
 import type { Database } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
@@ -115,4 +116,24 @@ export async function restoreExpense(client: Client, businessId: number, expense
     voided_by: null,
     void_reason: null,
   });
+}
+
+export async function listExpenseCategories(client: Client, businessId: number) {
+  const result = await client.from("expense_categories").select("name")
+    .eq("business_id", businessId).order("name", { ascending: true });
+  if (result.error) throw new Error(`Unable to load expense categories: ${result.error.message}`);
+  if (result.data.length) return result.data.map((row) => row.name);
+  const seeded = await client.from("expense_categories")
+    .upsert(expenseCategories.map((name) => ({ business_id: businessId, name })), { onConflict: "business_id,name", ignoreDuplicates: true })
+    .select("name");
+  if (seeded.error) throw new Error(`Unable to seed expense categories: ${seeded.error.message}`);
+  return seeded.data.map((row) => row.name).sort((left, right) => left.localeCompare(right));
+}
+
+export async function upsertExpenseCategory(client: Client, businessId: number, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const result = await client.from("expense_categories")
+    .upsert({ business_id: businessId, name: trimmed }, { onConflict: "business_id,name", ignoreDuplicates: true });
+  if (result.error) throw new Error(`Unable to save the expense category: ${result.error.message}`);
 }
