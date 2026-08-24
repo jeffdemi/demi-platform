@@ -160,3 +160,60 @@ export function buildBookkeepingStatements(input: {
     },
   };
 }
+
+function lastDayOfMonth(year: number, month: number) {
+  return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+}
+
+export function buildMonthlyLedgerGrids(input: {
+  entries: BookkeepingEntry[];
+  lines: BookkeepingLine[];
+  year: number;
+  to: string;
+  businessLineId?: number;
+}) {
+  const months = Array.from({ length: 12 }, (_, index) => index + 1);
+  const monthLabels = months.map((month) => `${input.year}-${String(month).padStart(2, "0")}`);
+  const monthStatements = months.map((month) => {
+    const from = `${input.year}-${String(month).padStart(2, "0")}-01`;
+    if (from > input.to) return null;
+    const rawTo = lastDayOfMonth(input.year, month);
+    const to = rawTo > input.to ? input.to : rawTo;
+    return buildBookkeepingStatements({ entries: input.entries, lines: input.lines, from, to, businessLineId: input.businessLineId });
+  });
+
+  const profitLossRows = (() => {
+    const accounts = new Map<number, LedgerAccount>();
+    monthStatements.forEach((statement) => statement?.profitLoss.rows.forEach((row) => accounts.set(row.account.id, row.account)));
+    return [...accounts.values()].sort((left, right) => left.code.localeCompare(right.code)).map((account) => {
+      const monthly = monthStatements.map((statement) => statement?.profitLoss.rows.find((row) => row.account.id === account.id)?.balance ?? 0);
+      return { account, monthly, total: rounded(monthly.reduce((sum, value) => sum + value, 0)) };
+    });
+  })();
+
+  const balanceSheetRows = (() => {
+    const accounts = new Map<number, LedgerAccount>();
+    monthStatements.forEach((statement) => statement?.balanceSheet.rows.forEach((row) => accounts.set(row.account.id, row.account)));
+    return [...accounts.values()].sort((left, right) => left.code.localeCompare(right.code)).map((account) => ({
+      account,
+      monthly: monthStatements.map((statement) => statement ? (statement.balanceSheet.rows.find((row) => row.account.id === account.id)?.balance ?? 0) : null),
+    }));
+  })();
+
+  const cashFlowRows = (["operating", "investing", "financing"] as const).map((section) => {
+    const monthly = monthStatements.map((statement) => statement?.cashFlow[section] ?? 0);
+    return { section, monthly, total: rounded(monthly.reduce((sum, value) => sum + value, 0)) };
+  });
+  const netChange = { monthly: months.map((_, index) => rounded(cashFlowRows.reduce((sum, row) => sum + row.monthly[index], 0))), total: rounded(cashFlowRows.reduce((sum, row) => sum + row.total, 0)) };
+
+  return {
+    months: monthLabels,
+    profitLoss: {
+      rows: profitLossRows,
+      revenue: rounded(profitLossRows.filter((row) => row.account.account_type === "revenue").reduce((sum, row) => sum + row.total, 0)),
+      expenses: rounded(profitLossRows.filter((row) => row.account.account_type === "expense").reduce((sum, row) => sum + row.total, 0)),
+    },
+    balanceSheet: { rows: balanceSheetRows },
+    cashFlow: { rows: cashFlowRows, netChange },
+  };
+}
