@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpenCheck, CalendarCheck, Download, Settings } from "lucide-react";
+import { BookOpenCheck, CalendarCheck, CalendarRange, Download, Settings } from "lucide-react";
 import { FinancialTermHelp } from "@/components/financial-term-help";
 import { PageHeader } from "@/components/page-header";
 import { requireBusinessContext } from "@/lib/auth";
@@ -62,6 +62,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   ];
   const actions = (context.role === "employee" || context.role === "intern") ? null : <div className="flex flex-wrap gap-2">
     <Link className="flex h-11 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold" href="/reports/books"><BookOpenCheck size={17} />Bookkeeping statements</Link>
+    <Link className="flex h-11 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold" href="/reports/monthly"><CalendarRange size={17} />Monthly reports</Link>
     <Link className="flex h-11 items-center gap-2 rounded-md border border-line-strong px-4 font-semibold" href="/reports/settings"><Settings size={17} />Targets & owner pay</Link>
     <Link className="flex h-11 items-center gap-2 rounded-md bg-brand px-4 font-semibold text-on-brand" href="/finance/month-end?origin=reports"><CalendarCheck size={17} />Month-end close</Link>
   </div>;

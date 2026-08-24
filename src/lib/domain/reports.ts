@@ -61,3 +61,19 @@ export function buildReportSummary(data: ReportData) {
     months: [...months.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, 18).map(([month, values]) => ({ month, ...values, net: values.revenue - values.operatingExpenses, cashNet: values.revenue - values.cashOutflow })),
   };
 }
+
+export function buildMonthlyExpenseCategoryGrid(expenses: ReportData["expenses"], year: number, to: string) {
+  const yearPrefix = String(year);
+  const relevantExpenses = expenses.filter((expense) => !expense.voided_at && expense.transaction_type !== "asset"
+    && expense.expense_date.slice(0, 4) === yearPrefix && expense.expense_date <= to);
+  const categories = new Map<string, number[]>();
+  relevantExpenses.forEach((expense) => {
+    const monthIndex = Number(expense.expense_date.slice(5, 7)) - 1;
+    const monthly = categories.get(expense.category) ?? Array(12).fill(0);
+    monthly[monthIndex] += operatingExpenseImpact(expense);
+    categories.set(expense.category, monthly);
+  });
+  return [...categories.entries()]
+    .map(([category, monthly]) => ({ category, monthly, total: monthly.reduce((sum, value) => sum + value, 0) }))
+    .sort((left, right) => right.total - left.total);
+}
