@@ -1,13 +1,14 @@
-export function StatusBadge({ label, status }: { label: string; status: string }) {
-  const tone = status === "cancelled" || status === "declined"
-    ? "border-danger-line bg-danger-soft text-danger-strong"
-    : status === "paid" || status === "completed" || status === "accepted"
-      ? "border-brand-border bg-brand-soft text-brand-strong"
-      : "border-line bg-surface-muted text-muted-strong";
+const positiveStatuses = new Set(["paid", "completed", "accepted", "active", "reconciled", "approved"]);
+const warningStatuses = new Set(["sent", "scheduled", "pending", "awaiting_response", "partial", "overdue"]);
+const negativeStatuses = new Set(["cancelled", "declined", "void", "failed", "rejected"]);
+const infoStatuses = new Set(["in_progress", "converted", "review", "unreviewed"]);
 
-  return (
-    <span className={`inline-flex min-h-7 items-center rounded-md border px-2 py-1 text-xs font-semibold ${tone}`}>
-      {label}
-    </span>
-  );
+export function StatusBadge({ label, status }: { label: string; status: string }) {
+  const normalized = status.toLowerCase().replaceAll(" ", "_");
+  const tone = positiveStatuses.has(normalized) ? "status-positive"
+    : warningStatuses.has(normalized) ? "status-warning"
+      : negativeStatuses.has(normalized) ? "status-negative"
+        : infoStatuses.has(normalized) ? "status-info"
+          : "status-neutral";
+  return <span className={`status-badge ${tone}`}><span aria-hidden="true" className="status-dot" />{label}</span>;
 }
