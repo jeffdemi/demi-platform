@@ -2,11 +2,48 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Briefcase,
+  BriefcaseBusiness,
+  CircleDollarSign,
+  FileBarChart,
+  FileSpreadsheet,
+  FileText,
+  Gauge,
+  Landmark,
+  Settings,
+  Users,
+  UsersRound,
+  Wrench,
+} from "lucide-react";
 
-export function ActiveNavLink({ href, label, icon: Icon }: { href: string; label: string; icon: LucideIcon }) {
+const navigationIcons = {
+  accounting: Landmark,
+  businesses: Briefcase,
+  customers: Users,
+  dashboard: Gauge,
+  equipment: Wrench,
+  expenses: FileSpreadsheet,
+  invoices: CircleDollarSign,
+  jobs: BriefcaseBusiness,
+  labor: UsersRound,
+  quotes: FileText,
+  reports: FileBarChart,
+  settings: Settings,
+  team: Users,
+  transactions: ArrowLeftRight,
+} as const;
+
+export type NavigationIconName = keyof typeof navigationIcons;
+
+export function ActiveNavLink({ href, label, iconName }: { href: string; label: string; iconName: NavigationIconName }) {
   const pathname = usePathname();
-  const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`/`) && !(href === "/reports" && pathname.startsWith("/reports/settings")));
+  const withinSection = href !== "/dashboard" && pathname.startsWith(`${href}/`);
+  const reportsSettings = href === "/reports" && pathname.startsWith("/reports/settings");
+  const active = pathname === href || (withinSection && !reportsSettings);
+  const Icon = navigationIcons[iconName];
+
   return (
     <Link aria-current={active ? "page" : undefined} className={`nav-link ${active ? "nav-link-active" : ""}`} href={href}>
       <Icon aria-hidden="true" size={18} strokeWidth={active ? 2.4 : 2} />
