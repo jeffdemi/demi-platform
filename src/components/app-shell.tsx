@@ -1,42 +1,29 @@
 import Link from "next/link";
 import {
-  ArrowLeftRight,
-  Briefcase,
-  BriefcaseBusiness,
-  CircleDollarSign,
-  FileBarChart,
-  FileSpreadsheet,
-  FileText,
-  Gauge,
-  Landmark,
   LogOut,
-  Settings,
   TreePine,
-  Users,
-  UsersRound,
-  Wrench,
 } from "lucide-react";
 import { logout, switchBusiness } from "@/app/(app)/actions";
-import { ActiveNavLink } from "@/components/active-nav-link";
+import { ActiveNavLink, type NavigationIconName } from "@/components/active-nav-link";
 import { BusinessSwitcher } from "@/components/business-switcher";
 import { FinancialHelpLink } from "@/components/financial-help-link";
 import type { BusinessMembership } from "@/lib/domain/business-membership";
 
-const navigation = [
-  { href: "/dashboard", label: "Dashboard", icon: Gauge },
-  { href: "/customers", label: "Customers", icon: Users },
-  { href: "/quotes", label: "Quotes", icon: FileText },
-  { href: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
-  { href: "/invoices", label: "Invoices", icon: CircleDollarSign },
-  { href: "/expenses", label: "Expenses", icon: FileSpreadsheet },
-  { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { href: "/finance", label: "Finance", icon: Landmark },
-  { href: "/labor", label: "Labor", icon: UsersRound, adminOnly: true },
-  { href: "/equipment", label: "Equipment", icon: Wrench },
-  { href: "/reports", label: "Reports", icon: FileBarChart },
-  { href: "/account/team", label: "Team", icon: Users },
-  { href: "/account/businesses", label: "Businesses", icon: Briefcase, businessManagerOnly: true },
-  { href: "/reports/settings", label: "Settings", icon: Settings },
+const navigation: { href: string; label: string; iconName: NavigationIconName; adminOnly?: boolean; businessManagerOnly?: boolean }[] = [
+  { href: "/dashboard", label: "Dashboard", iconName: "dashboard" },
+  { href: "/customers", label: "Customers", iconName: "customers" },
+  { href: "/quotes", label: "Quotes", iconName: "quotes" },
+  { href: "/jobs", label: "Jobs", iconName: "jobs" },
+  { href: "/invoices", label: "Invoices", iconName: "invoices" },
+  { href: "/expenses", label: "Expenses", iconName: "expenses" },
+  { href: "/transactions", label: "Transactions", iconName: "transactions" },
+  { href: "/finance", label: "Finance", iconName: "accounting" },
+  { href: "/labor", label: "Labor", iconName: "labor", adminOnly: true },
+  { href: "/equipment", label: "Equipment", iconName: "equipment" },
+  { href: "/reports", label: "Reports", iconName: "reports" },
+  { href: "/account/team", label: "Team", iconName: "team" },
+  { href: "/account/businesses", label: "Businesses", iconName: "businesses", businessManagerOnly: true },
+  { href: "/reports/settings", label: "Settings", iconName: "settings" },
 ];
 
 export function AppShell({
@@ -83,7 +70,7 @@ export function AppShell({
         )}
 
         <nav className="flex gap-1 overflow-x-auto border-t border-white/10 px-3 py-2 lg:block lg:space-y-1 lg:border-t-0 lg:px-3 lg:py-2" aria-label="Primary navigation">
-          {navigation.filter((item) => !item.adminOnly || (role !== "employee" && role !== "intern")).filter((item) => !item.businessManagerOnly || canManageBusinesses).map(({ href, label, icon }) => <ActiveNavLink href={href} icon={icon} key={href} label={label} />)}
+          {navigation.filter((item) => !item.adminOnly || (role !== "employee" && role !== "intern")).filter((item) => !item.businessManagerOnly || canManageBusinesses).map(({ href, label, iconName }) => <ActiveNavLink href={href} iconName={iconName} key={href} label={label} />)}
         </nav>
 
         <div className="absolute bottom-0 hidden w-[236px] border-t border-white/10 p-4 lg:block">
