@@ -10,12 +10,14 @@ import {
   Gauge,
   Landmark,
   LogOut,
+  Settings,
   TreePine,
   Users,
   UsersRound,
   Wrench,
 } from "lucide-react";
 import { logout, switchBusiness } from "@/app/(app)/actions";
+import { ActiveNavLink } from "@/components/active-nav-link";
 import { BusinessSwitcher } from "@/components/business-switcher";
 import { FinancialHelpLink } from "@/components/financial-help-link";
 import type { BusinessMembership } from "@/lib/domain/business-membership";
@@ -24,8 +26,8 @@ const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/quotes", label: "Quotes", icon: FileText },
-  { href: "/invoices", label: "Invoices", icon: CircleDollarSign },
   { href: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
+  { href: "/invoices", label: "Invoices", icon: CircleDollarSign },
   { href: "/expenses", label: "Expenses", icon: FileSpreadsheet },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/finance", label: "Finance", icon: Landmark },
@@ -34,6 +36,7 @@ const navigation = [
   { href: "/reports", label: "Reports", icon: FileBarChart },
   { href: "/account/team", label: "Team", icon: Users },
   { href: "/account/businesses", label: "Businesses", icon: Briefcase, businessManagerOnly: true },
+  { href: "/reports/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppShell({
@@ -53,8 +56,8 @@ export function AppShell({
 }) {
   const canManageBusinesses = role === "owner" || memberships.length > 1;
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[236px_minmax(0,1fr)]">
-      <aside className="border-b border-brand-border bg-brand text-on-brand lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+    <div className="app-frame">
+      <aside className="app-sidebar">
         <div className="flex h-16 items-center justify-between px-4 lg:h-auto lg:px-5 lg:py-6">
           <Link className="flex min-w-0 items-center gap-3" href="/dashboard">
             <span className="grid size-9 shrink-0 place-items-center rounded-md bg-surface text-brand">
@@ -80,15 +83,7 @@ export function AppShell({
         )}
 
         <nav className="flex gap-1 overflow-x-auto border-t border-white/10 px-3 py-2 lg:block lg:space-y-1 lg:border-t-0 lg:px-3 lg:py-2" aria-label="Primary navigation">
-          {navigation
-            .filter((item) => !item.adminOnly || (role !== "employee" && role !== "intern"))
-            .filter((item) => !item.businessManagerOnly || canManageBusinesses)
-            .map(({ href, label, icon: Icon }) => (
-              <Link className="flex h-11 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-on-brand-muted hover:bg-white/10 hover:text-on-brand" href={href} key={href}>
-                <Icon aria-hidden="true" size={18} />
-                {label}
-              </Link>
-            ))}
+          {navigation.filter((item) => !item.adminOnly || (role !== "employee" && role !== "intern")).filter((item) => !item.businessManagerOnly || canManageBusinesses).map(({ href, label, icon }) => <ActiveNavLink href={href} icon={icon} key={href} label={label} />)}
         </nav>
 
         <div className="absolute bottom-0 hidden w-[236px] border-t border-white/10 p-4 lg:block">
@@ -102,7 +97,7 @@ export function AppShell({
           </form>
         </div>
       </aside>
-      <main className="min-w-0">{children}</main>
+      <main className="app-main" id="main-content">{children}</main>
     </div>
   );
 }
