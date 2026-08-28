@@ -75,7 +75,9 @@ export async function convertQuoteToJob(quoteId: number, _state: QuoteFormState)
   try {
     const jobId = await convertQuote(await createClient(), quoteId);
     revalidatePath("/quotes"); revalidatePath(`/quotes/${quoteId}`); revalidatePath("/jobs"); revalidatePath("/dashboard");
-    redirect(`/jobs/${jobId}`);
+    // Land on Edit, not the read-only detail page: converting never carries over a job/scheduled date,
+    // so the very next thing Jeff needs to do is set one.
+    redirect(`/jobs/${jobId}/edit`);
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
     return { message: error instanceof Error ? error.message : "The quote could not be converted." };

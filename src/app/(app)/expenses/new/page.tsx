@@ -8,6 +8,7 @@ import { getBankTransaction } from "@/lib/repositories/accounting-repository";
 import { listActiveEquipmentOptions } from "@/lib/repositories/equipment-repository";
 import { listExpenseCategories, listRefundableExpenseOptions } from "@/lib/repositories/expense-repository";
 import { listJobOptions } from "@/lib/repositories/job-repository";
+import { isExpenseAiConfigured } from "@/lib/services/expense-ai";
 import { createClient } from "@/lib/supabase/server";
 import { ExpenseForm } from "../expense-form";
 export const metadata: Metadata = { title: "Add expense" };
@@ -45,6 +46,6 @@ export default async function NewExpensePage({ searchParams }: { searchParams: P
       deductiblePercent: source?.deductible_percent ?? 100,
       financialClassification: source?.financial_classification ?? "operating",
       laborClass: source?.labor_class ?? undefined,
-    }} categories={categories} equipment={equipment} jobs={jobs} refundOptions={refundOptions} />
+    }} aiConfigured={isExpenseAiConfigured()} bankContext={bankRecord ? { description: bankRecord.description, amount: bankRecord.amount, date: bankRecord.transaction_date } : undefined} categories={categories} equipment={equipment} jobs={jobs} refundOptions={refundOptions} />
   </div>;
 }

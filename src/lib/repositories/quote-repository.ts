@@ -12,11 +12,12 @@ function dataOrThrow<T>(data: T | null, error: { message: string } | null, label
   return data;
 }
 
-export async function listQuotes(client: Client, businessId: number, filters: { search?: string; status?: string; view?: string; includeArchived?: boolean }) {
+export async function listQuotes(client: Client, businessId: number, filters: { customerId?: number; search?: string; status?: string; view?: string; includeArchived?: boolean }) {
   let query = client.from("quotes")
     .select("*, customers!inner(company_name, customer_type, email, first_name, last_name, phone)")
     .eq("business_id", businessId).order("quote_date", { ascending: false }).order("id", { ascending: false }).limit(500);
   if (!filters.includeArchived) query = query.is("archived_at", null);
+  if (filters.customerId) query = query.eq("customer_id", filters.customerId);
   const result = await query;
   return dataOrThrow(result.data as QuoteWithCustomer[] | null, result.error, "Unable to load quotes").filter((quote) => {
     if (filters.status && quote.status !== filters.status) return false;
@@ -66,6 +67,22 @@ export async function updateQuote(client: Client, businessId: number, quoteId: n
   const result = await client.from("quotes").update(values).eq("business_id", businessId).eq("id", quoteId).select("id").maybeSingle();
   if (result.error) throw new Error(`Unable to update quote: ${result.error.message}`);
   return result.data;
+}
+
+export type CustomerQuoteSummary = Pick<
+  Database["public"]["Tables"]["quotes"]["Row"],
+  "id" | "quote_number" | "status" | "quote_date" | "quoted_price" | "pro_bono" | "job_id" |
+  "service_address" | "municipality" | "property_location" | "location_description" |
+  "referral_source" | "customer_scope" | "hazard_notes" | "pa811_required" | "acceptance_notes"
+>;
+
+export async function listQuotesForCustomer(client: Client, businessId: number, customerId: number) {
+  const result = await client.from("quotes")
+    .select("id, quote_number, status, quote_date, quoted_price, pro_bono, job_id, service_address, municipality, property_location, location_description, referral_source, customer_scope, hazard_notes, pa811_required, acceptance_notes")
+    .eq("business_id", businessId).eq("customer_id", customerId)
+    .order("quote_date", { ascending: false }).order("id", { ascending: false }).limit(50);
+  if (result.error) throw new Error(`Unable to load quotes: ${result.error.message}`);
+  return (result.data ?? []) as CustomerQuoteSummary[];
 }
 
 export async function convertQuote(client: Client, quoteId: number) {
