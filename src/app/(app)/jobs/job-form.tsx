@@ -90,7 +90,7 @@ export function JobForm({
           <div>
             <label className={labelClass} htmlFor="jobDate">Job date <span className="font-normal text-muted">(completed/imported jobs only)</span></label>
             <input className={inputClass} defaultValue={job?.job_date ?? defaultJobDate ?? ""} id="jobDate" name="jobDate" type="date" />
-            <p className="mt-1 text-xs text-muted">Leave blank for new work — Scheduled date above is what the rest of the app shows. Only set this for a job that's already done or came from imported records.</p>
+            <p className="mt-1 text-xs text-muted">Leave blank for new work — Scheduled date above is what the rest of the app shows. Only set this for a job that&apos;s already done or came from imported records.</p>
             <Errors errors={state.errors?.jobDate} />
           </div>
         </div>
