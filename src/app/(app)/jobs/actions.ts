@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireBusinessContext } from "@/lib/auth";
 import { isSupportedJobStatus } from "@/lib/domain/jobs";
 import { createJob, getJobForEdit, updateJob } from "@/lib/repositories/job-repository";
+import { convertQuote, getQuoteForEdit } from "@/lib/repositories/quote-repository";
 import { createClient } from "@/lib/supabase/server";
 import { jobFormSchema, jobValuesFromFormData } from "@/lib/validation/operations";
 
@@ -28,14 +29,29 @@ export async function saveJob(
   const existing = jobId === null ? null : await getJobForEdit(client, business.id, jobId);
   if (jobId !== null && !existing) return { message: "That job no longer exists." };
 
+  const selectedQuote = jobId === null && validated.data.quoteId
+    ? await getQuoteForEdit(client, business.id, validated.data.quoteId)
+    : null;
+  if (validated.data.quoteId && !selectedQuote) {
+    return { errors: { quoteId: ["That quote is no longer available."] } };
+  }
+  if (selectedQuote && (selectedQuote.job_id !== null || !["draft", "sent", "accepted", "no_response"].includes(selectedQuote.status))) {
+    return { errors: { quoteId: ["Select an active quote that has not already become a job."] } };
+  }
+  if (selectedQuote && selectedQuote.customer_id !== validated.data.customerId) {
+    return { errors: { quoteId: ["The selected quote belongs to a different customer."] } };
+  }
+
   const statusIsUnchangedImportedValue = existing && validated.data.status === existing.status;
   if (!isSupportedJobStatus(validated.data.status) && !statusIsUnchangedImportedValue) {
     return { errors: { status: ["Select a supported job status."] } };
   }
 
+  const acceptedQuote = selectedQuote?.status === "accepted" ? selectedQuote : null;
   const values = {
     business_id: business.id,
     customer_id: validated.data.customerId,
+    quote_id: existing?.quote_id ?? acceptedQuote?.id ?? null,
     status: validated.data.status,
     job_date: validated.data.jobDate ?? null,
     scheduled_date: validated.data.scheduledDate ?? null,
@@ -64,8 +80,17 @@ export async function saveJob(
 
   try {
     if (jobId === null) {
-      const created = await createJob(client, values);
+      const created = acceptedQuote
+        ? { id: await convertQuote(client, acceptedQuote.id) }
+        : await createJob(client, values);
+      if (acceptedQuote) {
+        const updated = await updateJob(client, business.id, created.id, values);
+        if (!updated) return { message: "The quote became a job, but the edited details could not be saved." };
+        revalidatePath("/quotes");
+        revalidatePath(`/quotes/${acceptedQuote.id}`);
+      }
       revalidatePath("/jobs");
+      revalidatePath(`/customers/${validated.data.customerId}`);
       revalidatePath("/dashboard");
       redirect(`/jobs/${created.id}`);
     }

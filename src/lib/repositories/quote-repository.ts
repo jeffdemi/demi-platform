@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { quoteMatchesSearch, type QuoteWithCustomer } from "@/lib/domain/quotes";
+import type { JobQuotePrefill } from "@/lib/job-quote-prefill";
 import type { Database } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
@@ -83,6 +84,20 @@ export async function listQuotesForCustomer(client: Client, businessId: number, 
     .order("quote_date", { ascending: false }).order("id", { ascending: false }).limit(50);
   if (result.error) throw new Error(`Unable to load quotes: ${result.error.message}`);
   return (result.data ?? []) as CustomerQuoteSummary[];
+}
+
+export async function listJobQuotePrefills(client: Client, businessId: number) {
+  const result = await client.from("quotes")
+    .select("id, customer_id, quote_number, status, service_address, municipality, property_location, location_description, referral_source, customer_scope, hazard_notes, quoted_price, pro_bono, pa811_required, acceptance_notes, internal_notes")
+    .eq("business_id", businessId)
+    .in("status", ["draft", "sent", "accepted", "no_response"])
+    .is("job_id", null)
+    .is("archived_at", null)
+    .order("quote_date", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(200);
+  if (result.error) throw new Error(`Unable to load available quotes: ${result.error.message}`);
+  return (result.data ?? []) as JobQuotePrefill[];
 }
 
 export async function convertQuote(client: Client, quoteId: number) {

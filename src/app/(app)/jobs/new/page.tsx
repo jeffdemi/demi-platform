@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { requireBusinessContext } from "@/lib/auth";
 import { listActiveCustomerOptions } from "@/lib/repositories/customer-repository";
-import { getQuoteForEdit, listQuotesForCustomer } from "@/lib/repositories/quote-repository";
+import { listJobQuotePrefills } from "@/lib/repositories/quote-repository";
 import { createClient } from "@/lib/supabase/server";
-import { JobForm, type JobFromQuote } from "../job-form";
+import { JobForm } from "../job-form";
 
 export const metadata: Metadata = { title: "Add job" };
 
@@ -15,43 +15,29 @@ export default async function NewJobPage({ searchParams }: { searchParams: Promi
   const client = await createClient();
   const params = await searchParams;
 
-  const requestedQuoteId = Number(params.quoteId);
-  const quoteRow = Number.isInteger(requestedQuoteId) ? await getQuoteForEdit(client, business.id, requestedQuoteId) : null;
-
-  const requestedCustomerId = Number(params.customerId);
-  const defaultCustomerId = quoteRow?.customer_id
-    ?? (Number.isInteger(requestedCustomerId) ? requestedCustomerId : undefined);
-
-  const [customers, quotesForCustomer] = await Promise.all([
+  const [customers, quotePrefills] = await Promise.all([
     listActiveCustomerOptions(client, business.id),
-    defaultCustomerId ? listQuotesForCustomer(client, business.id, defaultCustomerId) : Promise.resolve([]),
+    listJobQuotePrefills(client, business.id),
   ]);
 
-  // Only quotes that haven't already become a job and aren't dead (declined/expired) are worth offering.
-  const openQuotes = quotesForCustomer.filter((quote) => !quote.job_id && !["declined", "expired"].includes(quote.status));
-  const quoteOptions = openQuotes.map((quote) => ({
-    id: quote.id,
-    label: `${quote.quote_number} — ${quote.customer_scope || quote.service_address || "Quote"}`,
-  }));
+  const activeCustomerIds = new Set(customers.map((customer) => customer.id));
+  const quoteOptions = quotePrefills.filter((quote) => activeCustomerIds.has(quote.customer_id));
 
-  const fromQuote: JobFromQuote | undefined = quoteRow ? {
-    id: quoteRow.id,
-    quote_number: quoteRow.quote_number,
-    service_address: quoteRow.service_address,
-    municipality: quoteRow.municipality,
-    property_location: quoteRow.property_location,
-    location_description: quoteRow.location_description,
-    referral_source: quoteRow.referral_source,
-    customer_scope: quoteRow.customer_scope,
-    hazard_notes: quoteRow.hazard_notes,
-    quoted_price: quoteRow.quoted_price,
-    pro_bono: quoteRow.pro_bono,
-    pa811_required: quoteRow.pa811_required,
-    acceptance_notes: quoteRow.acceptance_notes,
-  } : undefined;
+  const requestedQuoteId = Number(params.quoteId);
+  const defaultQuote = Number.isInteger(requestedQuoteId)
+    ? quoteOptions.find((quote) => quote.id === requestedQuoteId)
+    : undefined;
+  const requestedCustomerId = Number(params.customerId);
+  const defaultCustomerId = defaultQuote?.customer_id
+    ?? (Number.isInteger(requestedCustomerId) && activeCustomerIds.has(requestedCustomerId) ? requestedCustomerId : undefined);
 
   return <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
     <PageHeader description="Record work scope, scheduling, pricing, and completion details." title="Add job" />
-    <JobForm customers={customers} defaultCustomerId={defaultCustomerId} fromQuote={fromQuote} quoteOptions={quoteOptions} />
+    <JobForm
+      customers={customers}
+      defaultCustomerId={defaultCustomerId}
+      defaultQuoteId={defaultQuote?.id}
+      quoteOptions={quoteOptions}
+    />
   </div>;
 }
