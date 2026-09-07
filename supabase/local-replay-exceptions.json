@@ -1,0 +1,37 @@
+{
+  "20260814215205_correct_demi_identity_and_seed.sql": {
+    "sha256": "005c0583ac3a370266f00c3b9231f21fa0a3dd6a7034349a5c0165e5e8404a60",
+    "keepCharacters": 0,
+    "reason": "Production tenant-specific data block; no matching tenant exists on empty replay."
+  },
+  "20260814215900_bulk_business_line_classification.sql": {
+    "sha256": "3ae90e6957ce9a8e73557856518c8240eef6bb6535cb8705c6d2bbc05a26940c",
+    "keepCharacters": 2954,
+    "reason": "Production tenant-specific data block; no matching tenant exists on empty replay."
+  },
+  "20260815205544_bookkeeping_data_cleanup.sql": {
+    "sha256": "4bfdfd7fafba68a41cda94cdc7bafb15fe75b3c7a0d060ec9050bb020a40e09f",
+    "keepCharacters": 0,
+    "reason": "Data-only correction requires specific production rows."
+  },
+  "20260815223023_correct_july_31_payment.sql": {
+    "sha256": "ec3b966ba0edfc6c6bb676ee154ad9468ba60f42fac06bb31be996170ac80524",
+    "keepCharacters": 0,
+    "reason": "Data-only correction requires specific production rows."
+  },
+  "20260815234608_monthly_bookkeeping_integrity_cleanup.sql": {
+    "sha256": "4b2d7aaf0805d39eafa4bd0e5177c29f4cd1f4347ae5eb613b13dfaba97dff69",
+    "keepCharacters": 4710,
+    "reason": "Requires specific production bookkeeping rows; preserve schema before the final data-only DO block."
+  },
+  "20260816002237_reconcile_april_venmo_card_transfer.sql": {
+    "sha256": "59426ebb1bb1a611f9a69500f1e8e9a186960d46d201c862aa8d9d8f9b968ac7",
+    "keepCharacters": 0,
+    "reason": "Data-only correction requires specific production rows."
+  },
+  "20260816011043_reconcile_may_venmo_bofa_crypto_funding.sql": {
+    "sha256": "b094b9757a72fa08d632fb38a4a9a4650f980233a708811587477ef59bf18118",
+    "keepCharacters": 0,
+    "reason": "Data-only correction requires specific production rows."
+  }
+}

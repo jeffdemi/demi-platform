@@ -1523,6 +1523,7 @@ export type Database = {
         Args: { target_business_id: number; adjustment_date: string; adjustment_description: string; target_debit_account_id: number; target_credit_account_id: number; adjustment_amount: number; adjustment_reason: string }
         Returns: number
       }
+      convert_quote_to_job_with_values: { Args: { target_business_id: number; target_quote_id: number; job_values: Json }; Returns: number }
       convert_quote_to_job: { Args: { target_quote_id: number }; Returns: number }
       create_invoice_record: {
         Args: {

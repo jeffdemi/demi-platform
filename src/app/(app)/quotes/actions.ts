@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireBusinessContext } from "@/lib/auth";
 import { dateInTimeZone } from "@/lib/domain/jobs";
 import { quoteHasFinalPrice, quoteStatusUpdate } from "@/lib/domain/quotes";
-import { convertQuote, createQuote, getQuoteForEdit, updateQuote } from "@/lib/repositories/quote-repository";
+import { createQuote, getQuoteForEdit, updateQuote } from "@/lib/repositories/quote-repository";
 import { createClient } from "@/lib/supabase/server";
 import { formValues, quoteFormSchema, quoteStatusSchema } from "@/lib/validation/business-records";
 
@@ -73,11 +73,12 @@ export async function convertQuoteToJob(quoteId: number, _state: QuoteFormState)
   const context = await requireBusinessContext();
   if (context.role === "intern") return { message: "Interns have read-only access." };
   try {
-    const jobId = await convertQuote(await createClient(), quoteId);
-    revalidatePath("/quotes"); revalidatePath(`/quotes/${quoteId}`); revalidatePath("/jobs"); revalidatePath("/dashboard");
-    // Land on Edit, not the read-only detail page: converting never carries over a job/scheduled date,
-    // so the very next thing Jeff needs to do is set one.
-    redirect(`/jobs/${jobId}/edit`);
+    const quote = await getQuoteForEdit(await createClient(), context.business.id, quoteId);
+    if (!quote) return { message: "That quote no longer exists." };
+    if (quote.job_id !== null || quote.status === "converted") return { message: "This quote has already been converted." };
+    if (quote.status !== "accepted") return { message: "Only accepted quotes may be converted to jobs." };
+    // Collect final values before any mutation; saving runs one atomic RPC.
+    redirect(`/jobs/new?quoteId=${quoteId}`);
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
     return { message: error instanceof Error ? error.message : "The quote could not be converted." };

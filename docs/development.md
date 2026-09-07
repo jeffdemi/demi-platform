@@ -27,26 +27,65 @@ contents in logs.
 
 ### Local Supabase — preferred for schema work
 
-The local stack requires a Docker-compatible container runtime:
+The local stack needs an ARM64 Docker-compatible runtime on Apple Silicon and
+Node from `.nvmrc`. Scripts use the pinned npm Supabase CLI 2.117.0 rather than a
+possibly stale system binary. No production keys or Supabase login are needed.
 
 ```bash
-npx supabase start
-npx supabase db reset --no-seed
+npm run db:prepare   # inspect the isolated schema projection, no database access
+npm run db:start     # starts only the dedicated local project
+npm run db:reset     # destroys/replays that local database, no seed
+npm run db:test      # pgTAP assertions as authenticated tenant users
+npm run db:history   # local applied versions only
+npm run db:stop      # stop local containers; retain local volumes
 ```
 
-The reset command destroys only the selected local database and reapplies every
-migration. Never run `db reset --linked`, and never use production as a scratch
-database. `supabase/config.toml` currently names `supabase/seed.sql`, but that
-file is absent and the repository does not ship production business data. Use
-`--no-seed`; onboarding creates the first owner workspace.
+These commands reject additional arguments and use `.supabase-local` with project
+ID `demi-platform-reliability-local`; reset/tests explicitly pass `--local`.
+Never link or deploy that generated directory. Do not run multiple local Supabase
+stacks on the same default ports. Stop the existing local stack before starting
+this one. `db:stop` retains local data; `db:reset` discards it deliberately.
 
-Use the local API URL and keys printed by `supabase start` in `.env.local`.
+**Raw migration replay is currently not empty-database safe.** Seven historical
+production data corrections require specific financial records. The local helper
+uses checksum-reviewed data-only exceptions while retaining schema changes.
+Read [Migration history](migration-history.md) for the inventory, exact limitation
+and reconciliation procedure. Never run a blind linked push or `db reset --linked`.
 
-### Hosted branch or staging — acceptable alternative
+Tests in `supabase/tests` create synthetic users, two businesses and representative
+records inside transactions, switch to the `authenticated` role with user claims,
+and roll everything back. No real data or secret keys are fixtures. `db:test`
+does not prove Storage policies or complete accounting behavior. For interactive
+local testing, use the local API URL/keys from startup and create disposable users
+through local Auth/onboarding; use a separate local app environment, never copy
+production credentials. There is deliberately no persistent production-data seed.
 
-When local containers are unavailable, use a separate Supabase branch or staging
-project. Apply migrations there, create test users, exercise RLS as an
-authenticated caller, and discard the environment when finished.
+### Hosted branch or staging — optional, separately verified
+
+Use an isolated Supabase branch/project with separate credentials and Auth URLs,
+no production outbound integrations, and a Vercel preview scoped only to that
+project. Prefer a sanitized representative restore when rehearsing an existing
+production upgrade. New empty staging projects face the historical replay issue
+above; do not silently mark those migrations applied.
+
+The safe npm helpers intentionally cannot target hosted databases. For an approved
+disposable hosted test target, verify its project ref and host independently,
+review `supabase test db --help`, then use `--db-url` with credentials supplied from
+a protected operator environment. Never pass production connection details or
+paste connection strings into logs/shell history. The SQL tests require a privileged
+fixture setup connection, but all permission assertions run as authenticated users.
+Run each file with pgTAP through the CLI, inspect failures, and discard the test
+project after verification. No staging project is provisioned by this repository.
+
+### Local tooling diagnosis (2026-09-07)
+
+This task found ARM64 host architecture with Intel-only `/usr/local/bin/supabase`
+and `/usr/local/bin/docker`. The pinned npm CLI works; Docker invocation fails
+with `EBADARCH`. Docker Desktop was absent from `/Applications`. No system binary
+was replaced. Install/start an ARM64 Docker Desktop or equivalent approved local
+runtime, verify `file`/`docker version` and a reachable local daemon, then rerun
+`db:start`, `db:reset`, and `db:test`. Installing a CLI alone does not supply the
+Docker engine. Database execution remains unverified until those commands pass.
 
 ### Production — diagnostics and approved operations only
 
@@ -122,24 +161,12 @@ applied to any shared environment.
 
 ### Existing production migration-history caveat
 
-As of 2026-08-16, the 36 local migration names all exist in production, but
-several production history version timestamps differ from their local filenames.
-Earlier releases were applied through the Supabase management API, which recorded
-the migration name under the time it was applied. The Supabase CLI compares
-version timestamps, not SQL contents or migration names.
-
-Consequences:
-
-- do not run a linked `supabase db push` without inspecting migration history;
-- use `npx supabase migration list` and `npx supabase db push --dry-run` first;
-- rehearse any history reconciliation on a branch/staging project;
-- do not use `migration repair` casually—repair changes history state, not the
-  database schema;
-- obtain explicit owner approval before any production migration, push, or
-  deployment.
-
-The safe long-term fix is a reviewed, one-time alignment of local filenames and
-remote migration history, followed by CLI-based versioned releases.
+The repository has 43 historical migrations plus the new hardening RPC migration.
+Exact production version mappings are **Needs confirmation**. Old notes report
+management-API timestamp differences but contain no authoritative remote version
+export. See [Migration history](migration-history.md) for every local version,
+read-only inspection SQL, evidence requirements, and the approval-gated repair
+procedure. Keep applied files immutable; do not infer safety from a dry run alone.
 
 ## Financial change checklist
 
@@ -197,9 +224,25 @@ For a schema release also verify:
 7. Deploy only after explicit approval. Record the migration and code commit in
    the release handoff.
 
-There is no checked-in CI workflow or Vercel project link. GitHub and Vercel may
-still be configured externally, so verify them rather than assuming a push will
-deploy.
+`.github/workflows/ci.yml` runs on pull requests and pushes to `main`. The quality
+job runs `npm ci`, tests, lint, typecheck, build and the production dependency audit.
+The database job prepares/replays the isolated schema and runs pgTAP; any failure
+fails that job. Both use `.nvmrc` and npm lockfile caching, with read-only GitHub
+permissions. CI performs no deployment and uses no production secrets.
+
+The build requires `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and optionally `NEXT_PUBLIC_SITE_URL`.
+CI sets localhost URL values and a non-secret placeholder publishable key. No
+Supabase service/secret key, OpenAI key or bank encryption key is needed for the
+normal gate. Google Fonts and npm downloads require outbound network access.
+
+Owner setup in GitHub: protect `main` with required pull requests/review, require
+both `Required quality gate` and `Required database gate` status checks from
+Platform CI, require branches to be current, and block force pushes/deletion.
+Confirm the exact check names after the first run and limit bypass permissions.
+No branch protection was changed by this task. Verify Vercel's external deployment
+policy separately, especially schema-before-app ordering and preview credentials.
+Use [Release checklist](release-checklist.md) and [Backup/recovery](backup-recovery.md).
 
 ## Common pitfalls
 

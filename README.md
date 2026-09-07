@@ -33,6 +33,8 @@ The repository documentation is the handoff contract:
 - [Quote AI workbench](docs/quote-ai-workbench.md) — private photo workflow,
   assistant behavior, and operator approval
 - [Legacy migration](docs/legacy-migration.md) — repeatable SQLite import
+- [Release smoke checklist](docs/release-checklist.md) — deployment verification
+- [Backup and recovery](docs/backup-recovery.md) — external setup and restore drills
 - [Changelog](CHANGELOG.md) — feature history
 
 Before changing Next.js code, read the relevant guide under
@@ -184,11 +186,12 @@ them.
 
 ## Database and migrations
 
-Schema is versioned in `supabase/migrations`. As of 2026-08-16, all 36 migration
-names in this repository are present in production. Some production migration
-history timestamps differ from the local filenames because earlier changes were
-applied through the Supabase management API. Since the CLI compares migration
-versions, do not run a linked push blindly.
+Schema is versioned in `supabase/migrations`: 43 historical files plus the new
+reliability migration as of 2026-09-07. Exact production versions are **Needs
+confirmation**. Historical management-API timestamp differences and seven
+production-dependent data corrections require the explicit
+[migration review procedure](docs/migration-history.md). Never run a blind linked
+push. Use the isolated local schema/RLS workflow in [Development](docs/development.md).
 
 For every database change:
 
@@ -243,7 +246,7 @@ SMTP, password policy, and Vercel environment variables as described in
 - The Labor page records paid employee/contractor labor. For the current default
   single-member LLC treatment, owner draws are equity activity, not wages or
   expenses; owner market compensation is a management-reporting normalization.
-- The repository does not contain deployment automation or a checked-in Vercel
+- The repository contains quality/database CI but no deployment automation or checked-in Vercel
   project link. Confirm the target project and environment outside Git before
   deploying.
 

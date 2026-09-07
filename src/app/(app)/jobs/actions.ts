@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireBusinessContext } from "@/lib/auth";
 import { isSupportedJobStatus } from "@/lib/domain/jobs";
-import { createJob, getJobForEdit, updateJob } from "@/lib/repositories/job-repository";
+import { getJobForEdit, updateJob } from "@/lib/repositories/job-repository";
+import { createJobFromForm } from "@/lib/services/jobs";
 import { createClient } from "@/lib/supabase/server";
 import { jobFormSchema, jobValuesFromFormData } from "@/lib/validation/operations";
 
@@ -18,6 +19,9 @@ export async function saveJob(
   _: JobFormState,
   formData: FormData,
 ): Promise<JobFormState> {
+  const rawQuoteId = formData.get("sourceQuoteId");
+  const quoteId = rawQuoteId ? Number(rawQuoteId) : null;
+  if (quoteId !== null && (!Number.isSafeInteger(quoteId) || quoteId <= 0)) return { message: "Invalid quote." };
   const validated = jobFormSchema.safeParse(jobValuesFromFormData(formData));
   if (!validated.success) return { errors: validated.error.flatten().fieldErrors };
 
@@ -64,7 +68,9 @@ export async function saveJob(
 
   try {
     if (jobId === null) {
-      const created = await createJob(client, values);
+      const created = await createJobFromForm(client, values, quoteId);
+      revalidatePath("/quotes");
+      if (quoteId) revalidatePath(`/quotes/${quoteId}`);
       revalidatePath("/jobs");
       revalidatePath("/dashboard");
       redirect(`/jobs/${created.id}`);

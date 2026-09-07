@@ -72,6 +72,11 @@ service role. The browser first receives a server-generated preview. Confirmatio
 calls one PostgreSQL function that matches or creates customers, skips job
 fingerprints already present, creates jobs, and writes an audit row atomically.
 
+Accepted quote conversion writes final edited job values and the bidirectional
+quote/job link in one caller-authorized RPC transaction. The quote row lock and
+existing unique index serialize/reject duplicate conversions; failures roll back
+the entire operation. Non-accepted quote prefills retain independent job creation.
+
 Quote conversion, invoice creation with job-state synchronization, and
 maintenance hour-meter updates are also PostgreSQL transactions. Their functions
 run as the caller and remain subject to RLS; none bypass tenant authorization.

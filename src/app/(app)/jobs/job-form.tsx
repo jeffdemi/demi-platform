@@ -74,10 +74,11 @@ export function JobForm({
       ) : null}
       {fromQuote ? (
         <p className="rounded-lg border border-brand-border bg-brand-soft px-4 py-3 text-sm font-medium text-brand-strong">
-          Prefilled from quote {fromQuote.quote_number}. Fields below are editable — this does not mark the quote converted; use &quot;Convert to job&quot; on the quote page for that.
+          Prefilled from quote {fromQuote.quote_number}. Fields below are editable. Saving converts an accepted quote and retains these values. Other quote states only prefill a new job.
         </p>
       ) : null}
       <form action={action} className="space-y-8">
+      {!job && fromQuote ? <input type="hidden" name="sourceQuoteId" value={fromQuote.id} /> : null}
       <section>
         <h2 className="border-b border-line pb-3 text-lg font-bold">Schedule and customer</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
