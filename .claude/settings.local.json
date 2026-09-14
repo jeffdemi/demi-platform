@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npx vercel *)",
+      "Bash(nvm --version)",
+      "Bash(npx vitest *)",
+      "Bash(awk 'NR==445,NR==520{print NR\": \"$0}' src/types/database.ts)",
+      "Bash(docker info *)",
+      "Bash(git push *)",
+      "Read(//Users/jeffdemi/**)",
+      "Read(//Users/jeffdemi/.claude/**)",
+      "Bash(env)",
+      "Bash(python3 *)",
+      "Bash(npm -g list @anthropic-ai/claude-code)",
+      "Read(//usr/local/Caskroom/claude-code/**)",
+      "Bash(rm ~/.local/bin/claude)",
+      "Bash(rm -rf ~/.local/share/claude/versions/2.1.20)",
+      "Bash(brew upgrade *)"
+    ]
+  }
+}

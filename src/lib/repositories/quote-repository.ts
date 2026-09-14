@@ -100,8 +100,11 @@ export async function listJobQuotePrefills(client: Client, businessId: number) {
   return (result.data ?? []) as JobQuotePrefill[];
 }
 
-export async function convertQuote(client: Client, quoteId: number) {
-  const result = await client.rpc("convert_quote_to_job", { target_quote_id: quoteId });
+export async function convertQuote(client: Client, businessId: number, quoteId: number,
+  values: Partial<Omit<Database["public"]["Tables"]["jobs"]["Insert"], "business_id">>) {
+  const result = await client.rpc("convert_quote_to_job_with_values", {
+    target_business_id: businessId, target_quote_id: quoteId, job_values: values,
+  });
   if (result.error) throw new Error(result.error.message);
   return result.data;
 }

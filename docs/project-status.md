@@ -1,31 +1,52 @@
 # Current Project Status
 
-Last reviewed: **2026-08-20**
+Last reviewed: **2026-09-07**
 
 This is the dated development and bookkeeping handoff. Update it when production
 state, unresolved financial facts, or release procedures materially change.
 
-## Production baseline
+## Repository and release baseline
 
-- The application is in active use for Demi Solutions LLC.
-- The SimpleFIN bank-activity release is deployed from `main`; use Git history
-  and the production deployment record for the exact current commit.
-- Production PostgreSQL is healthy and runs major version 17.
-- 41 migration names now exist in `supabase/migrations`. The most recent three
-  (`20260818120000_intern_role.sql`, `20260818130000_expense_match_tolerance_settings.sql`,
-  `20260818140000_fuzzy_expense_match_corrections.sql`) still need explicit
-  confirmation that they were applied to production; all others are
-  represented there.
-- Several remote migration version timestamps differ from local filenames due
-  to earlier management-API application. See [Development](development.md)
-  before using the linked Supabase CLI.
-- The GitHub repository is connected to the Vercel `stump-grinding` project;
-  production deploys from `main`. The local `.vercel` link and production
-  secrets remain intentionally untracked.
-- Production migrations, Git pushes, and deployments require explicit owner
-  approval.
+- Working branch: `workflow-improvements`; reviewed HEAD:
+  `649ced54df6869877449e47e5e645777bcb0d098`.
+- Local `main`: `6c41380b50216a92e8be7c5a9481834e41297fdc`.
+  Cached `origin/main`: `8db65e1a3a52d73ccc77afb79abd08480b5c03b0`.
+  These refs differ; current live remote main is **Needs confirmation**. No fetch,
+  merge, commit, push or deployment was performed. This document describes the
+  reviewed checkout, not an assumed production commit.
+- Main history includes multi-business switching/creation (#10), transaction
+  navigation/quick categorization and monthly reports (#12–14). Reviewed HEAD
+  also includes quote context/AI expense suggestions, UI/navigation work (#17)
+  and the navigation Server Component fix (#18). Their current production
+  deployment status is **Needs confirmation**.
+- Historical notes identify active production use, PostgreSQL 17, SimpleFIN and
+  Vercel project `stump-grinding` deploying from main. Current deployed SHA,
+  project linkage, database health and environment settings: **Needs confirmation**.
+- 44 local migrations: 43 historical plus
+  `20260907221107_platform_reliability_atomic_quote_conversion.sql`, newly added
+  in this worktree and not applied to production in this task. Exact production
+  history and schema application: **Needs confirmation** for every mapping.
+  See [Migration history](migration-history.md). Intern, fuzzy-match,
+  multi-business and category migrations have no verified application evidence.
+- Platform Reliability & Delivery is an uncommitted hardening change: two CI gates,
+  local schema projection, pgTAP isolation/conversion tests, transactional final
+  quote/job values, smoke checks and recovery guidance. Hosted CI execution and
+  required branch protection are **Needs confirmation**.
+- Application tests: **154 passing tests in 18 files** (144 baseline + 10 workflow
+  cases). Database SQL tests contain **124 assertions** (109 isolation/role, 15 conversion),
+  authored but not executed: ARM64 host has an
+  Intel-only Docker CLI and no Docker Desktop installation found. The pinned
+  npm Supabase CLI 2.117.0 works. See [Development](development.md).
+- Final application verification: tests, lint, typecheck and build passed;
+  `npm audit --omit=dev` reported zero vulnerabilities. Build also passed with CI
+  placeholder public configuration and empty server secrets. Local database test
+  connection was refused at `127.0.0.1:54322` because Docker could not start.
+- Dependency fix: PostCSS's transitive `nanoid` updated only from 3.3.16 to 3.3.18
+  in the lockfile for GHSA-2v37-7h3g-55p8. No forced or broad dependency upgrade.
+- Production migrations, history repairs, backup configuration, Git pushes and
+  deployments require a separately approved concrete owner plan.
 
-## Implemented and in use
+## Implemented in the reviewed checkout
 
 - Invite-only, role-based tenant access with RLS and private file storage,
   including a read-only intern role gated by an `is_business_writer()` RLS
@@ -100,9 +121,8 @@ closed-period lock. Tolerance percent (default 2%, 0-20) and day window
 (default 10, 0-60) are owner/admin-configurable on
 `/reports/settings`.
 
-Both new migrations (`20260818130000_expense_match_tolerance_settings.sql`
-and `20260818140000_fuzzy_expense_match_corrections.sql`) still need to be
-applied to production per the release checklist before this is usable there;
+Production application of `20260818130000_expense_match_tolerance_settings.sql`
+and `20260818140000_fuzzy_expense_match_corrections.sql` is **Needs confirmation**;
 this environment had no local Docker/Postgres available to rehearse the
 migration end to end, so re-verify the RPC's rejection paths (wrong business,
 already-matched, closed period, non-owner/admin) against a real database
@@ -110,7 +130,8 @@ before or immediately after applying.
 
 ### SimpleFIN bank sync
 
-The additive SimpleFIN Bridge integration is deployed to production. It adds
+Historical handoff notes report the additive SimpleFIN Bridge integration deployed.
+Current deployment and configuration are **Needs confirmation**. It adds
 owner/admin connection and mapping controls, encrypted Access URL storage, a
 user-driven safe preview, account-scoped provider-ID/fingerprint duplicate
 protection, and confirmed import of posted activity. The production encryption
@@ -156,17 +177,21 @@ with guessed opening balances.
   imported activity converge on one close checklist.
 - Preserve form values and actionable error text for every failed Server Action.
 
-### 5. Establish repeatable delivery infrastructure
+### 5. Complete reliability release validation
 
-- A `.devcontainer/devcontainer.json` now exists for Claude Code on the web;
-  it does not replace the release checklist or a CI pipeline.
-- Reconcile the Supabase migration-history timestamp mismatch in a tested,
-  reviewed release.
-- Add CI for test, lint, typecheck, build, and migration validation.
-- Document or check in the Vercel project/deployment policy without committing
-  secrets.
-- Add a staging or Supabase branch workflow so schema and RLS tests never require
-  production.
+- Install/start a compatible local container runtime and pass both database suites.
+- Require the two CI checks before merging; hosted runs are not yet verified.
+- Rehearse original migration history on a sanitized representative restore.
+  The local projection omits seven production-dependent data blocks and therefore
+  does not prove those corrections or a full historical upgrade.
+- Obtain the actual production history and approve a precise reconciliation map.
+- Verify backup coverage, key recovery access and an isolated restore drill.
+- After database and CI evidence, approve the additive RPC migration before app
+  promotion, then execute the [smoke checklist](release-checklist.md).
+
+Recommended next release: **Recovery & Migration Validation** to close these
+operational evidence gaps before expanding financial automation. Existing
+bookkeeping/tax uncertainties above remain unchanged.
 
 ## Known product boundaries
 

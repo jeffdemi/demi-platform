@@ -12,7 +12,14 @@
     "lint": "eslint",
     "migrate:legacy": "node scripts/migrate-legacy-sqlite.mjs",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:prepare": "node scripts/local-db.mjs prepare",
+    "db:start": "node scripts/local-db.mjs start",
+    "db:reset": "node scripts/local-db.mjs reset",
+    "db:test": "node scripts/local-db.mjs test",
+    "db:stop": "node scripts/local-db.mjs stop",
+    "db:history": "node scripts/local-db.mjs history",
+    "db:inventory": "node scripts/migration-inventory.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
