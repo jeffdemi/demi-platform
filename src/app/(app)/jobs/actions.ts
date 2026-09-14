@@ -19,9 +19,6 @@ export async function saveJob(
   _: JobFormState,
   formData: FormData,
 ): Promise<JobFormState> {
-  const rawQuoteId = formData.get("sourceQuoteId");
-  const quoteId = rawQuoteId ? Number(rawQuoteId) : null;
-  if (quoteId !== null && (!Number.isSafeInteger(quoteId) || quoteId <= 0)) return { message: "Invalid quote." };
   const validated = jobFormSchema.safeParse(jobValuesFromFormData(formData));
   if (!validated.success) return { errors: validated.error.flatten().fieldErrors };
 
@@ -37,9 +34,11 @@ export async function saveJob(
     return { errors: { status: ["Select a supported job status."] } };
   }
 
+  const quoteId = validated.data.quoteId ?? null;
   const values = {
     business_id: business.id,
     customer_id: validated.data.customerId,
+    quote_id: existing?.quote_id ?? null,
     status: validated.data.status,
     job_date: validated.data.jobDate ?? null,
     scheduled_date: validated.data.scheduledDate ?? null,
@@ -72,6 +71,7 @@ export async function saveJob(
       revalidatePath("/quotes");
       if (quoteId) revalidatePath(`/quotes/${quoteId}`);
       revalidatePath("/jobs");
+      revalidatePath(`/customers/${validated.data.customerId}`);
       revalidatePath("/dashboard");
       redirect(`/jobs/${created.id}`);
     }

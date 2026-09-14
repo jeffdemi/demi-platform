@@ -116,6 +116,7 @@ describe("job operations", () => {
   it("rejects malformed operational values", () => {
     const result = jobFormSchema.safeParse({
       customerId: "1",
+      quoteId: "-1",
       status: "scheduled",
       jobDate: "2026-02-31",
       scheduledDate: "not-a-date",
@@ -144,6 +145,7 @@ describe("job operations", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       const errors = result.error.flatten().fieldErrors;
+      expect(errors.quoteId).toBeDefined();
       expect(errors.jobDate).toBeDefined();
       expect(errors.scheduledDate).toBeDefined();
       expect(errors.scheduledStartTime).toBeDefined();

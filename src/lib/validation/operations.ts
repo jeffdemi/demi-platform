@@ -33,6 +33,12 @@ const optionalNumber = (label: string, integer = false) =>
       .optional(),
   );
 
+const optionalPositiveId = (label: string) =>
+  z.preprocess(
+    (value) => value === "" || value === null ? undefined : value,
+    z.coerce.number().int().positive(`Select ${label}.`).optional(),
+  );
+
 const optionalEmail = z.preprocess(
   (value) => typeof value === "string" ? value.trim().toLocaleLowerCase() || undefined : value,
   z.email("Enter a valid email address.").max(320).optional(),
@@ -58,6 +64,7 @@ export const customerFormSchema = z.object({
 
 export const jobFormSchema = z.object({
   customerId: z.coerce.number().int().positive("Select a customer."),
+  quoteId: optionalPositiveId("a quote"),
   status: z.string().trim().min(1, "Select a status."),
   jobDate: optionalDate("Job date"),
   scheduledDate: optionalDate("Scheduled date"),
@@ -100,6 +107,7 @@ export function valuesFromFormData(formData: FormData) {
 export function jobValuesFromFormData(formData: FormData) {
   return {
     customerId: formData.get("customerId"),
+    quoteId: formData.get("quoteId"),
     status: formData.get("status"),
     jobDate: formData.get("jobDate"),
     scheduledDate: formData.get("scheduledDate"),
