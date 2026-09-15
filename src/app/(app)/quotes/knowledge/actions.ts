@@ -36,6 +36,7 @@ export async function saveQuoteKnowledge(knowledgeId: number | null, _: QuoteKno
     redirect("/quotes/knowledge");
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
+    console.error("saveQuoteKnowledge failed", { knowledgeId, businessId: business.id, error });
     return { message: error instanceof Error ? error.message : "The entry could not be saved." };
   }
 }
@@ -50,6 +51,7 @@ export async function deleteQuoteKnowledgeEntry(knowledgeId: number, _state: Quo
     revalidatePath("/quotes/knowledge");
     return { message: "Entry deleted." };
   } catch (error) {
+    console.error("deleteQuoteKnowledgeEntry failed", { knowledgeId, businessId: business.id, error });
     return { message: error instanceof Error ? error.message : "The entry could not be deleted." };
   }
 }
