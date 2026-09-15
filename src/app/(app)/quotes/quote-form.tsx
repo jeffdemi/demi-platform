@@ -21,11 +21,15 @@ export function QuoteForm({ customers, quote, today, defaultCustomerId }: { cust
     </div></section>
     <section><h2 className="border-b border-line pb-3 text-lg font-bold">Location and scope</h2><div className="mt-5 grid gap-5 sm:grid-cols-2">
       <div className="sm:col-span-2"><Field errors={state.errors?.serviceAddress} label="Service address" name="serviceAddress"><input className={inputClass} defaultValue={quote?.service_address ?? ""} id="serviceAddress" name="serviceAddress" /></Field></div>
-      <Field errors={state.errors?.municipality} label="Municipality" name="municipality"><input className={inputClass} defaultValue={quote?.municipality ?? ""} id="municipality" name="municipality" /></Field>
       <Field errors={state.errors?.propertyLocation} label="Property location" name="propertyLocation"><select className={inputClass} defaultValue={quote?.property_location ?? ""} id="propertyLocation" name="propertyLocation"><option value="">Not set</option>{propertyLocationOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></Field>
       <div className="sm:col-span-2"><Field errors={state.errors?.locationDescription} label="Location description" name="locationDescription"><textarea className={textAreaClass} defaultValue={quote?.location_description ?? ""} id="locationDescription" name="locationDescription" /></Field></div>
       <div className="sm:col-span-2"><Field errors={state.errors?.customerScope} label="Customer-facing scope" name="customerScope"><textarea className={textAreaClass} defaultValue={quote?.customer_scope ?? ""} id="customerScope" name="customerScope" /></Field></div>
       <div className="sm:col-span-2"><Field errors={state.errors?.hazardNotes} label="Hazard notes" name="hazardNotes"><textarea className={textAreaClass} defaultValue={quote?.hazard_notes ?? ""} id="hazardNotes" name="hazardNotes" /></Field></div>
+      <div className="sm:col-span-2">
+        <Field errors={state.errors?.specialInstructions} label="Special instructions" name="specialInstructions"><textarea className={textAreaClass} defaultValue={quote?.special_instructions ?? ""} id="specialInstructions" name="specialInstructions" placeholder="Access notes, pricing quirks, anything that should inform the AI estimate." /></Field>
+        <p className="mt-1 text-xs text-muted">Unlike internal notes, this is included when the quote is sent to the AI estimator.</p>
+        <label className="mt-3 flex items-start gap-3 text-sm leading-5"><input className="mt-1 size-4 accent-brand" name="saveToKnowledgeBase" type="checkbox" value="yes" /><span>Save this to my knowledge base so future AI estimates take it into account.</span></label>
+      </div>
       <label className="flex min-h-11 items-center gap-3 text-sm font-semibold"><input className="size-5 accent-brand" defaultChecked={quote?.pa811_required ?? false} name="pa811Required" type="checkbox" />PA 811 required</label>
     </div></section>
     <section><h2 className="border-b border-line pb-3 text-lg font-bold">Pricing and response</h2><div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

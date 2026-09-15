@@ -7,8 +7,10 @@ import { StatusBadge } from "@/components/status-badge";
 import { RecordLifecycleControl } from "@/components/record-lifecycle-control";
 import { requireBusinessContext } from "@/lib/auth";
 import { customerDisplayName } from "@/lib/domain/customers";
+import { dateInTimeZone } from "@/lib/domain/jobs";
 import { customerQuoteMessage, optionLabel, quoteHasFinalPrice, quotePriceLabel, quoteStatusLabel } from "@/lib/domain/quotes";
 import { formatDate } from "@/lib/format";
+import { listActiveCustomerOptions } from "@/lib/repositories/customer-repository";
 import { getQuote } from "@/lib/repositories/quote-repository";
 import { getQuoteAiWorkbench, isQuoteAiConfigured } from "@/lib/services/quote-ai";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +18,8 @@ import { MessageEditor } from "../message-editor";
 import { QuoteAiWorkbench } from "../quote-ai-workbench";
 import { QuotePhotoManager } from "../quote-photo-manager";
 import { QuoteStatusActions } from "../status-actions";
+import { QuoteDraftStep1 } from "./quote-draft-step1";
+import { QuoteDraftStep2 } from "./quote-draft-step2";
 
 export const metadata: Metadata = { title: "Quote details" };
 
@@ -24,7 +28,7 @@ const Detail = ({ label, value }: { label: string; value: React.ReactNode }) => 
   <dd className="mt-1 whitespace-pre-wrap text-sm font-medium">{value || "Not recorded"}</dd>
 </div>;
 
-export default async function QuoteDetailPage({ params }: { params: Promise<{ quoteId: string }> }) {
+export default async function QuoteDetailPage({ params, searchParams }: { params: Promise<{ quoteId: string }>; searchParams: Promise<{ step?: string }> }) {
   const id = Number((await params).quoteId);
   if (!Number.isInteger(id)) notFound();
   const context = await requireBusinessContext();
@@ -36,6 +40,23 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ qu
   const converted = quote.job_id !== null;
   const draft = quote.status === "draft";
   const readOnly = context.role === "intern";
+
+  if (draft) {
+    const step = (await searchParams).step === "2" ? 2 : 1;
+    if (step === 2) {
+      return <QuoteDraftStep2 photoCount={workbench.photos.length} quote={quote} readOnly={readOnly} recommendation={workbench.recommendation} />;
+    }
+    const customers = await listActiveCustomerOptions(client, business.id, quote.customer_id);
+    return <QuoteDraftStep1
+      customers={customers}
+      messages={workbench.messages}
+      photos={workbench.photos}
+      quote={quote}
+      readOnly={readOnly}
+      recommendation={workbench.recommendation}
+      today={dateInTimeZone(business.timezone)}
+    />;
+  }
 
   return <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
     <PageHeader actions={<>
@@ -54,7 +75,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ qu
         <section className="rounded-lg border border-line bg-surface p-5 shadow-sm">
           <div className="flex justify-between gap-3"><h2 className="font-bold">Overview</h2><StatusBadge label={quoteStatusLabel(quote.status)} status={quote.status} /></div>
           <Link className="mt-5 flex items-center gap-2 font-semibold text-brand" href={`/customers/${quote.customer_id}`}><UserRound size={17} />{customerDisplayName(quote.customers)}</Link>
-          <dl className="mt-5 grid gap-4"><Detail label="Service address" value={quote.service_address} /><Detail label="Municipality" value={quote.municipality} /><Detail label="Property location" value={optionLabel(quote.property_location)} /><Detail label="Location details" value={quote.location_description} /></dl>
+          <dl className="mt-5 grid gap-4"><Detail label="Service address" value={quote.service_address} /><Detail label="Property location" value={optionLabel(quote.property_location)} /><Detail label="Location details" value={quote.location_description} /></dl>
         </section>
         <section className="rounded-lg border border-line bg-brand p-5 text-on-brand"><p className="text-sm text-on-brand-muted">Quoted price</p><p className="mt-1 text-3xl font-bold">{quotePriceLabel(quote)}</p>{quote.expiration_date && <p className="mt-4 text-sm text-on-brand-muted">Valid through {formatDate(quote.expiration_date)}</p>}</section>
         {converted && <Link className="block rounded-lg border border-brand-border bg-brand-soft p-4 font-semibold text-brand" href={`/jobs/${quote.job_id}`}>View converted job</Link>}

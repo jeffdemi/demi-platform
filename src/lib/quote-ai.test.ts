@@ -13,18 +13,18 @@ const quote = {
   id: 2, business_id: 1, customer_id: 8, job_id: null, legacy_id: null,
   quote_number: "Q-2026-0002", status: "draft", quote_date: "2026-08-08",
   expiration_date: null, sent_date: null, response_date: null, contact_method: "text",
-  referral_source: null, service_address: "123 Private Lane", municipality: "West Chester",
+  referral_source: null, service_address: "123 Private Lane",
   property_location: "back_yard", location_description: "behind the blue shed",
   hazard_notes: "Unmarked utility near fence", customer_scope: "Grind two maple stumps below grade",
-  internal_notes: "Never share this note", normal_price: 450, quoted_price: 400,
+  special_instructions: "Gate code is 4821", internal_notes: "Never share this note", normal_price: 450, quoted_price: 400,
   discount_reason: null, pro_bono: false, accepted_method: null, acceptance_notes: null,
   pa811_required: true, created_at: "2026-08-08T00:00:00Z", updated_at: "2026-08-08T00:00:00Z",
   customers: { customer_type: "individual", company_name: null, first_name: "Erin", last_name: "Private", phone: "610-555-0199", email: "erin@example.com" },
 } satisfies QuoteWithCustomer;
 
 const jobs: ComparableJob[] = [
-  { id: 10, status: "paid", completed_date: "2026-08-01", municipality: "West Chester", property_location: "back_yard", work_description: "Grind two maple stumps", amount_quoted: 425, amount_paid: 425, travel_minutes: 20, grinding_minutes: 70, cleanup_minutes: 20, machine_hours: 1.5, pro_bono: false, pa811_required: true },
-  { id: 11, status: "paid", completed_date: "2026-08-07", municipality: "Exton", property_location: "front_yard", work_description: "Single pine stump", amount_quoted: 250, amount_paid: 250, travel_minutes: 10, grinding_minutes: 35, cleanup_minutes: 10, machine_hours: 0.8, pro_bono: false, pa811_required: false },
+  { id: 10, status: "paid", completed_date: "2026-08-01", property_location: "back_yard", work_description: "Grind two maple stumps", amount_quoted: 425, amount_paid: 425, travel_minutes: 20, grinding_minutes: 70, cleanup_minutes: 20, machine_hours: 1.5, pro_bono: false, pa811_required: true },
+  { id: 11, status: "paid", completed_date: "2026-08-07", property_location: "front_yard", work_description: "Single pine stump", amount_quoted: 250, amount_paid: 250, travel_minutes: 10, grinding_minutes: 35, cleanup_minutes: 10, machine_hours: 0.8, pro_bono: false, pa811_required: false },
 ];
 
 const validRecommendation = {
@@ -50,7 +50,7 @@ describe("quote AI preparation", () => {
   });
 
   it("excludes customer identity, exact address, private notes, hazards, and raw comparable descriptions from AI context", () => {
-    const context = quoteAssistantContext(quote, rankComparableJobs(quote, jobs), 3);
+    const context = quoteAssistantContext(quote, rankComparableJobs(quote, jobs), 3, []);
     expect(context).toContain("Grind two maple stumps below grade");
     expect(context).toContain('"photoCount":3');
     ["Erin", "Private", "123 Private Lane", "erin@example.com", "610-555-0199", "Never share this note", "Unmarked utility", "Single pine stump", '"jobId"'].forEach((privateValue) => {
@@ -58,17 +58,35 @@ describe("quote AI preparation", () => {
     });
   });
 
+  it("includes special instructions, unlike internal notes and hazard notes", () => {
+    const context = quoteAssistantContext(quote, rankComparableJobs(quote, jobs), 0, []);
+    expect(context).toContain("Gate code is 4821");
+  });
+
+  it("passes knowledge base entries through to the AI context", () => {
+    const context = quoteAssistantContext(quote, rankComparableJobs(quote, jobs), 0, [
+      { title: "Steep driveways", body: "Add 15% for driveways over 10% grade.", tags: ["pricing"] },
+    ]);
+    expect(context).toContain("Steep driveways");
+    expect(context).toContain("Add 15% for driveways over 10% grade.");
+  });
+
   it("does not anchor the estimator to the internal pending-price sentinel", () => {
-    const context = quoteAssistantContext({ ...quote, quoted_price: 0 }, rankComparableJobs(quote, jobs), 0);
+    const context = quoteAssistantContext({ ...quote, quoted_price: 0 }, rankComparableJobs(quote, jobs), 0, []);
     expect(context).toContain('"currentQuotedPrice":null');
   });
 
   it("tells the estimator to ask questions and leave final control with the operator", () => {
-    const instructions = quoteAssistantInstructions();
+    const instructions = quoteAssistantInstructions(false);
     expect(instructions).toContain("Jeff must approve");
     expect(instructions).toContain("do not infer exact stump diameter");
     expect(instructions).toContain("recommendedPrice to null");
     expect(instructions).toContain("Never expose internal notes");
+  });
+
+  it("tells the estimator to apply the knowledge base when one is present", () => {
+    expect(quoteAssistantInstructions(false)).not.toContain("knowledgeBase array");
+    expect(quoteAssistantInstructions(true)).toContain("knowledgeBase array");
   });
 
   it("accepts structured recommendations and rejects reversed price ranges", () => {

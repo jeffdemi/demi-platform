@@ -126,7 +126,7 @@ export async function listJobOptions(client: Client, businessId: number, custome
 
 export async function listCompletedJobsForQuoteComparison(client: Client, businessId: number) {
   const result = await client.from("jobs")
-    .select("id, status, completed_date, municipality, property_location, work_description, amount_quoted, amount_paid, travel_minutes, grinding_minutes, cleanup_minutes, machine_hours, pro_bono, pa811_required")
+    .select("id, status, completed_date, property_location, work_description, amount_quoted, amount_paid, travel_minutes, grinding_minutes, cleanup_minutes, machine_hours, pro_bono, pa811_required")
     .eq("business_id", businessId)
     .in("status", ["completed", "invoiced", "paid"])
     .not("amount_quoted", "is", null)

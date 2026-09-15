@@ -39,12 +39,23 @@ export const quoteFormSchema = z.object({
   quoteDate: date("Quote date", true), expirationDate: date("Expiration date"),
   sentDate: date("Sent date"), responseDate: date("Response date"),
   contactMethod: optionalText(50), referralSource: optionalText(250), serviceAddress: optionalText(500),
-  municipality: optionalText(160), propertyLocation: optionalText(100), locationDescription: optionalText(),
-  hazardNotes: optionalText(), customerScope: optionalText(), internalNotes: optionalText(),
+  propertyLocation: optionalText(100), locationDescription: optionalText(),
+  hazardNotes: optionalText(), customerScope: optionalText(), specialInstructions: optionalText(2000), internalNotes: optionalText(),
   normalPrice: number("Normal price"), quotedPrice: number("Quoted price"), discountReason: optionalText(500),
   proBono: z.boolean(), acceptedMethod: optionalText(50), acceptanceNotes: optionalText(), pa811Required: z.boolean(),
 }).superRefine((value, context) => {
   if (value.status === "converted") context.addIssue({ code: "custom", path: ["status"], message: "Use Convert to Job to mark a quote converted." });
+});
+
+export const quoteFinalPriceSchema = z.object({
+  normalPrice: number("Normal price"), quotedPrice: number("Quoted price"),
+  proBono: z.boolean(), discountReason: optionalText(500),
+});
+
+export const quoteKnowledgeFormSchema = z.object({
+  title: requiredText("Title", 200),
+  body: requiredText("Body", 5000),
+  tags: optionalText(500),
 });
 
 export const quoteStatusSchema = z.object({

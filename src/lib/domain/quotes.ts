@@ -48,7 +48,6 @@ export function quoteMatchesSearch(quote: QuoteWithCustomer, search: string) {
     customerDisplayName(quote.customers),
     quote.customers.company_name,
     quote.service_address,
-    quote.municipality,
     quote.customer_scope,
   ].some((value) => value?.toLowerCase().includes(query));
 }

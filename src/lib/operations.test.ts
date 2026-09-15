@@ -40,7 +40,6 @@ const job = {
   estimated_duration_minutes: 90,
   completed_date: null,
   service_address: "10 Pine Lane",
-  municipality: "West Chester",
   property_location: "Rear yard",
   location_description: null,
   referral_source: null,
@@ -91,7 +90,7 @@ describe("customer operations", () => {
 });
 
 describe("job operations", () => {
-  it.each(["Jeff", "Demi", "Tree Care", "610-555", "Pine Lane", "West Chester", "maple stumps"])(
+  it.each(["Jeff", "Demi", "Tree Care", "610-555", "Pine Lane", "maple stumps"])(
     "searches job field %s",
     (search) => expect(jobMatchesSearch(job, search)).toBe(true),
   );
@@ -124,7 +123,6 @@ describe("job operations", () => {
       estimatedDurationMinutes: "1.5",
       completedDate: "",
       serviceAddress: "",
-      municipality: "",
       propertyLocation: "",
       locationDescription: "",
       referralSource: "",

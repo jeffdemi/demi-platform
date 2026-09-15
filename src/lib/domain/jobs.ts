@@ -55,7 +55,6 @@ export function jobMatchesSearch(job: JobWithCustomer, search: string) {
     job.customers.company_name,
     job.customers.phone,
     job.service_address,
-    job.municipality,
     job.work_description,
   ].some((value) => value?.toLocaleLowerCase().includes(query));
 }

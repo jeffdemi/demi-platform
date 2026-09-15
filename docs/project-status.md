@@ -205,8 +205,7 @@ bookkeeping/tax uncertainties above remain unchanged.
 - Receipt review is structured and rule-based; private receipts are not sent to
   an OCR/AI provider.
 - External SMS/email delivery, payment collection, signatures, customer portal,
-  PA 811 submission, municipality lookup, and travel-time services remain
-  deferred.
+  PA 811 submission, and travel-time services remain deferred.
 
 ## Definition of a clean handoff
 

@@ -771,7 +771,6 @@ export type Database = {
           legacy_id: number | null
           location_description: string | null
           machine_hours: number | null
-          municipality: string | null
           notes: string | null
           pa811_required: boolean
           paid_date: string | null
@@ -810,7 +809,6 @@ export type Database = {
           legacy_id?: number | null
           location_description?: string | null
           machine_hours?: number | null
-          municipality?: string | null
           notes?: string | null
           pa811_required?: boolean
           paid_date?: string | null
@@ -849,7 +847,6 @@ export type Database = {
           legacy_id?: number | null
           location_description?: string | null
           machine_hours?: number | null
-          municipality?: string | null
           notes?: string | null
           pa811_required?: boolean
           paid_date?: string | null
@@ -1310,6 +1307,47 @@ export type Database = {
           { foreignKeyName: "quote_ai_threads_business_quote_fkey"; columns: ["business_id", "quote_id"]; isOneToOne: true; referencedRelation: "quotes"; referencedColumns: ["business_id", "id"] },
         ]
       }
+      quote_knowledge: {
+        Row: {
+          body: string
+          business_id: number
+          created_at: string
+          created_by: string | null
+          id: number
+          source_quote_id: number | null
+          tags: string[]
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body: string
+          business_id: number
+          created_at?: string
+          created_by?: string | null
+          id?: never
+          source_quote_id?: number | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string
+          business_id?: number
+          created_at?: string
+          created_by?: string | null
+          id?: never
+          source_quote_id?: number | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "quote_knowledge_source_quote_id_fkey"; columns: ["source_quote_id"]; isOneToOne: false; referencedRelation: "quotes"; referencedColumns: ["id"] },
+        ]
+      }
       quote_photos: {
         Row: {
           business_id: number
@@ -1368,7 +1406,6 @@ export type Database = {
           job_id: number | null
           legacy_id: number | null
           location_description: string | null
-          municipality: string | null
           normal_price: number | null
           pa811_required: boolean
           pro_bono: boolean
@@ -1380,6 +1417,7 @@ export type Database = {
           response_date: string | null
           sent_date: string | null
           service_address: string | null
+          special_instructions: string | null
           status: string
           updated_at: string
         }
@@ -1402,7 +1440,6 @@ export type Database = {
           job_id?: number | null
           legacy_id?: number | null
           location_description?: string | null
-          municipality?: string | null
           normal_price?: number | null
           pa811_required?: boolean
           pro_bono?: boolean
@@ -1414,6 +1451,7 @@ export type Database = {
           response_date?: string | null
           sent_date?: string | null
           service_address?: string | null
+          special_instructions?: string | null
           status?: string
           updated_at?: string
         }
@@ -1436,7 +1474,6 @@ export type Database = {
           job_id?: number | null
           legacy_id?: number | null
           location_description?: string | null
-          municipality?: string | null
           normal_price?: number | null
           pa811_required?: boolean
           pro_bono?: boolean
@@ -1448,6 +1485,7 @@ export type Database = {
           response_date?: string | null
           sent_date?: string | null
           service_address?: string | null
+          special_instructions?: string | null
           status?: string
           updated_at?: string
         }
