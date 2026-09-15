@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireBusinessContext } from "@/lib/auth";
@@ -11,18 +12,31 @@ import { createQuote, getQuoteForEdit, updateQuote } from "@/lib/repositories/qu
 import { createClient } from "@/lib/supabase/server";
 import { formValues, quoteFinalPriceSchema, quoteFormSchema, quoteStatusSchema } from "@/lib/validation/business-records";
 
-export type QuoteFormState = { message?: string; errors?: Record<string, string[]> };
+export type QuoteFormState = { message?: string; errors?: Record<string, string[]>; values?: Record<string, string>; attemptId?: string };
 const names = ["customerId", "status", "quoteDate", "expirationDate", "sentDate", "responseDate", "contactMethod", "referralSource", "serviceAddress", "propertyLocation", "locationDescription", "hazardNotes", "customerScope", "specialInstructions", "internalNotes", "normalPrice", "quotedPrice", "discountReason", "acceptedMethod", "acceptanceNotes"];
+const echoedNames = [...names, "proBono", "pa811Required", "saveToKnowledgeBase"];
+
+// Echoed back to the client on failure so the form can restore exactly what the operator typed,
+// instead of silently reverting to the last-saved values (or nothing, for a brand-new quote).
+function submittedValues(formData: FormData) {
+  const values: Record<string, string> = {};
+  for (const name of echoedNames) {
+    const value = formData.get(name);
+    if (typeof value === "string") values[name] = value;
+  }
+  return values;
+}
 
 export async function saveQuote(quoteId: number | null, _: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
+  const restore = { values: submittedValues(formData), attemptId: randomUUID() };
   const parsed = quoteFormSchema.safeParse({ ...formValues(formData, names), proBono: formData.get("proBono") === "on", pa811Required: formData.get("pa811Required") === "on" });
-  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
-  if (!parsed.data.customerId || !parsed.data.quoteDate) return { message: "Customer and quote date are required." };
+  if (!parsed.success) return { ...restore, errors: parsed.error.flatten().fieldErrors };
+  if (!parsed.data.customerId || !parsed.data.quoteDate) return { ...restore, message: "Customer and quote date are required." };
   const context = await requireBusinessContext();
-  if (context.role === "intern") return { message: "Interns have read-only access." };
+  if (context.role === "intern") return { ...restore, message: "Interns have read-only access." };
   const { business } = context;
   const client = await createClient();
-  if (quoteId !== null && !(await getQuoteForEdit(client, business.id, quoteId))) return { message: "That quote no longer exists." };
+  if (quoteId !== null && !(await getQuoteForEdit(client, business.id, quoteId))) return { ...restore, message: "That quote no longer exists." };
   const data = parsed.data;
   const values = {
     business_id: business.id, customer_id: data.customerId as number, status: quoteId === null ? "draft" : data.status,
@@ -40,7 +54,7 @@ export async function saveQuote(quoteId: number | null, _: QuoteFormState, formD
   };
   try {
     const id = quoteId === null ? (await createQuote(client, values)).id : quoteId;
-    if (quoteId !== null && !(await updateQuote(client, business.id, quoteId, values))) return { message: "That quote no longer exists." };
+    if (quoteId !== null && !(await updateQuote(client, business.id, quoteId, values))) return { ...restore, message: "That quote no longer exists." };
     if (formData.get("saveToKnowledgeBase") === "yes" && data.specialInstructions) {
       await createQuoteKnowledge(client, {
         business_id: business.id, title: deriveKnowledgeTitle(data.specialInstructions),
@@ -51,23 +65,31 @@ export async function saveQuote(quoteId: number | null, _: QuoteFormState, formD
     redirect(`/quotes/${id}${values.status === "draft" ? "?step=1" : ""}`);
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
-    return { message: "The quote could not be saved. Check the values and try again." };
+    console.error("saveQuote failed", { quoteId, businessId: business.id, error });
+    return { ...restore, message: error instanceof Error ? error.message : "The quote could not be saved. Check the values and try again." };
   }
 }
 
 export async function setQuoteFinalPrice(quoteId: number, _state: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
+  const restore = {
+    values: {
+      normalPrice: String(formData.get("normalPrice") ?? ""), quotedPrice: String(formData.get("quotedPrice") ?? ""),
+      proBono: String(formData.get("proBono") ?? ""), discountReason: String(formData.get("discountReason") ?? ""),
+    },
+    attemptId: randomUUID(),
+  };
   const parsed = quoteFinalPriceSchema.safeParse({
     normalPrice: formData.get("normalPrice"), quotedPrice: formData.get("quotedPrice"),
     proBono: formData.get("proBono") === "on", discountReason: formData.get("discountReason"),
   });
-  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+  if (!parsed.success) return { ...restore, errors: parsed.error.flatten().fieldErrors };
   const context = await requireBusinessContext();
-  if (context.role === "intern") return { message: "Interns have read-only access." };
+  if (context.role === "intern") return { ...restore, message: "Interns have read-only access." };
   const { business } = context;
   const client = await createClient();
   const quote = await getQuoteForEdit(client, business.id, quoteId);
-  if (!quote) return { message: "That quote no longer exists." };
-  if (quote.status !== "draft") return { message: "Only a draft quote's price can be set here." };
+  if (!quote) return { ...restore, message: "That quote no longer exists." };
+  if (quote.status !== "draft") return { ...restore, message: "Only a draft quote's price can be set here." };
   try {
     await updateQuote(client, business.id, quoteId, {
       normal_price: parsed.data.normalPrice ?? null,
@@ -77,7 +99,10 @@ export async function setQuoteFinalPrice(quoteId: number, _state: QuoteFormState
     });
     revalidatePath(`/quotes/${quoteId}`); revalidatePath("/quotes"); revalidatePath("/dashboard");
     return { message: "Final price saved." };
-  } catch { return { message: "The price could not be saved." }; }
+  } catch (error) {
+    console.error("setQuoteFinalPrice failed", { quoteId, businessId: business.id, error });
+    return { ...restore, message: error instanceof Error ? error.message : "The price could not be saved." };
+  }
 }
 
 export async function markQuoteStatus(quoteId: number, _state: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
@@ -100,7 +125,10 @@ export async function markQuoteStatus(quoteId: number, _state: QuoteFormState, f
     await updateQuote(client, business.id, quoteId, values);
     revalidatePath(`/quotes/${quoteId}`); revalidatePath("/quotes"); revalidatePath("/dashboard");
     return { message: "Status updated." };
-  } catch { return { message: "The quote status could not be updated." }; }
+  } catch (error) {
+    console.error("markQuoteStatus failed", { quoteId, businessId: business.id, error });
+    return { message: error instanceof Error ? error.message : "The quote status could not be updated." };
+  }
 }
 
 export async function convertQuoteToJob(quoteId: number, _state: QuoteFormState): Promise<QuoteFormState> {
@@ -116,6 +144,7 @@ export async function convertQuoteToJob(quoteId: number, _state: QuoteFormState)
     redirect(`/jobs/new?quoteId=${quoteId}`);
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
+    console.error("convertQuoteToJob failed", { quoteId, error });
     return { message: error instanceof Error ? error.message : "The quote could not be converted." };
   }
 }
