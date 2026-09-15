@@ -53,7 +53,6 @@ export type ComparableJob = {
   id: number;
   status: string;
   completed_date: string | null;
-  municipality: string | null;
   property_location: string | null;
   work_description: string | null;
   amount_quoted: number | null;
@@ -76,13 +75,12 @@ function overlapScore(left: Set<string>, right: Set<string>) {
   return score;
 }
 
-export function rankComparableJobs(quote: Pick<QuoteWithCustomer, "customer_scope" | "municipality" | "property_location">, jobs: ComparableJob[], limit = 8) {
+export function rankComparableJobs(quote: Pick<QuoteWithCustomer, "customer_scope" | "property_location">, jobs: ComparableJob[], limit = 8) {
   const quoteWords = normalizedWords(quote.customer_scope);
   return jobs
     .filter((job) => job.amount_quoted !== null && !job.pro_bono)
     .map((job) => {
       let score = overlapScore(quoteWords, normalizedWords(job.work_description));
-      if (quote.municipality && job.municipality?.toLowerCase() === quote.municipality.toLowerCase()) score += 4;
       if (quote.property_location && job.property_location?.toLowerCase() === quote.property_location.toLowerCase()) score += 2;
       return { ...job, similarity_score: score };
     })
@@ -92,25 +90,31 @@ export function rankComparableJobs(quote: Pick<QuoteWithCustomer, "customer_scop
     .slice(0, limit);
 }
 
-export function quoteAssistantInstructions() {
+export function quoteAssistantInstructions(hasKnowledgeBase: boolean) {
   return `You are an estimating copilot for Jeff at Demi Stump Grinding. Help Jeff prepare a draft stump-grinding quote from the recorded quote, site photos, his follow-up answers, and comparable completed jobs.
 
 The quote is not delivered until Jeff explicitly marks it sent. Never claim that it has been sent, accepted, scheduled, or completed. Treat every price and scope as a recommendation that Jeff must approve.
 
 Photo limits: do not infer exact stump diameter, gate width, underground utilities, depth, or clearance when the image does not establish them. Ask concise follow-up questions when stump count, dimensions, access, slope, rocks, structures, utility risk, root work, cleanup, or grindings removal materially affect price or scope. Do not create false precision.
 
-Pricing: use comparable jobs as evidence, not a guarantee. Explain important assumptions. If the evidence is insufficient, set readiness to needs_information and recommendedPrice to null. For a pro bono quote, do not display an awkward zero-dollar price.
+Pricing: use comparable jobs as evidence, not a guarantee. Explain important assumptions. If the evidence is insufficient, set readiness to needs_information and recommendedPrice to null. For a pro bono quote, do not display an awkward zero-dollar price.${hasKnowledgeBase ? " The context includes a knowledgeBase array of Jeff's own standing pricing notes and rules of thumb; apply them the way Jeff would, and mention when one changed your price or scope." : ""}
 
 Customer-facing text must be friendly and direct. Never expose internal notes, private comparable-job details, or hazard notes in the customer message. Hazard information may appear only in internal riskFlags. Return only the requested structured result.`;
 }
 
-export function quoteAssistantContext(quote: QuoteWithCustomer, comparableJobs: ReturnType<typeof rankComparableJobs>, photoCount: number) {
+export function quoteAssistantContext(
+  quote: QuoteWithCustomer,
+  comparableJobs: ReturnType<typeof rankComparableJobs>,
+  photoCount: number,
+  knowledgeBase: { title: string; body: string; tags: string[] }[],
+) {
   return JSON.stringify({
     task: "Review this draft quote and recommend the next best questions, scope, and price.",
+    knowledgeBase,
     quote: {
-      municipality: quote.municipality,
       propertyLocation: quote.property_location,
       customerScope: quote.customer_scope,
+      specialInstructions: quote.special_instructions,
       currentNormalPrice: quote.normal_price,
       currentQuotedPrice: quoteHasFinalPrice(quote) ? quote.quoted_price : null,
       proBono: quote.pro_bono,
@@ -121,7 +125,6 @@ export function quoteAssistantContext(quote: QuoteWithCustomer, comparableJobs: 
     comparableCompletedJobs: comparableJobs.map((job) => ({
       similarityScore: job.similarity_score,
       completedDate: job.completed_date,
-      sameMunicipality: Boolean(quote.municipality && job.municipality?.toLowerCase() === quote.municipality.toLowerCase()),
       samePropertyLocation: Boolean(quote.property_location && job.property_location?.toLowerCase() === quote.property_location.toLowerCase()),
       amountQuoted: job.amount_quoted,
       amountPaid: job.amount_paid,

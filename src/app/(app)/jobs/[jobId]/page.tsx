@@ -38,7 +38,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ jobI
             <div className="flex items-center justify-between gap-3"><h2 className="font-bold">Overview</h2><StatusBadge label={jobStatusLabel(job.status)} status={job.status} /></div>
             <div className="mt-5 space-y-4 text-sm">
               <Link className="flex items-start gap-3 font-semibold text-brand hover:underline" href={`/customers/${job.customer_id}`}><UserRound aria-hidden="true" className="mt-0.5" size={17} />{customerName}</Link>
-              <p className="flex items-start gap-3"><MapPin aria-hidden="true" className="mt-0.5 text-muted" size={17} /><span>{job.service_address || "No service address"}{job.municipality ? <><br /><span className="text-muted">{job.municipality}</span></> : null}</span></p>
+              <p className="flex items-start gap-3"><MapPin aria-hidden="true" className="mt-0.5 text-muted" size={17} /><span>{job.service_address || "No service address"}</span></p>
               <p className="flex items-start gap-3"><CalendarDays aria-hidden="true" className="mt-0.5 text-muted" size={17} /><span>{formatDate(job.scheduled_date || job.job_date)}{job.scheduled_start_time ? <><br /><span className="text-muted">{formatTime(job.scheduled_start_time)}</span></> : null}</span></p>
             </div>
           </section>

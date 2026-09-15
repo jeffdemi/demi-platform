@@ -41,7 +41,7 @@ The public schema is organized by responsibility:
 - operations: `customers`, `quotes`, `jobs`, `invoices`, `expenses`,
   `equipment`, and `maintenance`;
 - quote preparation: `quote_photos`, `quote_ai_threads`, `quote_ai_messages`,
-  and `quote_ai_recommendations`;
+  `quote_ai_recommendations`, and `quote_knowledge`;
 - source imports: `legacy_imports`, `job_imports`, `bank_imports`, and
   `digital_asset_imports`;
 - connected banking: `bank_connections`, `bank_connection_accounts`,

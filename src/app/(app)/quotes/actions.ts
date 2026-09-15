@@ -4,13 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireBusinessContext } from "@/lib/auth";
 import { dateInTimeZone } from "@/lib/domain/jobs";
+import { deriveKnowledgeTitle } from "@/lib/domain/quote-knowledge";
 import { quoteHasFinalPrice, quoteStatusUpdate } from "@/lib/domain/quotes";
+import { createQuoteKnowledge } from "@/lib/repositories/quote-knowledge-repository";
 import { createQuote, getQuoteForEdit, updateQuote } from "@/lib/repositories/quote-repository";
 import { createClient } from "@/lib/supabase/server";
-import { formValues, quoteFormSchema, quoteStatusSchema } from "@/lib/validation/business-records";
+import { formValues, quoteFinalPriceSchema, quoteFormSchema, quoteStatusSchema } from "@/lib/validation/business-records";
 
 export type QuoteFormState = { message?: string; errors?: Record<string, string[]> };
-const names = ["customerId", "status", "quoteDate", "expirationDate", "sentDate", "responseDate", "contactMethod", "referralSource", "serviceAddress", "municipality", "propertyLocation", "locationDescription", "hazardNotes", "customerScope", "internalNotes", "normalPrice", "quotedPrice", "discountReason", "acceptedMethod", "acceptanceNotes"];
+const names = ["customerId", "status", "quoteDate", "expirationDate", "sentDate", "responseDate", "contactMethod", "referralSource", "serviceAddress", "propertyLocation", "locationDescription", "hazardNotes", "customerScope", "specialInstructions", "internalNotes", "normalPrice", "quotedPrice", "discountReason", "acceptedMethod", "acceptanceNotes"];
 
 export async function saveQuote(quoteId: number | null, _: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
   const parsed = quoteFormSchema.safeParse({ ...formValues(formData, names), proBono: formData.get("proBono") === "on", pa811Required: formData.get("pa811Required") === "on" });
@@ -27,9 +29,10 @@ export async function saveQuote(quoteId: number | null, _: QuoteFormState, formD
     quote_date: data.quoteDate as string, expiration_date: data.expirationDate ?? null, sent_date: data.sentDate ?? null,
     response_date: data.responseDate ?? null, contact_method: data.contactMethod ?? null,
     referral_source: data.referralSource ?? null, service_address: data.serviceAddress ?? null,
-    municipality: data.municipality ?? null, property_location: data.propertyLocation ?? null,
+    property_location: data.propertyLocation ?? null,
     location_description: data.locationDescription ?? null, hazard_notes: data.hazardNotes ?? null,
-    customer_scope: data.customerScope ?? null, internal_notes: data.internalNotes ?? null,
+    customer_scope: data.customerScope ?? null, special_instructions: data.specialInstructions ?? null,
+    internal_notes: data.internalNotes ?? null,
     normal_price: data.normalPrice ?? null, quoted_price: data.proBono ? 0 : data.quotedPrice ?? 0,
     discount_reason: data.discountReason ?? null, pro_bono: data.proBono,
     accepted_method: data.acceptedMethod ?? null, acceptance_notes: data.acceptanceNotes ?? null,
@@ -38,11 +41,43 @@ export async function saveQuote(quoteId: number | null, _: QuoteFormState, formD
   try {
     const id = quoteId === null ? (await createQuote(client, values)).id : quoteId;
     if (quoteId !== null && !(await updateQuote(client, business.id, quoteId, values))) return { message: "That quote no longer exists." };
-    revalidatePath("/quotes"); revalidatePath("/dashboard"); redirect(`/quotes/${id}`);
+    if (formData.get("saveToKnowledgeBase") === "yes" && data.specialInstructions) {
+      await createQuoteKnowledge(client, {
+        business_id: business.id, title: deriveKnowledgeTitle(data.specialInstructions),
+        body: data.specialInstructions, source_quote_id: id, created_by: context.user.id, updated_by: context.user.id,
+      });
+    }
+    revalidatePath("/quotes"); revalidatePath("/dashboard"); revalidatePath("/quotes/knowledge");
+    redirect(`/quotes/${id}${values.status === "draft" ? "?step=1" : ""}`);
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
     return { message: "The quote could not be saved. Check the values and try again." };
   }
+}
+
+export async function setQuoteFinalPrice(quoteId: number, _state: QuoteFormState, formData: FormData): Promise<QuoteFormState> {
+  const parsed = quoteFinalPriceSchema.safeParse({
+    normalPrice: formData.get("normalPrice"), quotedPrice: formData.get("quotedPrice"),
+    proBono: formData.get("proBono") === "on", discountReason: formData.get("discountReason"),
+  });
+  if (!parsed.success) return { errors: parsed.error.flatten().fieldErrors };
+  const context = await requireBusinessContext();
+  if (context.role === "intern") return { message: "Interns have read-only access." };
+  const { business } = context;
+  const client = await createClient();
+  const quote = await getQuoteForEdit(client, business.id, quoteId);
+  if (!quote) return { message: "That quote no longer exists." };
+  if (quote.status !== "draft") return { message: "Only a draft quote's price can be set here." };
+  try {
+    await updateQuote(client, business.id, quoteId, {
+      normal_price: parsed.data.normalPrice ?? null,
+      quoted_price: parsed.data.proBono ? 0 : parsed.data.quotedPrice ?? 0,
+      pro_bono: parsed.data.proBono,
+      discount_reason: parsed.data.discountReason ?? null,
+    });
+    revalidatePath(`/quotes/${quoteId}`); revalidatePath("/quotes"); revalidatePath("/dashboard");
+    return { message: "Final price saved." };
+  } catch { return { message: "The price could not be saved." }; }
 }
 
 export async function markQuoteStatus(quoteId: number, _state: QuoteFormState, formData: FormData): Promise<QuoteFormState> {

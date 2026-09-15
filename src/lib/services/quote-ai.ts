@@ -23,6 +23,7 @@ import {
   markQuoteAiRecommendationApplied,
   touchQuoteAiThread,
 } from "@/lib/repositories/quote-ai-repository";
+import { listQuoteKnowledge } from "@/lib/repositories/quote-knowledge-repository";
 import { getQuote, getQuoteForEdit, updateQuote } from "@/lib/repositories/quote-repository";
 import { getQuotePhotosWithUrls } from "@/lib/services/quote-photos";
 import type { Database } from "@/types/database";
@@ -60,10 +61,10 @@ export function extractOpenAiResponseText(response: unknown) {
   return null;
 }
 
-export function buildQuoteAiRequest(model: string, input: ResponseInput[], safetyIdentifier: string) {
+export function buildQuoteAiRequest(model: string, input: ResponseInput[], safetyIdentifier: string, hasKnowledgeBase: boolean) {
   return {
     model,
-    instructions: quoteAssistantInstructions(),
+    instructions: quoteAssistantInstructions(hasKnowledgeBase),
     input,
     reasoning: { effort: "low" },
     text: {
@@ -81,14 +82,14 @@ export function buildQuoteAiRequest(model: string, input: ResponseInput[], safet
   };
 }
 
-async function callQuoteAi(input: ResponseInput[], userId: string, businessId: number) {
+async function callQuoteAi(input: ResponseInput[], userId: string, businessId: number, hasKnowledgeBase: boolean) {
   const { apiKey, model } = quoteAiConfig();
   if (!apiKey) throw new Error("AI estimating is not configured yet. Add OPENAI_API_KEY locally and in Vercel.");
   const safetyIdentifier = createHash("sha256").update(`${businessId}:${userId}`).digest("hex");
   const result = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify(buildQuoteAiRequest(model, input, safetyIdentifier)),
+    body: JSON.stringify(buildQuoteAiRequest(model, input, safetyIdentifier, hasKnowledgeBase)),
     signal: AbortSignal.timeout(90_000),
   });
   const response = await result.json().catch(() => null) as { id?: string; error?: { message?: string } } | null;
@@ -141,14 +142,16 @@ export async function runQuoteAssistant(
   const message = userMessage?.trim();
   if (message && message.length > 2000) throw new Error("Keep each message under 2,000 characters.");
 
-  const [photos, previousMessages, completedJobs] = await Promise.all([
+  const [photos, previousMessages, completedJobs, knowledge] = await Promise.all([
     getQuotePhotosWithUrls(client, businessId, quoteId, 600),
     listQuoteAiMessages(client, businessId, quoteId),
     listCompletedJobsForQuoteComparison(client, businessId),
+    listQuoteKnowledge(client, businessId),
   ]);
   const comparableJobs = rankComparableJobs(quote, completedJobs);
+  const knowledgeBase = knowledge.map((entry) => ({ title: entry.title, body: entry.body, tags: entry.tags }));
   const contextContent: ResponseInput["content"] = [
-    { type: "input_text", text: quoteAssistantContext(quote, comparableJobs, photos.length) },
+    { type: "input_text", text: quoteAssistantContext(quote, comparableJobs, photos.length, knowledgeBase) },
     ...photos.map((photo) => ({ type: "input_image" as const, image_url: photo.signedUrl, detail: "high" as const })),
   ];
   const input: ResponseInput[] = [
@@ -157,7 +160,7 @@ export async function runQuoteAssistant(
   ];
   if (message) input.push({ role: "user", content: message });
 
-  const result = await callQuoteAi(input, userId, businessId);
+  const result = await callQuoteAi(input, userId, businessId, knowledgeBase.length > 0);
   const thread = await quoteThread(client, businessId, quoteId, userId, result.model);
   if (message) {
     await createQuoteAiMessage(client, {

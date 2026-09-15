@@ -46,7 +46,6 @@ export async function saveJob(
     estimated_duration_minutes: validated.data.estimatedDurationMinutes ?? null,
     completed_date: validated.data.completedDate ?? null,
     service_address: validated.data.serviceAddress ?? null,
-    municipality: validated.data.municipality ?? null,
     property_location: validated.data.propertyLocation ?? null,
     location_description: validated.data.locationDescription ?? null,
     referral_source: validated.data.referralSource ?? null,

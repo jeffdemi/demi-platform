@@ -28,7 +28,7 @@ Swap the two array entries so the order reads Quotes → Jobs → Invoices, matc
 **Problem**
 Today there are two disconnected paths into a job:
 
-1. "Convert to job" button on the quote detail page (`quotes/status-actions.tsx`) — calls the `convert_quote_to_job` Postgres RPC, which copies `service_address`, `municipality`, `property_location`, `location_description`, `referral_source`, `customer_scope → work_description`, `hazard_notes`, `quoted_price → amount_quoted`, `pro_bono`, `pa811_required`, `acceptance_notes → notes`. Only usable when quote status is `accepted`, and it locks the quote afterward.
+1. "Convert to job" button on the quote detail page (`quotes/status-actions.tsx`) — calls the `convert_quote_to_job` Postgres RPC, which copies `service_address`, `property_location`, `location_description`, `referral_source`, `customer_scope → work_description`, `hazard_notes`, `quoted_price → amount_quoted`, `pro_bono`, `pa811_required`, `acceptance_notes → notes`. Only usable when quote status is `accepted`, and it locks the quote afterward.
 2. "Add job" from the Jobs list or from a customer's page (`customers/[customerId]/page.tsx` line 25) — opens a completely blank `JobForm` with no `quoteId` awareness at all, even if that exact customer has an accepted quote sitting there.
 
 So unless you remember to start from the quote's own page, you retype everything by hand.

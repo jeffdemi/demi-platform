@@ -9,7 +9,6 @@ export type JobQuotePrefill = Pick<
   | "quote_number"
   | "status"
   | "service_address"
-  | "municipality"
   | "property_location"
   | "location_description"
   | "referral_source"
@@ -31,7 +30,6 @@ export function jobDefaultsFromQuote(quote: JobQuotePrefill) {
     customerId: quote.customer_id,
     status: "quoted",
     serviceAddress: quote.service_address ?? "",
-    municipality: quote.municipality ?? "",
     propertyLocation: quote.property_location ?? "",
     locationDescription: quote.location_description ?? "",
     referralSource: quote.referral_source ?? "",

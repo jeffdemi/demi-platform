@@ -2,8 +2,8 @@ import { apiBusinessContext, csvResponse } from "@/lib/api-auth";
 
 const resources = {
   customers: "id, customer_type, company_name, first_name, last_name, phone, email, active, created_at, updated_at",
-  jobs: "id, customer_id, quote_id, source_job_number, status, job_date, scheduled_date, scheduled_start_time, service_address, municipality, work_description, amount_quoted, amount_paid, paid_date, created_at, updated_at",
-  quotes: "id, customer_id, job_id, quote_number, status, quote_date, expiration_date, service_address, municipality, customer_scope, quoted_price, pro_bono, sent_date, response_date, created_at, updated_at",
+  jobs: "id, customer_id, quote_id, source_job_number, status, job_date, scheduled_date, scheduled_start_time, service_address, work_description, amount_quoted, amount_paid, paid_date, created_at, updated_at",
+  quotes: "id, customer_id, job_id, quote_number, status, quote_date, expiration_date, service_address, customer_scope, quoted_price, pro_bono, sent_date, response_date, created_at, updated_at",
   invoices: "id, customer_id, job_id, invoice_number, amount, invoice_date, due_date, payment_terms, status, paid_date, created_at, updated_at",
   expenses: "id, job_id, equipment_id, bank_transaction_id, expense_date, transaction_type, category, tax_category, deductible_percent, vendor, description, amount, payment_method, receipt_review_status, voided_at, created_at, updated_at",
   payments: "id, customer_id, invoice_id, job_id, bank_transaction_id, payment_date, amount, method, reference, source, voided_at, created_at, updated_at",

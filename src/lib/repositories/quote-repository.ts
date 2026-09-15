@@ -73,13 +73,13 @@ export async function updateQuote(client: Client, businessId: number, quoteId: n
 export type CustomerQuoteSummary = Pick<
   Database["public"]["Tables"]["quotes"]["Row"],
   "id" | "quote_number" | "status" | "quote_date" | "quoted_price" | "pro_bono" | "job_id" |
-  "service_address" | "municipality" | "property_location" | "location_description" |
+  "service_address" | "property_location" | "location_description" |
   "referral_source" | "customer_scope" | "hazard_notes" | "pa811_required" | "acceptance_notes"
 >;
 
 export async function listQuotesForCustomer(client: Client, businessId: number, customerId: number) {
   const result = await client.from("quotes")
-    .select("id, quote_number, status, quote_date, quoted_price, pro_bono, job_id, service_address, municipality, property_location, location_description, referral_source, customer_scope, hazard_notes, pa811_required, acceptance_notes")
+    .select("id, quote_number, status, quote_date, quoted_price, pro_bono, job_id, service_address, property_location, location_description, referral_source, customer_scope, hazard_notes, pa811_required, acceptance_notes")
     .eq("business_id", businessId).eq("customer_id", customerId)
     .order("quote_date", { ascending: false }).order("id", { ascending: false }).limit(50);
   if (result.error) throw new Error(`Unable to load quotes: ${result.error.message}`);
@@ -88,7 +88,7 @@ export async function listQuotesForCustomer(client: Client, businessId: number, 
 
 export async function listJobQuotePrefills(client: Client, businessId: number) {
   const result = await client.from("quotes")
-    .select("id, customer_id, quote_number, status, service_address, municipality, property_location, location_description, referral_source, customer_scope, hazard_notes, quoted_price, pro_bono, pa811_required, acceptance_notes, internal_notes")
+    .select("id, customer_id, quote_number, status, service_address, property_location, location_description, referral_source, customer_scope, hazard_notes, quoted_price, pro_bono, pa811_required, acceptance_notes, internal_notes")
     .eq("business_id", businessId)
     .in("status", ["draft", "sent", "accepted", "no_response"])
     .is("job_id", null)
