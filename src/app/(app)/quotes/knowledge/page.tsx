@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, Pencil, Plus } from "lucide-react";
+import { AlertTriangle, BookOpen, Pencil, Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { requireBusinessContext } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
@@ -12,7 +12,16 @@ export const metadata: Metadata = { title: "Quote knowledge base" };
 
 export default async function QuoteKnowledgePage() {
   const context = await requireBusinessContext();
-  const entries = await listQuoteKnowledge(await createClient(), context.business.id);
+  // Caught here (instead of letting it throw) so the real message reaches the page: Next.js
+  // redacts the message on errors that escape a Server Component render in production builds.
+  let entries: Awaited<ReturnType<typeof listQuoteKnowledge>> = [];
+  let loadError: string | null = null;
+  try {
+    entries = await listQuoteKnowledge(await createClient(), context.business.id);
+  } catch (error) {
+    console.error("Failed to load the quote knowledge base", { businessId: context.business.id, error });
+    loadError = error instanceof Error ? error.message : "The knowledge base could not be loaded.";
+  }
 
   return <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
     <PageHeader
@@ -20,7 +29,14 @@ export default async function QuoteKnowledgePage() {
       description="Standing pricing notes and rules of thumb applied to every AI quote estimate."
       title="Quote knowledge base"
     />
-    <div className="mt-6 overflow-hidden rounded-lg border border-line bg-surface shadow-sm">
+    {loadError ? <div className="mt-6 flex items-start gap-3 rounded-lg border border-danger-line bg-danger-soft p-5 text-danger-strong">
+      <AlertTriangle className="mt-0.5 shrink-0" size={20} />
+      <div>
+        <p className="font-semibold">The knowledge base could not be loaded.</p>
+        <p className="mt-1 whitespace-pre-wrap text-sm">{loadError}</p>
+        <p className="mt-2 text-sm">If this mentions a missing table or column, the latest database migrations likely have not been applied to this environment yet.</p>
+      </div>
+    </div> : <div className="mt-6 overflow-hidden rounded-lg border border-line bg-surface shadow-sm">
       {entries.length ? <div className="divide-y divide-line">{entries.map((entry) => <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-4" key={entry.id}>
         <div className="min-w-0 flex-1">
           <p className="font-semibold">{entry.title}</p>
@@ -36,6 +52,6 @@ export default async function QuoteKnowledgePage() {
           <DeleteKnowledgeButton id={entry.id} />
         </div> : null}
       </div>)}</div> : <div className="px-5 py-14 text-center"><BookOpen className="mx-auto text-muted" /><p className="mt-3 font-semibold">No knowledge base entries yet</p><p className="mt-1 text-sm text-muted">Add pricing rules and standing notes for the AI estimator to apply to every quote.</p></div>}
-    </div>
+    </div>}
   </div>;
 }
