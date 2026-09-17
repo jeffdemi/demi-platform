@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { quoteMatchesSearch, type QuoteWithCustomer } from "@/lib/domain/quotes";
 import type { JobQuotePrefill } from "@/lib/job-quote-prefill";
+import { describeDbError } from "@/lib/supabase-errors";
 import type { Database } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
@@ -59,14 +60,14 @@ export async function createQuote(client: Client, values: Omit<Database["public"
     const quoteNumber = await nextQuoteNumber(client, values.business_id, values.quote_date ?? new Date().toISOString().slice(0, 10));
     const result = await client.from("quotes").insert({ ...values, quote_number: quoteNumber }).select("id").single();
     if (!result.error && result.data) return result.data;
-    if (result.error?.code !== "23505") throw new Error(`Unable to create quote: ${result.error?.message}`);
+    if (result.error?.code !== "23505") throw new Error(describeDbError(result.error, "create quote"));
   }
   throw new Error("Unable to generate a unique quote number.");
 }
 
 export async function updateQuote(client: Client, businessId: number, quoteId: number, values: Database["public"]["Tables"]["quotes"]["Update"]) {
   const result = await client.from("quotes").update(values).eq("business_id", businessId).eq("id", quoteId).select("id").maybeSingle();
-  if (result.error) throw new Error(`Unable to update quote: ${result.error.message}`);
+  if (result.error) throw new Error(describeDbError(result.error, "update quote"));
   return result.data;
 }
 
