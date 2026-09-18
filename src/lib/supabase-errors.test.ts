@@ -13,6 +13,17 @@ describe("describeDbError", () => {
     expect(message).toContain("special_instructions");
   });
 
+  it("turns a missing-function schema cache error into an actionable message", () => {
+    const message = describeDbError(
+      { code: "PGRST202", message: "Could not find the function public.create_invoice_record(invoice_amount, invoice_notes, ...) in the schema cache" },
+      "create the invoice",
+    );
+    expect(message).toContain("Unable to create the invoice");
+    expect(message).toContain("schema is out of date");
+    expect(message).toContain("supabase db push");
+    expect(message).toContain("create_invoice_record");
+  });
+
   it("turns a missing-table schema cache error into an actionable message", () => {
     const message = describeDbError(
       { code: "PGRST205", message: "Could not find the table 'public.quote_knowledge' in the schema cache" },
