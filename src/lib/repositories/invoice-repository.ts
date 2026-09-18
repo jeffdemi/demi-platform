@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { describeDbError } from "@/lib/supabase-errors";
 import type { Database } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
@@ -33,15 +34,15 @@ export async function createInvoiceRecord(client: Client, values: {
     invoice_amount: values.amount, invoice_on: values.invoiceDate, due_on: values.dueDate,
     terms: values.paymentTerms, invoice_status: values.status, paid_on: values.paidDate, invoice_notes: values.notes,
   });
-  if (result.error) throw new Error(result.error.message);
+  if (result.error) throw new Error(describeDbError(result.error, "create the invoice"));
   return result.data;
 }
 
 export async function updateInvoiceStatus(client: Client, businessId: number, invoiceId: number, status: string, paidDate: string | null) {
   const existing = await client.from("invoices").select("id").eq("business_id", businessId).eq("id", invoiceId).maybeSingle();
-  if (existing.error) throw new Error(`Unable to update invoice: ${existing.error.message}`);
+  if (existing.error) throw new Error(describeDbError(existing.error, "update invoice"));
   if (!existing.data) return null;
   const result = await client.rpc("set_invoice_status", { target_invoice_id: invoiceId, invoice_status: status, paid_on: paidDate ?? undefined });
-  if (result.error) throw new Error(`Unable to update invoice: ${result.error.message}`);
+  if (result.error) throw new Error(describeDbError(result.error, "update invoice"));
   return { id: result.data };
 }
