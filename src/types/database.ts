@@ -1565,16 +1565,16 @@ export type Database = {
       convert_quote_to_job: { Args: { target_quote_id: number }; Returns: number }
       create_invoice_record: {
         Args: {
-          due_on?: string
+          due_on?: string | null
           invoice_amount: number
-          invoice_notes?: string
+          invoice_notes?: string | null
           invoice_on: string
           invoice_status: string
-          paid_on?: string
+          paid_on?: string | null
           target_business_id: number
           target_customer_id: number
-          target_job_id?: number
-          terms?: string
+          target_job_id?: number | null
+          terms?: string | null
         }
         Returns: number
       }
@@ -1642,7 +1642,7 @@ export type Database = {
         Returns: undefined
       }
       set_invoice_status: {
-        Args: { invoice_status: string; paid_on?: string; target_invoice_id: number }
+        Args: { invoice_status: string; paid_on?: string | null; target_invoice_id: number }
         Returns: number
       }
     }
