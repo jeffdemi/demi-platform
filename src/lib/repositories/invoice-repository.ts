@@ -25,8 +25,23 @@ export async function getInvoice(client: Client, businessId: number, invoiceId: 
   return result.data as InvoiceWithRelations | null;
 }
 
+// Invoice numbers already raised against each job, so the form can warn before a second
+// one is created. Archived invoices are left out; a voided one is shown, flagged, because
+// voiding then re-issuing is a normal correction and the user should judge it themselves.
+export async function listInvoiceLabelsByJob(client: Client, businessId: number) {
+  const result = await client.from("invoices").select("job_id, invoice_number, status")
+    .eq("business_id", businessId).not("job_id", "is", null).is("archived_at", null);
+  if (result.error) throw new Error(describeDbError(result.error, "load existing invoices"));
+  const byJob: Record<number, string[]> = {};
+  for (const row of result.data ?? []) {
+    if (row.job_id === null) continue;
+    (byJob[row.job_id] ??= []).push(row.status === "void" ? `${row.invoice_number} (void)` : row.invoice_number);
+  }
+  return byJob;
+}
+
 export async function createInvoiceRecord(client: Client, values: {
-  businessId: number; customerId: number; jobId?: number; amount: number; invoiceDate: string;
+  businessId: number; customerId: number; jobId: number; amount: number; invoiceDate: string;
   dueDate?: string; paymentTerms?: string; status: string; paidDate?: string; notes?: string;
 }) {
   // supabase-js drops object keys whose value is `undefined` before sending the RPC body, and

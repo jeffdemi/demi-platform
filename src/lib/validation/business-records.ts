@@ -64,7 +64,7 @@ export const quoteStatusSchema = z.object({
 });
 
 export const invoiceFormSchema = z.object({
-  customerId: positiveId("a customer"), jobId: positiveId("a job", false), amount: number("Amount", true),
+  customerId: positiveId("a customer"), jobId: positiveId("a job"), amount: number("Amount", true),
   invoiceDate: date("Invoice date", true), dueDate: date("Due date"), paymentTerms: optionalText(250),
   status: z.enum(["draft", "unpaid", "paid", "void"]), paidDate: date("Paid date"), notes: optionalText(),
 }).superRefine((value, context) => {

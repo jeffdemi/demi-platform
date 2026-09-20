@@ -1,0 +1,42 @@
+# Production migrations must be applied before a PR that adds them is merged,
+# because a push to main auto-deploys and the app would then expect a schema
+# that is not there yet. See docs/release-checklist.md.
+name: Migration gate
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+permissions:
+  contents: read
+concurrency:
+  group: migration-gate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  migrations-applied:
+    name: Required migration gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require confirmation that migrations are applied
+        env:
+          # Read through the environment so no PR-controlled text is expanded as shell.
+          BASE_REF: ${{ github.base_ref }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "$BASE_REF"
+          touched=$(git diff --name-only --diff-filter=AM "origin/$BASE_REF...HEAD" -- 'supabase/migrations/*.sql')
+          if [ -z "$touched" ]; then
+            echo "No migration files added or changed; gate does not apply."
+            exit 0
+          fi
+          echo "This pull request touches migration files:"
+          echo "$touched" | sed 's/^/  /'
+          if printf '%s' "$PR_LABELS" | grep -q '"migrations-applied"'; then
+            echo "Label 'migrations-applied' is present; treating production as already migrated."
+            exit 0
+          fi
+          echo "::error::Apply these migrations to production first, then add the 'migrations-applied' label. Merging deploys main automatically, so the code would reach production before the schema it needs. Run 'supabase migration list --linked' before pushing: this project has a history of drift, and several past migrations contain one-time financial data corrections that must not run twice."
+          exit 1
