@@ -92,6 +92,13 @@ describe("billing and operating records", () => {
     expect(quoteFormSchema.safeParse({ customerId: "", status: "converted", quoteDate: "bad", quotedPrice: "x", proBono: false, pa811Required: false }).success).toBe(false);
   });
 
+  it("requires a job on an invoice, because the job supplies the number suffix", () => {
+    const base = { customerId: "2", amount: "350", invoiceDate: "2026-03-04", status: "unpaid" };
+    expect(invoiceFormSchema.safeParse(base).success).toBe(false);
+    expect(invoiceFormSchema.safeParse({ ...base, jobId: "" }).success).toBe(false);
+    expect(invoiceFormSchema.safeParse({ ...base, jobId: "3" }).success).toBe(true);
+  });
+
   it("shows directly recorded expenses in Finance until they are matched", async () => {
     const [financePage, expenseRepository] = await Promise.all([
       readFile(new URL("../app/(app)/finance/page.tsx", import.meta.url), "utf8"),
