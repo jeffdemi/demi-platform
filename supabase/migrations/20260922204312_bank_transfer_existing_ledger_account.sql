@@ -46,4 +46,3 @@ begin
   return transfer_id;
 end;
 $$;
-
