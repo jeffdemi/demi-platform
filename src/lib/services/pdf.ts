@@ -3,7 +3,7 @@ import { customerDisplayName } from "../domain/customers";
 import { quoteDocumentLines, type QuoteWithCustomer } from "../domain/quotes";
 import type { InvoiceWithRelations } from "../repositories/invoice-repository";
 
-type BusinessDetails = {
+export type BusinessDetails = {
   name: string; legal_name: string | null; phone: string | null; email: string | null;
   address_line_1: string | null; address_line_2: string | null; city: string | null;
   region: string | null; postal_code: string | null;
@@ -21,6 +21,26 @@ function wrap(text: string, font: PDFFont, size: number, width: number) {
   return lines;
 }
 
+// Quote text is editable, including line breaks and long reference strings.
+function wrapQuoteText(text: string, font: PDFFont, size: number, width: number) {
+  return text.split(/\r?\n/).flatMap(paragraph => {
+    const words = paragraph.split(/\s+/).flatMap(word => {
+      const pieces: string[] = [];
+      let piece = "";
+      for (const character of word) {
+        if (piece && font.widthOfTextAtSize(piece + character, size) > width) {
+          pieces.push(piece);
+          piece = "";
+        }
+        piece += character;
+      }
+      if (piece) pieces.push(piece);
+      return pieces;
+    });
+    return words.length ? wrap(words.join(" "), font, size, width) : [""];
+  });
+}
+
 async function createPdf(business: BusinessDetails, title: string, lines: string[]) {
   const document = await PDFDocument.create();
   const regular = await document.embedFont(StandardFonts.Helvetica);
@@ -31,7 +51,7 @@ async function createPdf(business: BusinessDetails, title: string, lines: string
   const draw = (text: string, options: { font?: PDFFont; size?: number; gap?: number; color?: ReturnType<typeof rgb> } = {}) => {
     const font = options.font ?? regular;
     const size = options.size ?? 11;
-    for (const wrapped of wrap(text, font, size, 500)) {
+    for (const wrapped of wrapQuoteText(text, font, size, 500)) {
       if (y < 65) addPage();
       page.drawText(wrapped, { x: 56, y, size, font, color: options.color ?? rgb(0.12, 0.15, 0.13) });
       y -= size + 5;
@@ -40,11 +60,12 @@ async function createPdf(business: BusinessDetails, title: string, lines: string
   };
   draw(business.name || "Demi Stump Grinding", { font: bold, size: 20, color: rgb(0.09, 0.22, 0.17), gap: 3 });
   if (business.legal_name && business.legal_name !== business.name) draw(business.legal_name, { size: 9, gap: 1, color: rgb(0.4, 0.45, 0.42) });
+  for (const address of businessAddressLines(business)) draw(address, { size: 9, gap: 1 });
   const contact = [business.phone, business.email].filter(Boolean).join(" | ");
   if (contact) draw(contact, { size: 9, gap: 12, color: rgb(0.4, 0.45, 0.42) });
   draw(title, { font: bold, size: 17, gap: 14 });
   for (const line of lines) draw(line, { font: line.endsWith(":") ? bold : regular, gap: 7 });
-  page.drawText("Demi Stump Grinding", { x: 56, y: 32, size: 8, font: regular, color: rgb(0.45, 0.49, 0.47) });
+  page.drawText(business.name, { x: 56, y: 32, size: 8, font: regular, color: rgb(0.45, 0.49, 0.47) });
   return document.save();
 }
 
