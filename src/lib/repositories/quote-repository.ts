@@ -6,8 +6,8 @@ import type { Database } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
 type JobLink = Pick<Database["public"]["Tables"]["jobs"]["Row"], "id" | "status">;
-export type QuoteDetail = QuoteWithCustomer & { jobs: JobLink | null };
-const QUOTE_DETAIL_SELECT = "*, customers!inner(company_name, customer_type, email, first_name, last_name, phone), jobs!quotes_business_job_fkey(id, status)";
+export type QuoteDetail = QuoteWithCustomer & { jobs: JobLink | null; customers: QuoteWithCustomer["customers"] & { updated_at: string } };
+const QUOTE_DETAIL_SELECT = "*, customers!inner(company_name, customer_type, email, first_name, last_name, phone, updated_at), jobs!quotes_business_job_fkey(id, status)";
 
 function dataOrThrow<T>(data: T | null, error: { message: string } | null, label: string): T {
   if (error || data === null) throw new Error(`${label}${error ? `: ${error.message}` : "."}`);

@@ -1411,6 +1411,8 @@ export type Database = {
           pro_bono: boolean
           property_location: string | null
           quote_date: string
+          pdf_terms: string | null
+          pdf_notes: string | null
           quote_number: string
           quoted_price: number
           referral_source: string | null
@@ -1445,6 +1447,8 @@ export type Database = {
           pro_bono?: boolean
           property_location?: string | null
           quote_date?: string
+          pdf_terms?: string | null
+          pdf_notes?: string | null
           quote_number: string
           quoted_price?: number
           referral_source?: string | null
@@ -1479,6 +1483,8 @@ export type Database = {
           pro_bono?: boolean
           property_location?: string | null
           quote_date?: string
+          pdf_terms?: string | null
+          pdf_notes?: string | null
           quote_number?: string
           quoted_price?: number
           referral_source?: string | null
@@ -1518,6 +1524,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      save_quote_pdf_review: { Args: { target_business_id: number; target_quote_id: number; expected_quote_updated_at: string; expected_customer_updated_at: string; expected_business_updated_at: string; quote_values: Json; customer_values: Json; business_values: Json }; Returns: undefined }
       confirm_bank_sync_run: { Args: { target_business_id: number; target_run_id: string }; Returns: Json }
       save_bank_connection_mappings: { Args: { target_business_id: number; target_connection_id: string; mappings: Json }; Returns: undefined }
       force_delete_business_record: { Args: { target_business_id: number; target_record_type: string; target_record_id: number; deletion_reason: string }; Returns: undefined }

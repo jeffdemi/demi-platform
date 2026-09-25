@@ -29,6 +29,8 @@ export function QuoteDraftStep2({ quote, photoCount, recommendation, readOnly }:
   return <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
     <PageHeader actions={<Link className="flex h-10 items-center gap-2 rounded-md border border-line-strong px-3 font-semibold" href={`/quotes/${quote.id}?step=1`}><ArrowLeft size={16} />Back to step 1</Link>} description={`Step 2 of 2 · ${quote.quote_number} · Quote`} title={customerDisplayName(quote.customers)} />
 
+    <div className="mt-5"><Link className="inline-flex rounded-md bg-brand px-4 py-3 font-semibold text-on-brand" href={`/quotes/${quote.id}/pdf/review`}>Review &amp; create PDF</Link></div>
+
     <div className="mt-6 grid gap-5 lg:grid-cols-2">
       <section className="rounded-lg border border-line bg-surface p-5 shadow-sm">
         <h2 className="font-bold">Collected details</h2>

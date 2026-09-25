@@ -60,7 +60,7 @@ export default async function QuoteDetailPage({ params, searchParams }: { params
 
   return <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
     <PageHeader actions={<>
-      <a className="flex h-10 items-center gap-2 rounded-md border border-line-strong px-3 font-semibold" href={`/quotes/${quote.id}/pdf`}><Download size={16} />PDF</a>
+      <a className="flex h-10 items-center gap-2 rounded-md border border-line-strong px-3 font-semibold" href={`/quotes/${quote.id}/pdf/review`}><Download size={16} />Create PDF</a>
       {!converted && !quote.archived_at && !readOnly ? <Link className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 font-semibold text-on-brand" href={`/quotes/${quote.id}/edit`}><Pencil size={16} />Edit quote</Link> : null}
     </>} description={`${formatDate(quote.quote_date)} - ${quoteStatusLabel(quote.status)}`} title={quote.quote_number} />
 

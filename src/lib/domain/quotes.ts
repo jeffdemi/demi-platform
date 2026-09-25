@@ -2,7 +2,7 @@ import type { Database } from "@/types/database";
 import { customerDisplayName, type Customer } from "./customers";
 
 type QuoteRow = Database["public"]["Tables"]["quotes"]["Row"];
-export type Quote = Omit<QuoteRow, "archive_reason" | "archived_at" | "archived_by"> & Partial<Pick<QuoteRow, "archive_reason" | "archived_at" | "archived_by">>;
+export type Quote = Omit<QuoteRow, "archive_reason" | "archived_at" | "archived_by" | "pdf_terms" | "pdf_notes"> & Partial<Pick<QuoteRow, "archive_reason" | "archived_at" | "archived_by" | "pdf_terms" | "pdf_notes">>;
 export type QuoteCustomer = Pick<Customer, "company_name" | "customer_type" | "email" | "first_name" | "last_name" | "phone">;
 export type QuoteWithCustomer = Quote & { customers: QuoteCustomer };
 
@@ -87,13 +87,16 @@ export function quoteDocumentLines(quote: QuoteWithCustomer) {
     `Quote ${quote.quote_number}`,
     `Date: ${quote.quote_date}`,
     `Customer: ${customerDisplayName(quote.customers)}`,
+    quote.customers.phone ? `Customer phone: ${quote.customers.phone}` : null,
+    quote.customers.email ? `Customer email: ${quote.customers.email}` : null,
     quote.service_address ? `Service address: ${quote.service_address}` : null,
     quote.property_location ? `Property location: ${optionLabel(quote.property_location)}` : null,
     quote.location_description ? `Location details: ${quote.location_description}` : null,
     `Scope: ${quote.customer_scope || "Stump grinding work as discussed"}`,
     quote.pro_bono ? "Price: No charge" : quoteHasFinalPrice(quote) ? `Price: $${quote.quoted_price.toFixed(2)}` : "Price: Pending estimate",
     quote.expiration_date ? `Valid through: ${quote.expiration_date}` : null,
-    "To accept this quote, contact Jeff at Demi Stump Grinding.",
+    quote.pdf_terms ?? "To accept this quote, contact the business using the details above.",
+    quote.pdf_notes ? `Notes: ${quote.pdf_notes}` : null,
   ].filter((line): line is string => Boolean(line));
 }
 
