@@ -662,6 +662,10 @@ export type Database = {
           job_id: number | null
           legacy_id: number | null
           notes: string | null
+          pdf_description: string | null
+          pdf_service_address: string | null
+          pdf_message: string | null
+          pdf_notes: string | null
           paid_date: string | null
           payment_terms: string | null
           status: string
@@ -683,6 +687,10 @@ export type Database = {
           job_id?: number | null
           legacy_id?: number | null
           notes?: string | null
+          pdf_description?: string | null
+          pdf_service_address?: string | null
+          pdf_message?: string | null
+          pdf_notes?: string | null
           paid_date?: string | null
           payment_terms?: string | null
           status?: string
@@ -704,6 +712,10 @@ export type Database = {
           job_id?: number | null
           legacy_id?: number | null
           notes?: string | null
+          pdf_description?: string | null
+          pdf_service_address?: string | null
+          pdf_message?: string | null
+          pdf_notes?: string | null
           paid_date?: string | null
           payment_terms?: string | null
           status?: string
@@ -1525,6 +1537,7 @@ export type Database = {
     }
     Functions: {
       save_quote_pdf_review: { Args: { target_business_id: number; target_quote_id: number; expected_quote_updated_at: string; expected_customer_updated_at: string; expected_business_updated_at: string; quote_values: Json; customer_values: Json; business_values: Json }; Returns: undefined }
+      save_invoice_pdf_review: { Args: { target_business_id: number; target_invoice_id: number; expected_invoice_updated_at: string; expected_customer_updated_at: string; expected_business_updated_at: string; invoice_values: Json; customer_values: Json; business_values: Json }; Returns: undefined }
       confirm_bank_sync_run: { Args: { target_business_id: number; target_run_id: string }; Returns: Json }
       save_bank_connection_mappings: { Args: { target_business_id: number; target_connection_id: string; mappings: Json }; Returns: undefined }
       force_delete_business_record: { Args: { target_business_id: number; target_record_type: string; target_record_id: number; deletion_reason: string }; Returns: undefined }

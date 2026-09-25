@@ -81,12 +81,13 @@ export function invoiceDocumentLines(invoice: InvoiceWithRelations) {
     `Invoice date: ${invoice.invoice_date}`,
     invoice.due_date ? `Due date: ${invoice.due_date}` : null,
     `Customer: ${customerDisplayName(invoice.customers)}`,
-    invoice.jobs?.service_address ? `Service address: ${invoice.jobs.service_address}` : null,
-    invoice.jobs?.work_description ? `Work completed: ${invoice.jobs.work_description}` : null,
+    (invoice.pdf_service_address || invoice.jobs?.service_address) ? `Service address: ${invoice.pdf_service_address || invoice.jobs?.service_address}` : null,
+    (invoice.pdf_description || invoice.jobs?.work_description) ? `Work completed: ${invoice.pdf_description || invoice.jobs?.work_description}` : null,
     `Amount due: $${invoice.amount.toFixed(2)}`,
     invoice.payment_terms ? `Payment terms: ${invoice.payment_terms}` : null,
+    invoice.pdf_notes ? `Notes: ${invoice.pdf_notes}` : null,
     `Status: ${invoice.status.replaceAll("_", " ")}`,
-    "Thank you for your business. Please contact Jeff with any questions about this invoice.",
+    invoice.pdf_message || "Thank you for your business. Please contact us with any questions about this invoice.",
   ].filter((line): line is string => Boolean(line));
 }
 
@@ -178,7 +179,8 @@ export async function buildInvoicePdf(business: BusinessDetails, invoice: Invoic
   let blockY = headerBottom - 24;
   const columnWidth = CONTENT_WIDTH / 2 - 12;
   text("BILL TO", MARGIN, blockY, { font: bold, size: 8, color: muted });
-  const hasServiceInfo = Boolean(invoice.jobs?.service_address);
+  const serviceAddress = invoice.pdf_service_address || invoice.jobs?.service_address || null;
+  const hasServiceInfo = Boolean(serviceAddress);
   if (hasServiceInfo) text("SERVICE LOCATION", MARGIN + columnWidth + 24, blockY, { font: bold, size: 8, color: muted });
   blockY -= 16;
 
@@ -189,9 +191,9 @@ export async function buildInvoicePdf(business: BusinessDetails, invoice: Invoic
   for (const line of customerContact) { text(line as string, MARGIN, billY, { size: 9, color: muted }); billY -= 13; }
 
   let serviceY = blockY;
-  if (hasServiceInfo && invoice.jobs?.service_address) {
+  if (hasServiceInfo && serviceAddress) {
     const serviceX = MARGIN + columnWidth + 24;
-    for (const wrapped of wrap(invoice.jobs.service_address, regular, 9, columnWidth)) { text(wrapped, serviceX, serviceY, { size: 9, color: ink }); serviceY -= 13; }
+    for (const wrapped of wrap(serviceAddress, regular, 9, columnWidth)) { text(wrapped, serviceX, serviceY, { size: 9, color: ink }); serviceY -= 13; }
   }
 
   // Line items table
@@ -202,7 +204,7 @@ export async function buildInvoicePdf(business: BusinessDetails, invoice: Invoic
   textRight("AMOUNT", CONTENT_RIGHT - 10, tableY - 8, { font: bold, size: 8, color: brand });
   tableY -= tableHeaderHeight + 10;
 
-  const description = invoice.jobs?.work_description || "Stump grinding services";
+  const description = invoice.pdf_description || invoice.jobs?.work_description || "Stump grinding services";
   const descriptionLines = wrap(description, regular, 10, CONTENT_WIDTH - 140);
   for (const [index, wrapped] of descriptionLines.entries()) {
     text(wrapped, MARGIN + 10, tableY, { size: 10 });
@@ -232,13 +234,17 @@ export async function buildInvoicePdf(business: BusinessDetails, invoice: Invoic
   tableY -= 40;
 
   if (isVoid) { text("This invoice has been voided and is not payable.", MARGIN, tableY, { size: 9, color: rgb(0.72, 0.24, 0.18) }); tableY -= 14; }
+  if (invoice.pdf_notes) { for (const line of wrap(invoice.pdf_notes, regular, 9, CONTENT_WIDTH)) { text(line, MARGIN, tableY, { size: 9, color: muted }); tableY -= 13; } }
 
   // Footer
   const footerCenter = PAGE_WIDTH / 2;
   hr(MARGIN, 78, CONTENT_WIDTH, { color: lineColor });
-  textCenter("Thank you for your business!", footerCenter, 60, { font: bold, size: 10, color: brand });
+  const footerMessage = invoice.pdf_message || "Thank you for your business!";
+  for (const [index, line] of wrap(footerMessage, bold, 10, CONTENT_WIDTH).slice(0, 2).entries()) {
+    textCenter(line, footerCenter, 60 - index * 11, { font: bold, size: 10, color: brand });
+  }
   const footerContact = [business.name || "Demi Stump Grinding", business.phone, business.email].filter(Boolean).join("  •  ");
-  textCenter(footerContact, footerCenter, 44, { size: 8, color: muted });
+  textCenter(footerContact, footerCenter, 38, { size: 8, color: muted });
 
   return document.save();
 }
