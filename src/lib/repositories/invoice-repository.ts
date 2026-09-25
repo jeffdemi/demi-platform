@@ -3,13 +3,13 @@ import { describeDbError } from "@/lib/supabase-errors";
 import type { Database } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
-type Customer = Pick<Database["public"]["Tables"]["customers"]["Row"], "company_name" | "customer_type" | "first_name" | "last_name" | "phone" | "email">;
+type Customer = Pick<Database["public"]["Tables"]["customers"]["Row"], "company_name" | "customer_type" | "first_name" | "last_name" | "phone" | "email"> & { updated_at?: string };
 type Job = Pick<Database["public"]["Tables"]["jobs"]["Row"], "id" | "work_description" | "service_address">;
 type InvoiceRow = Database["public"]["Tables"]["invoices"]["Row"];
-export type InvoiceWithRelations = Omit<InvoiceRow, "archive_reason" | "archived_at" | "archived_by"> & Partial<Pick<InvoiceRow, "archive_reason" | "archived_at" | "archived_by">> & { customers: Customer; jobs: Job | null };
+export type InvoiceWithRelations = Omit<InvoiceRow, "archive_reason" | "archived_at" | "archived_by" | "pdf_description" | "pdf_service_address" | "pdf_message" | "pdf_notes"> & Partial<Pick<InvoiceRow, "archive_reason" | "archived_at" | "archived_by" | "pdf_description" | "pdf_service_address" | "pdf_message" | "pdf_notes">> & { customers: Customer; jobs: Job | null };
 
 export async function listInvoices(client: Client, businessId: number, status?: string, includeArchived = false) {
-  let query = client.from("invoices").select("*, customers!inner(company_name, customer_type, first_name, last_name, phone, email), jobs(id, work_description, service_address)")
+  let query = client.from("invoices").select("*, customers!inner(company_name, customer_type, first_name, last_name, phone, email, updated_at), jobs(id, work_description, service_address)")
     .eq("business_id", businessId).order("invoice_date", { ascending: false }).order("id", { ascending: false }).limit(500);
   if (status) query = query.eq("status", status);
   if (!includeArchived) query = query.is("archived_at", null);
@@ -19,7 +19,7 @@ export async function listInvoices(client: Client, businessId: number, status?: 
 }
 
 export async function getInvoice(client: Client, businessId: number, invoiceId: number) {
-  const result = await client.from("invoices").select("*, customers!inner(company_name, customer_type, first_name, last_name, phone, email), jobs(id, work_description, service_address)")
+  const result = await client.from("invoices").select("*, customers!inner(company_name, customer_type, first_name, last_name, phone, email, updated_at), jobs(id, work_description, service_address)")
     .eq("business_id", businessId).eq("id", invoiceId).maybeSingle();
   if (result.error) throw new Error(`Unable to load invoice: ${result.error.message}`);
   return result.data as InvoiceWithRelations | null;
