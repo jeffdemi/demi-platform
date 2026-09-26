@@ -19,6 +19,7 @@ export function QuoteDraftStep1({ quote, customers, today, photos, messages, rec
 }) {
   return <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
     <PageHeader description={`Step 1 of 2 · ${quote.quote_number} · Intake`} title="Prepare the quote" />
+    <p className="mb-6 text-sm text-muted">Step 2 lets you add site photos and get an AI-suggested price based on your past quotes before you send this one.</p>
     <QuoteForm customers={customers} quote={quote} today={today} />
     <div className="mt-8 grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
       <QuotePhotoManager businessId={quote.business_id} draft photos={photos} quoteId={quote.id} readOnly={readOnly} />
