@@ -6,7 +6,7 @@ import { customerDisplayName } from "@/lib/domain/customers";
 import { dateInTimeZone } from "@/lib/domain/jobs";
 import { formatCurrency } from "@/lib/format";
 import { getBankTransaction } from "@/lib/repositories/accounting-repository";
-import { listInvoices } from "@/lib/repositories/invoice-repository";
+import { getInvoiceBalance, listInvoices } from "@/lib/repositories/invoice-repository";
 import { listJobOptions } from "@/lib/repositories/job-repository";
 import { createClient } from "@/lib/supabase/server";
 import { PaymentForm } from "./payment-form";
@@ -31,5 +31,8 @@ export default async function NewPaymentPage({ searchParams }: { searchParams: P
   // so a foreign or stale id simply prefills nothing.
   const requestedJobId = Number(query.job);
   const selectedJob = jobs.find((job) => job.id === requestedJobId);
-  return <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8"><PageHeader description={bankTransaction ? `Reconcile deposit ${formatCurrency(bankTransaction.amount)} from ${bankTransaction.description}.` : "Record cash received and keep invoice, job, and ledger totals synchronized."} title="Record payment" /><PaymentForm defaults={{ invoiceId: selectedInvoice?.id, jobId: selectedInvoice?.job_id ?? selectedJob?.id, bankTransactionId: bankTransaction?.id, paymentDate: bankTransaction?.transaction_date ?? dateInTimeZone(business.timezone), amount: bankTransaction?.amount, reference: bankTransaction?.description }} invoices={invoices.map((invoice) => ({ id: invoice.id, label: `${invoice.invoice_number} · ${customerDisplayName(invoice.customers)} · ${formatCurrency(invoice.amount)}` }))} jobs={jobs} /></div>;
+  const invoiceBalance = selectedInvoice
+    ? await getInvoiceBalance(client, business.id, selectedInvoice.id, selectedInvoice.amount)
+    : null;
+  return <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8"><PageHeader description={bankTransaction ? `Reconcile deposit ${formatCurrency(bankTransaction.amount)} from ${bankTransaction.description}.` : "Record cash received and keep invoice, job, and ledger totals synchronized."} title="Record payment" /><PaymentForm defaults={{ invoiceId: selectedInvoice?.id, jobId: selectedInvoice?.job_id ?? selectedJob?.id, bankTransactionId: bankTransaction?.id, paymentDate: bankTransaction?.transaction_date ?? dateInTimeZone(business.timezone), amount: bankTransaction?.amount ?? invoiceBalance ?? undefined, reference: bankTransaction?.description }} invoices={invoices.map((invoice) => ({ id: invoice.id, label: `${invoice.invoice_number} · ${customerDisplayName(invoice.customers)} · ${formatCurrency(invoice.amount)}` }))} jobs={jobs} /></div>;
 }

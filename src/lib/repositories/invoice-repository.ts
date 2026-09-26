@@ -58,6 +58,16 @@ export async function createInvoiceRecord(client: Client, values: {
   return result.data;
 }
 
+// Rounded to cents; summed from live payment rows rather than trusting a
+// cached invoice status, so a partial or superseded payment is reflected.
+export async function getInvoiceBalance(client: Client, businessId: number, invoiceId: number, invoiceAmount: number) {
+  const result = await client.from("payments").select("amount")
+    .eq("business_id", businessId).eq("invoice_id", invoiceId).is("voided_at", null);
+  if (result.error) throw new Error(describeDbError(result.error, "load invoice payments"));
+  const paid = (result.data ?? []).reduce((total, row) => total + row.amount, 0);
+  return Math.max(Math.round((invoiceAmount - paid) * 100) / 100, 0);
+}
+
 export async function updateInvoiceStatus(client: Client, businessId: number, invoiceId: number, status: string, paidDate: string | null) {
   const existing = await client.from("invoices").select("id").eq("business_id", businessId).eq("id", invoiceId).maybeSingle();
   if (existing.error) throw new Error(describeDbError(existing.error, "update invoice"));
