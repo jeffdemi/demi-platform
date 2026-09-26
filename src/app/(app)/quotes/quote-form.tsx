@@ -2,22 +2,24 @@
 
 import Link from "next/link";
 import { Save } from "lucide-react";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Field, inputClass, textAreaClass } from "@/components/form-fields";
 import { FormFeedback } from "@/components/form-feedback";
 import { acceptedMethodOptions, contactMethodOptions, optionLabel, propertyLocationOptions, quoteStatusOptions, type Quote } from "@/lib/domain/quotes";
 import { saveQuote, type QuoteFormState } from "./actions";
 
-export function QuoteForm({ customers, quote, today, defaultCustomerId }: { customers: { id: number; label: string }[]; quote?: Quote; today: string; defaultCustomerId?: number }) {
+export function QuoteForm({ customers, quote, today, defaultCustomerId }: { customers: { id: number; label: string; addressLine?: string }[]; quote?: Quote; today: string; defaultCustomerId?: number }) {
   const [state, action, pending] = useActionState(saveQuote.bind(null, quote?.id ?? null), {} as QuoteFormState);
   // On a failed submission the server echoes back exactly what was typed in state.values;
   // remounting the form (via key) is what makes the restored defaultValues take effect.
   const restored = state.values;
   const text = (name: string, fallback: string) => restored?.[name] ?? fallback;
   const checked = (name: string, fallback: boolean) => restored ? restored[name] === "on" : fallback;
+  const [selectedCustomerId, setSelectedCustomerId] = useState(text("customerId", String(quote?.customer_id ?? defaultCustomerId ?? "")));
+  const selectedCustomer = customers.find((customer) => customer.id === Number(selectedCustomerId));
   return <form action={action} className="mt-6 space-y-8" key={state.attemptId ?? "initial"}>
     <section><h2 className="border-b border-line pb-3 text-lg font-bold">Customer and quote</h2><div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      <Field errors={state.errors?.customerId} label="Customer" name="customerId"><select className={inputClass} defaultValue={text("customerId", String(quote?.customer_id ?? defaultCustomerId ?? ""))} id="customerId" name="customerId" required><option value="">Select customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.label}</option>)}</select></Field>
+      <Field errors={state.errors?.customerId} label="Customer" name="customerId"><select className={inputClass} id="customerId" name="customerId" onChange={(event) => setSelectedCustomerId(event.target.value)} required value={selectedCustomerId}><option value="">Select customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.label}</option>)}</select></Field>
       {quote ? <Field errors={state.errors?.status} label="Status" name="status"><select className={inputClass} defaultValue={text("status", quote.status)} id="status" name="status">{quoteStatusOptions.filter((status) => status.value !== "converted" || quote.status === "converted").map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select></Field> : <Field label="Status" name="status"><input name="status" type="hidden" value="draft" /><div className={`${inputClass} flex items-center bg-surface-muted font-semibold`}>Draft - not delivered</div></Field>}
       <Field errors={state.errors?.quoteDate} label="Quote date" name="quoteDate"><input className={inputClass} defaultValue={text("quoteDate", quote?.quote_date ?? today)} id="quoteDate" name="quoteDate" required type="date" /></Field>
       <Field errors={state.errors?.expirationDate} label="Expiration date" name="expirationDate"><input className={inputClass} defaultValue={text("expirationDate", quote?.expiration_date ?? "")} id="expirationDate" name="expirationDate" type="date" /></Field>
@@ -25,7 +27,7 @@ export function QuoteForm({ customers, quote, today, defaultCustomerId }: { cust
       <Field errors={state.errors?.referralSource} label="Referral source" name="referralSource"><input className={inputClass} defaultValue={text("referralSource", quote?.referral_source ?? "")} id="referralSource" name="referralSource" /></Field>
     </div></section>
     <section><h2 className="border-b border-line pb-3 text-lg font-bold">Location and scope</h2><div className="mt-5 grid gap-5 sm:grid-cols-2">
-      <div className="sm:col-span-2"><Field errors={state.errors?.serviceAddress} label="Service address" name="serviceAddress"><input className={inputClass} defaultValue={text("serviceAddress", quote?.service_address ?? "")} id="serviceAddress" name="serviceAddress" /></Field></div>
+      <div className="sm:col-span-2"><Field errors={state.errors?.serviceAddress} label="Service address" name="serviceAddress"><input className={inputClass} defaultValue={text("serviceAddress", quote?.service_address || selectedCustomer?.addressLine || "")} id="serviceAddress" key={`service-address-${selectedCustomerId}`} name="serviceAddress" /></Field></div>
       <Field errors={state.errors?.propertyLocation} label="Property location" name="propertyLocation"><select className={inputClass} defaultValue={text("propertyLocation", quote?.property_location ?? "")} id="propertyLocation" name="propertyLocation"><option value="">Not set</option>{propertyLocationOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></Field>
       <div className="sm:col-span-2"><Field errors={state.errors?.locationDescription} label="Location description" name="locationDescription"><textarea className={textAreaClass} defaultValue={text("locationDescription", quote?.location_description ?? "")} id="locationDescription" name="locationDescription" /></Field></div>
       <div className="sm:col-span-2"><Field errors={state.errors?.customerScope} label="Customer-facing scope" name="customerScope"><textarea className={textAreaClass} defaultValue={text("customerScope", quote?.customer_scope ?? "")} id="customerScope" name="customerScope" /></Field></div>

@@ -56,6 +56,28 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
           <input autoComplete="email" className={inputClass} defaultValue={customer?.email ?? ""} id="email" name="email" type="email" />
           <Errors errors={state.errors?.email} />
         </div>
+        <div className="sm:col-span-2">
+          <label className={labelClass} htmlFor="streetAddress">Street address</label>
+          <input autoComplete="street-address" className={inputClass} defaultValue={customer?.street_address ?? ""} id="streetAddress" name="streetAddress" />
+          <Errors errors={state.errors?.streetAddress} />
+        </div>
+        <div>
+          <label className={labelClass} htmlFor="city">City</label>
+          <input autoComplete="address-level2" className={inputClass} defaultValue={customer?.city ?? ""} id="city" name="city" />
+          <Errors errors={state.errors?.city} />
+        </div>
+        <div className="grid grid-cols-2 gap-5">
+          <div>
+            <label className={labelClass} htmlFor="state">State</label>
+            <input autoComplete="address-level1" className={inputClass} defaultValue={customer?.state ?? ""} id="state" name="state" />
+            <Errors errors={state.errors?.state} />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="zip">ZIP</label>
+            <input autoComplete="postal-code" className={inputClass} defaultValue={customer?.zip ?? ""} id="zip" name="zip" />
+            <Errors errors={state.errors?.zip} />
+          </div>
+        </div>
         <label className="flex min-h-11 items-center gap-3 text-sm font-semibold sm:col-span-2">
           <input className="size-5 accent-brand" defaultChecked={customer?.active ?? true} name="active" type="checkbox" />
           Active customer

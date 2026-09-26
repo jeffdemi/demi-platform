@@ -15,6 +15,15 @@ export function customerDisplayName(
   return personalName || companyName || "Unnamed customer";
 }
 
+export function customerAddressLine(
+  customer: Pick<Customer, "street_address" | "city" | "state" | "zip">,
+) {
+  const cityStateZip = [customer.city, [customer.state, customer.zip].filter(Boolean).join(" ")]
+    .filter(Boolean)
+    .join(", ");
+  return [customer.street_address, cityStateZip].filter(Boolean).join(", ");
+}
+
 export function customerMatchesSearch(
   customer: Pick<Customer, "company_name" | "email" | "first_name" | "last_name" | "phone">,
   search: string,

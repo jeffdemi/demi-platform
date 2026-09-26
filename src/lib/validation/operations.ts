@@ -51,6 +51,10 @@ export const customerFormSchema = z.object({
   lastName: cleanedOptionalText(100),
   phone: cleanedOptionalText(50),
   email: optionalEmail,
+  streetAddress: cleanedOptionalText(250),
+  city: cleanedOptionalText(100),
+  state: cleanedOptionalText(50),
+  zip: cleanedOptionalText(20),
   notes: cleanedOptionalText(5000),
   active: z.boolean(),
 }).superRefine((value, context) => {
@@ -98,6 +102,10 @@ export function valuesFromFormData(formData: FormData) {
     lastName: formData.get("lastName"),
     phone: formData.get("phone"),
     email: formData.get("email"),
+    streetAddress: formData.get("streetAddress"),
+    city: formData.get("city"),
+    state: formData.get("state"),
+    zip: formData.get("zip"),
     notes: formData.get("notes"),
     active: formData.get("active") === "on",
   };
