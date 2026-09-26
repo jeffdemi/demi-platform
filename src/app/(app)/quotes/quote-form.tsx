@@ -5,7 +5,7 @@ import { Save } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Field, inputClass, textAreaClass } from "@/components/form-fields";
 import { FormFeedback } from "@/components/form-feedback";
-import { acceptedMethodOptions, contactMethodOptions, optionLabel, propertyLocationOptions, quoteStatusOptions, type Quote } from "@/lib/domain/quotes";
+import { acceptedMethodOptions, contactMethodOptions, optionLabel, propertyLocationOptions, quoteStatusLabel, type Quote } from "@/lib/domain/quotes";
 import { saveQuote, type QuoteFormState } from "./actions";
 
 export function QuoteForm({ customers, quote, today, defaultCustomerId }: { customers: { id: number; label: string; addressLine?: string }[]; quote?: Quote; today: string; defaultCustomerId?: number }) {
@@ -20,7 +20,7 @@ export function QuoteForm({ customers, quote, today, defaultCustomerId }: { cust
   return <form action={action} className="mt-6 space-y-8" key={state.attemptId ?? "initial"}>
     <section><h2 className="border-b border-line pb-3 text-lg font-bold">Customer and quote</h2><div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       <Field errors={state.errors?.customerId} label="Customer" name="customerId"><select className={inputClass} id="customerId" name="customerId" onChange={(event) => setSelectedCustomerId(event.target.value)} required value={selectedCustomerId}><option value="">Select customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.label}</option>)}</select></Field>
-      {quote ? <Field errors={state.errors?.status} label="Status" name="status"><select className={inputClass} defaultValue={text("status", quote.status)} id="status" name="status">{quoteStatusOptions.filter((status) => status.value !== "converted" || quote.status === "converted").map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select></Field> : <Field label="Status" name="status"><input name="status" type="hidden" value="draft" /><div className={`${inputClass} flex items-center bg-surface-muted font-semibold`}>Draft - not delivered</div></Field>}
+      <Field label="Status" name="status"><input name="status" type="hidden" value={quote?.status ?? "draft"} /><div className={`${inputClass} flex items-center bg-surface-muted font-semibold`}>{quote ? quoteStatusLabel(quote.status) : "Draft - not delivered"}</div>{quote && <p className="mt-1 text-xs text-muted">Change status from the Sales actions section below.</p>}</Field>
       <Field errors={state.errors?.quoteDate} label="Quote date" name="quoteDate"><input className={inputClass} defaultValue={text("quoteDate", quote?.quote_date ?? today)} id="quoteDate" name="quoteDate" required type="date" /></Field>
     </div></section>
     <section><h2 className="border-b border-line pb-3 text-lg font-bold">Location and scope</h2><div className="mt-5 grid gap-5 sm:grid-cols-2">
