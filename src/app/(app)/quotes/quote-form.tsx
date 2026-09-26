@@ -33,6 +33,7 @@ export function QuoteForm({ customers, quote, today, defaultCustomerId }: { cust
         <Field errors={state.errors?.specialInstructions} label="Special instructions" name="specialInstructions"><textarea className={textAreaClass} defaultValue={text("specialInstructions", quote?.special_instructions ?? "")} id="specialInstructions" name="specialInstructions" placeholder="Access notes, pricing quirks, anything that should inform the AI estimate." /></Field>
         <p className="mt-1 text-xs text-muted">Unlike internal notes, this is included when the quote is sent to the AI estimator.</p>
         <label className="mt-3 flex items-start gap-3 text-sm leading-5"><input className="mt-1 size-4 accent-brand" defaultChecked={checked("saveToKnowledgeBase", false)} name="saveToKnowledgeBase" type="checkbox" value="yes" /><span>Save this to my knowledge base so future AI estimates take it into account.</span></label>
+        <p className="mt-1 text-xs text-muted">Saves the special instructions text above as a standing note the AI estimator references on future quotes. Price and scope aren&apos;t saved separately.</p>
       </div>
       <label className="flex min-h-11 items-center gap-3 text-sm font-semibold"><input className="size-5 accent-brand" defaultChecked={checked("pa811Required", quote?.pa811_required ?? false)} name="pa811Required" type="checkbox" />PA 811 required</label>
     </div></section>
