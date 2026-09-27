@@ -46,6 +46,7 @@ export default function FinancialGuidePage() {
           <h3 className="mt-4 font-bold group-hover:text-brand">{title}</h3><p className="mt-1 text-sm leading-5 text-muted">{description}</p>
         </Link>)}
       </div>
+      <p className="mt-4 text-sm text-muted">Red amounts indicate money owed.</p>
     </section>
 
     <section className="border-y border-line py-6" id="monthly-workflow">
