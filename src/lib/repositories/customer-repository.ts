@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { customerDisplayName, customerMatchesSearch, type Customer } from "@/lib/domain/customers";
+import { customerAddressLine, customerDisplayName, customerMatchesSearch, type Customer } from "@/lib/domain/customers";
 import type { Database } from "@/types/database";
 
 type Client = SupabaseClient<Database>;
@@ -96,7 +96,7 @@ export async function getCustomerDetail(client: Client, businessId: number, cust
 export async function listActiveCustomerOptions(client: Client, businessId: number, includeCustomerId?: number) {
   let query = client
     .from("customers")
-    .select("id, customer_type, company_name, first_name, last_name")
+    .select("id, customer_type, company_name, first_name, last_name, street_address, city, state, zip")
     .eq("business_id", businessId)
     .limit(500);
   query = includeCustomerId
@@ -105,7 +105,11 @@ export async function listActiveCustomerOptions(client: Client, businessId: numb
   const result = await query;
   const customers = requireData(result.data, result.error, "Unable to load customer options");
   return customers
-    .map((customer) => ({ id: customer.id, label: customerDisplayName(customer) }))
+    .map((customer) => ({
+      id: customer.id,
+      label: customerDisplayName(customer),
+      addressLine: customerAddressLine(customer),
+    }))
     .sort((left, right) => left.label.localeCompare(right.label));
 }
 

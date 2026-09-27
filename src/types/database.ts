@@ -307,6 +307,7 @@ export type Database = {
         Row: {
           active: boolean
           business_id: number
+          city: string | null
           company_name: string | null
           created_at: string
           customer_type: string
@@ -317,11 +318,15 @@ export type Database = {
           legacy_id: number | null
           notes: string | null
           phone: string | null
+          state: string | null
+          street_address: string | null
           updated_at: string
+          zip: string | null
         }
         Insert: {
           active?: boolean
           business_id: number
+          city?: string | null
           company_name?: string | null
           created_at?: string
           customer_type?: string
@@ -332,11 +337,15 @@ export type Database = {
           legacy_id?: number | null
           notes?: string | null
           phone?: string | null
+          state?: string | null
+          street_address?: string | null
           updated_at?: string
+          zip?: string | null
         }
         Update: {
           active?: boolean
           business_id?: number
+          city?: string | null
           company_name?: string | null
           created_at?: string
           customer_type?: string
@@ -347,7 +356,10 @@ export type Database = {
           legacy_id?: number | null
           notes?: string | null
           phone?: string | null
+          state?: string | null
+          street_address?: string | null
           updated_at?: string
+          zip?: string | null
         }
         Relationships: [
           {

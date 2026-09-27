@@ -47,7 +47,7 @@ export async function saveQuote(quoteId: number | null, _: QuoteFormState, formD
     location_description: data.locationDescription ?? null, hazard_notes: data.hazardNotes ?? null,
     customer_scope: data.customerScope ?? null, special_instructions: data.specialInstructions ?? null,
     internal_notes: data.internalNotes ?? null,
-    normal_price: data.normalPrice ?? null, quoted_price: data.proBono ? 0 : data.quotedPrice ?? 0,
+    normal_price: data.normalPrice ?? null, quoted_price: data.proBono ? 0 : data.quotedPrice ?? data.normalPrice ?? 0,
     discount_reason: data.discountReason ?? null, pro_bono: data.proBono,
     accepted_method: data.acceptedMethod ?? null, acceptance_notes: data.acceptanceNotes ?? null,
     pa811_required: data.pa811Required,
@@ -93,7 +93,7 @@ export async function setQuoteFinalPrice(quoteId: number, _state: QuoteFormState
   try {
     await updateQuote(client, business.id, quoteId, {
       normal_price: parsed.data.normalPrice ?? null,
-      quoted_price: parsed.data.proBono ? 0 : parsed.data.quotedPrice ?? 0,
+      quoted_price: parsed.data.proBono ? 0 : parsed.data.quotedPrice ?? parsed.data.normalPrice ?? 0,
       pro_bono: parsed.data.proBono,
       discount_reason: parsed.data.discountReason ?? null,
     });

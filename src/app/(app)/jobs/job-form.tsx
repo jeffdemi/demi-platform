@@ -47,6 +47,8 @@ export function JobForm({
   );
   const [selectedQuoteId, setSelectedQuoteId] = useState(String(initialQuote?.id ?? ""));
   const [selectedStatus, setSelectedStatus] = useState(job?.status ?? (initialQuote ? "quoted" : "lead"));
+  const showCompletionDate = ["completed", "invoiced", "paid"].includes(selectedStatus);
+  const showLegacyJobDate = Boolean(importedStatus) || selectedStatus === "completed";
   const selectedQuote = quoteOptions?.find((quote) => quote.id === Number(selectedQuoteId));
   const quoteDefaults = selectedQuote ? jobDefaultsFromQuote(selectedQuote) : undefined;
   const customerId = selectedCustomerId ? Number(selectedCustomerId) : null;
@@ -105,16 +107,19 @@ export function JobForm({
             </Field>
           ) : null}
           <Field errors={state.errors?.status} label="Status" name="status"><select className={inputClass} id="status" name="status" onChange={(event) => setSelectedStatus(event.target.value)} value={selectedStatus}>{importedStatus && <option value={importedStatus}>Imported: {jobStatusLabel(importedStatus)}</option>}{jobStatusOptions.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select></Field>
-          <Field errors={state.errors?.scheduledDate} label="Scheduled date" name="scheduledDate"><input className={inputClass} defaultValue={job?.scheduled_date ?? ""} id="scheduledDate" name="scheduledDate" type="date" /></Field>
+          {showCompletionDate
+            ? <><Field errors={state.errors?.completedDate} label="Completion date" name="completedDate"><input className={inputClass} defaultValue={job?.completed_date ?? ""} id="completedDate" name="completedDate" type="date" /></Field><input defaultValue={job?.scheduled_date ?? ""} name="scheduledDate" type="hidden" /></>
+            : <><Field errors={state.errors?.scheduledDate} label="Scheduled date" name="scheduledDate"><input className={inputClass} defaultValue={job?.scheduled_date ?? ""} id="scheduledDate" name="scheduledDate" type="date" /></Field><input defaultValue={job?.completed_date ?? ""} name="completedDate" type="hidden" /></>}
           <Field errors={state.errors?.scheduledStartTime} label="Start time" name="scheduledStartTime"><input className={inputClass} defaultValue={job?.scheduled_start_time?.slice(0, 5) ?? ""} id="scheduledStartTime" name="scheduledStartTime" type="time" /></Field>
           <Field errors={state.errors?.estimatedDurationMinutes} label="Estimated duration (minutes)" name="estimatedDurationMinutes"><input className={inputClass} defaultValue={job?.estimated_duration_minutes ?? ""} id="estimatedDurationMinutes" min="0" name="estimatedDurationMinutes" step="1" type="number" /></Field>
-          <Field errors={state.errors?.completedDate} label="Completion date" name="completedDate"><input className={inputClass} defaultValue={job?.completed_date ?? ""} id="completedDate" name="completedDate" type="date" /></Field>
-          <div>
-            <label className={labelClass} htmlFor="jobDate">Job date <span className="font-normal text-muted">(completed/imported jobs only)</span></label>
-            <input className={inputClass} defaultValue={job?.job_date ?? defaultJobDate ?? ""} id="jobDate" name="jobDate" type="date" />
-            <p className="mt-1 text-xs text-muted">Leave blank for new work — Scheduled date above is what the rest of the app shows. Only set this for a job that&apos;s already done or came from imported records.</p>
-            <Errors errors={state.errors?.jobDate} />
-          </div>
+          {showLegacyJobDate ? (
+            <div>
+              <label className={labelClass} htmlFor="jobDate">Job date <span className="font-normal text-muted">(imported records)</span></label>
+              <input className={inputClass} defaultValue={job?.job_date ?? defaultJobDate ?? ""} id="jobDate" name="jobDate" type="date" />
+              <p className="mt-1 text-xs text-muted">Only used to record a job date carried over from older, already-completed or imported records. New jobs should use Scheduled date and Completion date instead.</p>
+              <Errors errors={state.errors?.jobDate} />
+            </div>
+          ) : <input defaultValue={job?.job_date ?? defaultJobDate ?? ""} name="jobDate" type="hidden" />}
         </div>
       </section>
 

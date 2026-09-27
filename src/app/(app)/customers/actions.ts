@@ -34,6 +34,10 @@ export async function saveCustomer(
     last_name: validated.data.lastName ?? null,
     phone: validated.data.phone ?? null,
     email: validated.data.email ?? null,
+    street_address: validated.data.streetAddress ?? null,
+    city: validated.data.city ?? null,
+    state: validated.data.state ?? null,
+    zip: validated.data.zip ?? null,
     notes: validated.data.notes ?? null,
     active: validated.data.active,
   };
