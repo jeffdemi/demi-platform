@@ -40,11 +40,15 @@ describe("actual cash receipts", () => {
     expect(receipts).toEqual([]);
   });
 
-  it("renders the Jobs list from amount paid rather than amount quoted", async () => {
+  it("renders the Jobs list amount from a resolved number, never a raw nullable field", async () => {
     const source = await readFile(new URL("../app/(app)/jobs/page.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain("formatCurrency(job.amount_paid)");
+    // formatCurrency(null) renders "Not recorded" -- passing the raw amount_paid/amount_quoted
+    // fields (nullable) straight through is exactly the bug this guards against. Every call
+    // must go through the `paid`/`owed` locals, which coalesce null to a number first.
+    expect(source).not.toContain("formatCurrency(job.amount_paid)");
     expect(source).not.toContain("formatCurrency(job.amount_quoted)");
+    expect(source).toContain("const paid = job.amount_paid ?? 0");
     expect(source).toContain("Amount paid");
   });
 
