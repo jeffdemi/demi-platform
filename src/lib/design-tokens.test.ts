@@ -17,7 +17,11 @@ describe("design tokens", () => {
     const files = componentFiles(join(process.cwd(), "src"));
     const violations = files.flatMap((file) => {
       const matches = readFileSync(file, "utf8").match(/#[0-9a-fA-F]{3,8}/g) ?? [];
-      return file.endsWith("src/app/layout.tsx") ? [] : matches.map((color) => `${file}: ${color}`);
+      // layout.tsx sets a literal themeColor meta value; icon.tsx is a next/og ImageResponse
+      // route rendered by Satori outside the app's stylesheet, so neither can reference CSS
+      // custom properties. Both must hand-match the token values they stand in for.
+      const exempt = file.endsWith("src/app/layout.tsx") || file.endsWith("src/app/icon.tsx");
+      return exempt ? [] : matches.map((color) => `${file}: ${color}`);
     });
 
     expect(violations).toEqual([]);
