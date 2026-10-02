@@ -396,6 +396,28 @@ export const maintenanceFormSchema = z.object({
   nextDueHours: number("Next due hours"), notes: optionalText(),
 });
 
+export const mileageSettingsSchema = z.object({
+  homeBaseAddress: requiredText("Home base address", 500),
+  irsStandardMileageRate: number("IRS standard mileage rate"),
+});
+
+export const manualMileageTripSchema = z.object({
+  tripDate: date("Trip date", true),
+  destination: requiredText("Destination", 500),
+  purpose: requiredText("Purpose", 500),
+  manualMiles: number("Miles"),
+});
+
+export const mileageTripApprovalSchema = z.object({
+  tripIds: z.array(z.coerce.number().int().positive()).min(1, "Select at least one trip."),
+});
+
+export const mileageDistanceCorrectionSchema = z.object({
+  tripId: positiveId("a trip"),
+  seq: z.coerce.number().int().nonnegative(),
+  miles: number("Miles", true),
+});
+
 export function formValues(formData: FormData, names: string[]) {
   return Object.fromEntries(names.map((name) => [name, formData.get(name)]));
 }

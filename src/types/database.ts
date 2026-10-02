@@ -1096,6 +1096,200 @@ export type Database = {
           },
         ]
       }
+      mileage_settings: {
+        Row: {
+          id: number
+          business_id: number
+          home_base_address: string | null
+          irs_standard_mileage_rate: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: never
+          business_id: number
+          home_base_address?: string | null
+          irs_standard_mileage_rate?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: never
+          business_id?: number
+          home_base_address?: string | null
+          irs_standard_mileage_rate?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "mileage_settings_business_id_fkey"; columns: ["business_id"]; isOneToOne: true; referencedRelation: "businesses"; referencedColumns: ["id"] },
+        ]
+      }
+      mileage_trips: {
+        Row: {
+          id: number
+          business_id: number
+          trip_date: string
+          kind: string
+          home_base_address: string
+          destination_address: string
+          purpose: string
+          legs: Json
+          total_miles: number
+          needs_manual_distance: boolean
+          created_by: string | null
+          approved_by: string | null
+          approved_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: never
+          business_id: number
+          trip_date: string
+          kind: string
+          home_base_address: string
+          destination_address: string
+          purpose: string
+          legs: Json
+          total_miles: number
+          needs_manual_distance?: boolean
+          created_by?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: never
+          business_id?: number
+          trip_date?: string
+          kind?: string
+          home_base_address?: string
+          destination_address?: string
+          purpose?: string
+          legs?: Json
+          total_miles?: number
+          needs_manual_distance?: boolean
+          created_by?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "mileage_trips_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] },
+        ]
+      }
+      mileage_trip_jobs: {
+        Row: {
+          id: number
+          business_id: number
+          trip_id: number
+          job_id: number
+          created_at: string
+        }
+        Insert: {
+          id?: never
+          business_id: number
+          trip_id: number
+          job_id: number
+          created_at?: string
+        }
+        Update: {
+          id?: never
+          business_id?: number
+          trip_id?: number
+          job_id?: number
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "mileage_trip_jobs_business_id_trip_id_fkey"; columns: ["business_id", "trip_id"]; isOneToOne: false; referencedRelation: "mileage_trips"; referencedColumns: ["business_id", "id"] },
+          { foreignKeyName: "mileage_trip_jobs_business_id_job_id_fkey"; columns: ["business_id", "job_id"]; isOneToOne: false; referencedRelation: "jobs"; referencedColumns: ["business_id", "id"] },
+        ]
+      }
+      mileage_geocode_cache: {
+        Row: {
+          id: number
+          business_id: number
+          normalized_query: string
+          address_text: string
+          latitude: number | null
+          longitude: number | null
+          lookup_status: string
+          provider: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: never
+          business_id: number
+          normalized_query: string
+          address_text: string
+          latitude?: number | null
+          longitude?: number | null
+          lookup_status: string
+          provider?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: never
+          business_id?: number
+          normalized_query?: string
+          address_text?: string
+          latitude?: number | null
+          longitude?: number | null
+          lookup_status?: string
+          provider?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "mileage_geocode_cache_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] },
+        ]
+      }
+      mileage_distance_cache: {
+        Row: {
+          id: number
+          business_id: number
+          origin_query: string
+          destination_query: string
+          miles: number | null
+          distance_source: string
+          corrected_by: string | null
+          corrected_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: never
+          business_id: number
+          origin_query: string
+          destination_query: string
+          miles?: number | null
+          distance_source: string
+          corrected_by?: string | null
+          corrected_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: never
+          business_id?: number
+          origin_query?: string
+          destination_query?: string
+          miles?: number | null
+          distance_source?: string
+          corrected_by?: string | null
+          corrected_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "mileage_distance_cache_business_id_fkey"; columns: ["business_id"]; isOneToOne: false; referencedRelation: "businesses"; referencedColumns: ["id"] },
+        ]
+      }
       monthly_financial_snapshots: {
         Row: {
           id: number; business_id: number; period_month: string; cash_book_balance: number; cash_bank_balance: number;
@@ -1595,6 +1789,22 @@ export type Database = {
       }
       convert_quote_to_job_with_values: { Args: { target_business_id: number; target_quote_id: number; job_values: Json }; Returns: number }
       convert_quote_to_job: { Args: { target_quote_id: number }; Returns: number }
+      create_mileage_trip: {
+        Args: {
+          target_business_id: number
+          target_trip_date: string
+          target_kind: string
+          target_home_base_address: string
+          target_destination_address: string
+          target_purpose: string
+          target_legs: Json
+          target_total_miles: number
+          target_needs_manual_distance: boolean
+          target_job_ids: number[] | null
+          target_created_by: string
+        }
+        Returns: number
+      }
       create_invoice_record: {
         Args: {
           due_on?: string | null
